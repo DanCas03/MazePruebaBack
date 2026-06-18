@@ -1,5 +1,19 @@
 # AI History — MazePruebaBack
 
+## Entrada 013 — Task 3.4: JwtStrategy + JwtAuthGuard
+
+**Fecha:** 2026-06-18
+**Tarea o problema abordado:** Implementar la estrategia JWT de Passport (`JwtStrategy`) y el guardia de autenticación (`JwtAuthGuard`) en la capa `infrastructure/security/`. `JwtStrategy` extiende `PassportStrategy(Strategy)` y lee `JWT_SECRET` vía `ConfigService` (DIP — nunca `process.env` directo); su método `validate` extrae `{ userId, email }` del payload. `JwtAuthGuard` extiende `AuthGuard('jwt')` como guardia reutilizable para proteger rutas. Ambas clases existen y compilan; no se usan para proteger `/auth/*` (register/login son públicos) pero están listas para decorar cualquier ruta futura.
+**Herramienta de IA utilizada:** Claude Code (subagent-driven-development, sonnet)
+**Prompt o instrucción proporcionada:** > "Implementa Task 3.4 (Infrastructure: JwtStrategy + JwtAuthGuard): TDD AAA, JwtStrategy lee JWT_SECRET via ConfigService, JwtAuthGuard extiende AuthGuard('jwt'), tests RED→GREEN, npm test 56 verde, npm run build exit 0, commit por fragmento."
+**Resultado obtenido:**
+- `src/infrastructure/security/jwt.strategy.ts`: patrón Adapter documentado inline; extiende `PassportStrategy(Strategy)` con extracción de token del header `Authorization: Bearer`, sin ignorar expiración y con `secretOrKey` leído de `ConfigService.getOrThrow('JWT_SECRET')`. `validate(payload)` mapea `sub → userId` y retorna `{ userId, email }`.
+- `src/infrastructure/security/jwt-auth.guard.ts`: extiende `AuthGuard('jwt')` (patrón OCP documentado inline). Clase minimal, la lógica de validación queda en `JwtStrategy`.
+- Tests AAA: `jwt.strategy.spec.ts` (3 tests: `ConfigService.getOrThrow` llamado con `'JWT_SECRET'`, `validate` con payload A, `validate` con payload B — `ConfigService` mockeado para aislar de env vars), `jwt-auth.guard.spec.ts` (2 tests: instanceof `AuthGuard('jwt')`, instanciable). RED inicial por módulos inexistentes; GREEN tras implementar.
+- `npm test` → 19 suites, 56/56 tests pasan. `npm run build` → exit 0.
+- Sin cambios en API pública HTTP (ningún endpoint protegido por el guard todavía); README.md no modificado.
+**Modificaciones realizadas por el equipo:**
+
 ## Entrada 012 — Task 3.3: BcryptHashService + JwtTokenService + PrismaUserRepository + User model
 
 **Fecha:** 2026-06-18
