@@ -38,9 +38,11 @@ shared/aspects/        ← LoggingInterceptor, DomainExceptionFilter (AOP cross-
 
 ## Available Endpoints
 
-| Method | Path           | Description                        |
-|--------|----------------|------------------------------------|
-| GET    | /levels/:id    | Retrieve a level grid by UUID      |
+| Method | Path              | Auth required | Description                        |
+|--------|-------------------|---------------|------------------------------------|
+| GET    | /levels/:id       | No            | Retrieve a level grid by UUID      |
+| POST   | /auth/register    | No            | Register a new user; returns JWT   |
+| POST   | /auth/login       | No            | Authenticate a user; returns JWT   |
 
 **Response shape for GET /levels/:id (200):**
 ```json
@@ -54,10 +56,32 @@ shared/aspects/        ← LoggingInterceptor, DomainExceptionFilter (AOP cross-
 }
 ```
 
-**Error responses:** domain exceptions are translated to HTTP status codes by a
-global `DomainExceptionFilter` (AOP). A missing level yields `404 Not Found`:
+**Response shape for POST /auth/register (201) and POST /auth/login (200):**
 ```json
-{ "statusCode": 404, "error": "LevelNotFoundException", "message": "Level 'x' not found" }
+{ "token": "<jwt>" }
+```
+
+**Request body for /auth/register:**
+```json
+{ "email": "user@example.com", "password": "minlength8" }
+```
+
+**Request body for /auth/login:**
+```json
+{ "email": "user@example.com", "password": "yourpassword" }
+```
+
+**Error responses:** domain exceptions are translated to HTTP status codes by a
+global `DomainExceptionFilter` (AOP):
+
+| Exception                    | HTTP Status       |
+|------------------------------|-------------------|
+| `LevelNotFoundException`     | 404 Not Found     |
+| `InvalidCredentialsException`| 401 Unauthorized  |
+| Other `DomainException`      | 400 Bad Request   |
+
+```json
+{ "statusCode": 401, "error": "InvalidCredentialsException", "message": "Invalid email or password" }
 ```
 
 ## Project setup

@@ -1,5 +1,22 @@
 # AI History — MazePruebaBack
 
+## Entrada 014 — Task 3.5: DTOs + AuthController + AuthModule + AppModule
+
+**Fecha:** 2026-06-18
+**Tarea o problema abordado:** Implementar la capa de adaptadores HTTP para autenticación: `RegisterDto` y `LoginDto` con class-validator, `AuthController` (POST /auth/register -> 201 {token}; POST /auth/login -> 200 {token}), `AuthModule` con `useFactory` para cablear los use cases de forma framework-free (DIP, imitando patrón de LevelModule), y registro de `AuthModule` en `AppModule`. Extender `DomainExceptionFilter` para mapear `InvalidCredentialsException` a HTTP 401 (OCP).
+**Herramienta de IA utilizada:** Claude Code (subagent-driven-development, sonnet)
+**Prompt o instrucción proporcionada:** > "Implementa Task 3.5 (Adapters: DTOs + AuthController + AuthModule): TDD AAA, DTOs con class-validator, AuthController invoca solo use cases, AuthModule usa useFactory para wiring, registra AuthModule en AppModule, extiende DomainExceptionFilter para 401, npm test todo verde, npm run build exit 0, commit por fragmento."
+**Resultado obtenido:**
+- `src/adapters/dtos/register.dto.ts`: `RegisterDto` con `@IsEmail()` y `@MinLength(8)` en password.
+- `src/adapters/dtos/login.dto.ts`: `LoginDto` con `@IsEmail()` y `@IsString()` en password.
+- `src/adapters/controllers/auth.controller.ts`: patrón Adapter documentado inline; `POST /auth/register` retorna 201 `{ token }`, `POST /auth/login` retorna 200 `{ token }`. Solo invoca use cases, sin contacto con IUserRepository.
+- `src/adapters/auth.module.ts`: registra `DatabaseModule`, `PassportModule`, `JwtModule.registerAsync` (lee `JWT_SECRET` de `ConfigService`), y cablea `USER_REPOSITORY_TOKEN`, `HASH_SERVICE_TOKEN`, `TOKEN_SERVICE_TOKEN`, `RegisterUseCase`, `LoginUseCase` con `useFactory` (todos framework-free). Registra `JwtStrategy`.
+- `src/app.module.ts`: importa `AuthModule`.
+- `src/shared/aspects/domain-exception.filter.ts`: añade `[InvalidCredentialsException, HttpStatus.UNAUTHORIZED]` al mapa (OCP — sin tocar lógica de `catch`).
+- Tests AAA: `auth.controller.spec.ts` (4 tests: register delega en use case, register propaga UserAlreadyExistsException, login delega en use case, login propaga InvalidCredentialsException — ambos use cases mockeados); `domain-exception.filter.spec.ts` extendido con test para 401.
+- `npm test` → 20 suites, 61/61 tests pasan. `npm run build` → exit 0.
+**Modificaciones realizadas por el equipo:**
+
 ## Entrada 013 — Task 3.4: JwtStrategy + JwtAuthGuard
 
 **Fecha:** 2026-06-18
