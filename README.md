@@ -84,10 +84,29 @@ global `DomainExceptionFilter` (AOP):
 { "statusCode": 401, "error": "InvalidCredentialsException", "message": "Invalid email or password" }
 ```
 
+## Environment Variables
+
+Create a `.env` file at the project root with the following variables:
+
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
+JWT_SECRET="your-secret-key"
+JWT_EXPIRATION="3600s"
+PORT=3000
+```
+
+| Variable        | Required | Description                                      |
+|-----------------|----------|--------------------------------------------------|
+| `DATABASE_URL`  | Yes      | PostgreSQL connection string (Prisma format)     |
+| `JWT_SECRET`    | Yes      | Secret used to sign and verify JWT tokens        |
+| `JWT_EXPIRATION`| Yes      | Token lifespan (e.g. `3600s`, `1d`)              |
+| `PORT`          | No       | HTTP port (defaults to `3000`)                   |
+
 ## Project setup
 
 ```bash
 $ npm install
+$ npx prisma migrate dev
 ```
 
 ## Compile and run the project
