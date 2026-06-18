@@ -33,7 +33,7 @@ src/
 ├── application/       ← Use cases, Ports (ILevelRepository, ILoggerService)
 ├── adapters/          ← Controllers, Mappers, NestJS Modules (DI wiring)
 └── infrastructure/    ← PrismaService, repositories, NestLoggerAdapter
-shared/aspects/        ← LoggingInterceptor (AOP cross-cutting concern)
+shared/aspects/        ← LoggingInterceptor, DomainExceptionFilter (AOP cross-cutting concerns)
 ```
 
 ## Available Endpoints
@@ -42,7 +42,7 @@ shared/aspects/        ← LoggingInterceptor (AOP cross-cutting concern)
 |--------|----------------|------------------------------------|
 | GET    | /levels/:id    | Retrieve a level grid by UUID      |
 
-**Response shape for GET /levels/:id:**
+**Response shape for GET /levels/:id (200):**
 ```json
 {
   "cells": [
@@ -52,6 +52,12 @@ shared/aspects/        ← LoggingInterceptor (AOP cross-cutting concern)
     ]
   ]
 }
+```
+
+**Error responses:** domain exceptions are translated to HTTP status codes by a
+global `DomainExceptionFilter` (AOP). A missing level yields `404 Not Found`:
+```json
+{ "statusCode": 404, "error": "LevelNotFoundException", "message": "Level 'x' not found" }
 ```
 
 ## Project setup

@@ -109,3 +109,19 @@
 - Suite completa: 30/30 tests pasan. El plan no especificó specs nuevos para esta capa (adapter); las clases son DTOs y wiring NestJS sin lógica de dominio.
 - API pública introducida: `GET /levels/:id`; README.md actualizado con sección de arquitectura y tabla de endpoints.
 **Modificaciones realizadas por el equipo:**
+
+## Entrada 009 — Task 2A.7: Fix de hallazgos de revisión (404, test de controller, DRY/OCP)
+
+**Fecha:** 2026-06-17
+**Tarea o problema abordado:** Corregir hallazgos de revisión sobre Task 2A.7 ya commiteada. (1) Una `LevelNotFoundException` no capturada producía HTTP 500 en lugar de 404; (2) faltaba el spec del `LevelController` (mandato CLAUDE.md); (3) duplicación del binding `LOGGER_SERVICE_TOKEN`/`NestLoggerAdapter` en `LevelModule` y `AppModule` (dos instancias) y uso de `instanceof` en `LevelMapper` en lugar del discriminante `ICell.type`.
+**Herramienta de IA utilizada:** Claude Code (subagent-driven-development, opus)
+**Prompt o instrucción proporcionada:** > "FIXING review findings on the ALREADY-COMMITTED Task 2A.7: map not-found a 404 (preferentemente un filtro de excepciones de dominio reutilizable), añadir level.controller.spec.ts (AAA, use case mockeado), y opcionalmente DRY del logger y OCP en el mapper. Amend (nuevo commit), correr npm test."
+**Resultado obtenido:**
+- `DomainExceptionFilter` (`src/shared/aspects/domain-exception.filter.ts`): filtro AOP global (`@Catch(DomainException)`) que traduce excepciones de dominio a HTTP. Registro `Map<constructor, HttpStatus>` con `LevelNotFoundException -> 404`; default `400` para subtipos no mapeados (nunca 500). Extensible para las excepciones de auth de la Fase 3 (OCP: se añaden entradas al registro sin tocar el `catch`). Registrado como `APP_FILTER` en `AppModule`.
+- `level.controller.spec.ts`: AAA con `GetLevelUseCase` mockeado. (a) delega construyendo un `LevelId` desde el `:id` y devuelve el DTO mapeado; (b) propaga `LevelNotFoundException` cuando el use case lanza (el filtro global lo convierte en 404). Sin DB.
+- `domain-exception.filter.spec.ts`: AAA verificando el mapeo real 404 y el default 400.
+- DRY: nuevo `LoggerModule` (`src/infrastructure/logger/logger.module.ts`, `@Global`) centraliza el binding `LOGGER_SERVICE_TOKEN -> NestLoggerAdapter` y lo exporta; eliminada la doble declaración en `LevelModule` y `AppModule` (una sola instancia del adapter).
+- OCP: `LevelMapper` discrimina por `cell.type === CellType.ARROW` en vez de `instanceof ArrowCell`, desacoplando el mapper de la jerarquía concreta.
+- `npm run build` → exit 0; `npm test` → 11 suites, 34/34 tests pasan (antes 30).
+- API pública: README.md actualizado con la forma de respuesta de error 404 y la mención del `DomainExceptionFilter` en la arquitectura.
+**Modificaciones realizadas por el equipo:**
