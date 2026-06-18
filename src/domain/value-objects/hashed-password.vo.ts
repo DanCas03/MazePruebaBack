@@ -6,4 +6,8 @@ export class HashedPassword {
       throw new InvalidHashedPasswordException('HashedPassword cannot be empty');
     }
   }
+
+  equals(other: HashedPassword): boolean {
+    return this.value === other.value;
+  }
 }
