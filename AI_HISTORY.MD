@@ -1,5 +1,21 @@
 # AI History — MazePruebaBack
 
+## Entrada 011 — Task 3.2: Puertos de Auth + RegisterUseCase + LoginUseCase
+
+**Fecha:** 2026-06-18
+**Tarea o problema abordado:** Definir los tres puertos de la capa `application/` para el flujo de autenticación (`IUserRepository`, `IHashService`, `ITokenService`) con sus tokens de DI, e implementar los casos de uso `RegisterUseCase` y `LoginUseCase` como TypeScript puro (cero imports `@nestjs`), orquestando los puertos vía constructor (DIP). Completa el slice vertical de aplicación para auth, listo para que la capa `infrastructure/` provea las implementaciones concretas.
+**Herramienta de IA utilizada:** Claude Code (subagent-driven-development, sonnet)
+**Prompt o instrucción proporcionada:** > "Implementa Task 3.2 (Application: Puertos de Auth + RegisterUseCase + LoginUseCase): crear los 3 puertos con tokens en application/ports/, escribir tests AAA que fallan (RED: 5 casos), implementar los use cases mínimos para verde (GREEN), npm run build exit 0, commit por fragmento."
+**Resultado obtenido:**
+- `src/application/ports/i-user.repository.ts`: interfaz `IUserRepository` con `findByEmail(email: Email): Promise<User | null>` y `save(user: User): Promise<void>` + token `USER_REPOSITORY_TOKEN`. Sin imports de `@nestjs`.
+- `src/application/ports/i-hash.service.ts`: interfaz `IHashService` con `hash(plain: string): Promise<string>` y `compare(plain: string, hashed: string): Promise<boolean>` + token `HASH_SERVICE_TOKEN`.
+- `src/application/ports/i-token.service.ts`: interfaz `ITokenService` con `sign(payload: { sub: string; email: string }): string` + token `TOKEN_SERVICE_TOKEN`.
+- `src/application/use-cases/register.use-case.ts`: `RegisterUseCase` (Command pattern documentado inline, DIP). Flujo: valida `Email` VO, comprueba duplicado lanzando `UserAlreadyExistsException`, hashea contraseña, construye `User` con UUID aleatorio, guarda y devuelve token. Cero imports de `@nestjs`.
+- `src/application/use-cases/login.use-case.ts`: `LoginUseCase` (Command pattern documentado inline, DIP). Flujo: busca usuario, lanza `InvalidCredentialsException` si no existe, compara hash y lanza misma excepción si falla, devuelve token. Cero imports de `@nestjs`.
+- Tests AAA (`register.use-case.spec.ts`, `login.use-case.spec.ts`): RED inicial (Cannot find module); GREEN tras implementar (5 tests nuevos: register ok, email duplicado, login ok, usuario inexistente, password incorrecta). Suite completa: 44/44. `npm run build` → exit 0.
+- Sin cambios en API pública HTTP (capa `application/`, aún no cableada a un módulo NestJS ni a una ruta); README.md no modificado.
+**Modificaciones realizadas por el equipo:**
+
 ## Entrada 001 — Phase 0: Inicialización rama main-sprint
 
 **Fecha:** 2026-06-17
