@@ -7,12 +7,12 @@ import {
 import type { Response } from 'express';
 import { DomainException } from '../../domain/exceptions/domain.exception';
 import { LevelNotFoundException } from '../../domain/exceptions/level-not-found.exception';
+import { InvalidCredentialsException } from '../../domain/exceptions/invalid-credentials.exception';
 
 // AOP: filtro transversal que traduce excepciones de dominio a respuestas HTTP.
 // Sin él, una DomainException no capturada produce un 500 genérico (p.ej.
 // LevelNotFoundException debería ser 404). Centralizar aquí mantiene los
-// controladores libres de try/catch repetidos y prepara el terreno para las
-// excepciones de dominio de la Fase 3 (auth).
+// controladores libres de try/catch repetidos.
 //
 // OCP: el mapeo se extiende añadiendo entradas al registro, sin tocar el flujo
 // de `catch`. Cada subtipo de DomainException no listado cae al default 400
@@ -22,7 +22,10 @@ export class DomainExceptionFilter implements ExceptionFilter {
   private static readonly statusByException = new Map<
     new (...args: any[]) => DomainException,
     HttpStatus
-  >([[LevelNotFoundException, HttpStatus.NOT_FOUND]]);
+  >([
+    [LevelNotFoundException, HttpStatus.NOT_FOUND],
+    [InvalidCredentialsException, HttpStatus.UNAUTHORIZED],
+  ]);
 
   catch(exception: DomainException, host: ArgumentsHost): void {
     const response = host.switchToHttp().getResponse<Response>();
