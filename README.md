@@ -1,176 +1,179 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Arrow Maze — Backend API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+![NestJS](https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-6-2D3748?logo=prisma&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-database-4169E1?logo=postgresql&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-61%20passing-brightgreen)
+![Build](https://img.shields.io/badge/nest%20build-passing-brightgreen)
+![License](https://img.shields.io/badge/license-UNLICENSED-lightgrey)
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+> Status badges reflect the latest local verification. Continuous integration (CI/CD) is not wired up yet; see [Contributing](#contributing).
+
+REST API for **Arrow Maze**, a casual mobile puzzle game. It serves puzzle levels to the Flutter client and handles user registration and authentication. The codebase is a study in **Clean Architecture**: the business rules sit in a framework-free core, and NestJS, Prisma, and JWT live at the edges as replaceable details.
 
 ## Description
 
-ArrowMaze backend — REST API built with NestJS, Clean Architecture (domain / application / adapters / infrastructure), PostgreSQL + Prisma, JWT authentication, and AOP logging.
+The API exposes two capabilities: retrieving a level grid by id, and authenticating users with JWT. What makes it worth reading is not the feature surface but how the layers are kept apart. A use case such as `GetLevelUseCase` or `LoginUseCase` is plain TypeScript with zero `@nestjs/*` imports; it depends on interfaces (ports), and the concrete adapters (Prisma repositories, bcrypt, JWT) are injected from the outside. Cross-cutting concerns (request logging, domain-to-HTTP error translation) are handled with aspects, not scattered through controllers.
+
+**Tech stack:** NestJS 11, TypeScript 5.7, Prisma 6 over PostgreSQL, `@nestjs/jwt` + `passport-jwt` + `bcryptjs` for auth, `class-validator` for input validation, Jest for tests.
 
 ## Architecture
 
+Clean Architecture with four layers. The dependency rule points inward only: `infrastructure` and `adapters` may depend on `application`, `application` depends on `domain`, and `domain` depends on nothing external.
+
 ```
 src/
-├── domain/            ← Entities, Value Objects, domain exceptions (pure TypeScript)
-├── application/       ← Use cases, Ports (ILevelRepository, ILoggerService)
-├── adapters/          ← Controllers, Mappers, NestJS Modules (DI wiring)
-└── infrastructure/    ← PrismaService, repositories, NestLoggerAdapter
-shared/aspects/        ← LoggingInterceptor, DomainExceptionFilter (AOP cross-cutting concerns)
+├── domain/          Entities, Value Objects, domain exceptions — pure TypeScript, no framework
+├── application/     Use cases + Ports (interface + DI token per dependency)
+├── adapters/        Controllers, DTOs, Mappers, NestJS Modules (DI wiring)
+└── infrastructure/  PrismaService, repositories, bcrypt/JWT services, logger adapter
+
+shared/aspects/      LoggingInterceptor + DomainExceptionFilter (AOP, cross-cutting)
 ```
 
-## Available Endpoints
+Why it is organized this way: the inner layers state *what* the system does, the outer layers decide *how*. You can swap Prisma for another ORM, or NestJS for another HTTP framework, by rewriting the outer layers; the use cases and domain rules never change. The litmus test is enforced in code: `grep @nestjs src/application src/domain` returns nothing.
 
-| Method | Path              | Auth required | Description                        |
-|--------|-------------------|---------------|------------------------------------|
-| GET    | /levels/:id       | No            | Retrieve a level grid by UUID      |
-| POST   | /auth/register    | No            | Register a new user; returns JWT   |
-| POST   | /auth/login       | No            | Authenticate a user; returns JWT   |
+## Design Patterns
 
-**Response shape for GET /levels/:id (200):**
-```json
-{
-  "cells": [
-    [
-      { "type": "ARROW", "position": { "row": 0, "col": 0 }, "direction": "RIGHT", "length": 2 },
-      { "type": "EMPTY", "position": { "row": 0, "col": 1 } }
-    ]
-  ]
+Patterns are used where they solve a concrete problem, and each one carries an inline comment explaining why it exists.
+
+| Pattern | Where | Problem it solves |
+|---|---|---|
+| **Factory Method** | [`cell.factory.ts`](src/domain/entities/cell.factory.ts) | Centralizes polymorphic cell creation (`ArrowCell`, `EmptyCell`, `ExitCell`, `WallCell`) so a new cell type means a new subclass and one `case`, not scattered `if/switch`. |
+| **Adapter** | [`nest-logger.adapter.ts`](src/infrastructure/logger/nest-logger.adapter.ts), [`jwt-token.service.ts`](src/infrastructure/security/jwt-token.service.ts), [`bcrypt-hash.service.ts`](src/infrastructure/security/bcrypt-hash.service.ts) | Wraps concrete libraries (NestJS `Logger`, `@nestjs/jwt`, `bcryptjs`) behind application ports, so the core never imports them directly. |
+| **Strategy (Passport)** | [`jwt.strategy.ts`](src/infrastructure/security/jwt.strategy.ts) | Encapsulates the JWT validation algorithm as a swappable Passport strategy reading its secret from `ConfigService`. |
+| **Dependency Injection / Composition Root** | [`auth.module.ts`](src/adapters/auth.module.ts), [`level.module.ts`](src/adapters/level.module.ts) | `useFactory` instantiates framework-free use cases with their ports, keeping construction out of the business code. |
+| **Interceptor (AOP)** | [`logging.interceptor.ts`](src/shared/aspects/logging.interceptor.ts) | Logs every request/response around the handler without touching handlers. |
+| **Exception Filter (AOP)** | [`domain-exception.filter.ts`](src/shared/aspects/domain-exception.filter.ts) | Translates domain exceptions to HTTP status codes in one place. |
+
+## SOLID Principles
+
+**Single Responsibility.** Each use case models exactly one operation. [`LoginUseCase`](src/application/use-cases/login.use-case.ts) only authenticates; it does not hash, sign, or talk to a database directly.
+
+```ts
+async execute(rawEmail: string, plainPassword: string): Promise<string> {
+  const email = new Email(rawEmail);
+  const user = await this.userRepo.findByEmail(email);
+  if (!user) throw new InvalidCredentialsException('Invalid email or password');
+  const valid = await this.hashService.compare(plainPassword, user.password.value);
+  if (!valid) throw new InvalidCredentialsException('Invalid email or password');
+  return this.tokenService.sign({ sub: user.id.value, email: user.email.value });
 }
 ```
 
-**Response shape for POST /auth/register (201) and POST /auth/login (200):**
-```json
+**Open/Closed.** The error-to-HTTP mapping in [`domain-exception.filter.ts`](src/shared/aspects/domain-exception.filter.ts) is extended by adding a registry entry, never by editing the `catch` flow. New exceptions fall through to a safe `400` default instead of leaking a `500`.
+
+```ts
+private static readonly statusByException = new Map([
+  [LevelNotFoundException, HttpStatus.NOT_FOUND],
+  [InvalidCredentialsException, HttpStatus.UNAUTHORIZED],
+]); // add a row to extend; the catch() below stays untouched
+```
+
+**Liskov Substitution.** Every concrete cell (`ArrowCell`, `EmptyCell`, `ExitCell`, `WallCell`) implements `ICell` and is returned interchangeably by `CellFactory`; callers consume `ICell` without caring which subtype they hold.
+
+**Interface Segregation.** Ports are small and focused. [`ILoggerService`](src/application/ports/i-logger.service.ts) exposes three methods (`log`, `error`, `warn`); auth splits into `IUserRepository`, `IHashService`, and `ITokenService` rather than one fat service.
+
+**Dependency Inversion.** Business code depends on abstractions; concretes are injected. `LoginUseCase` receives `IUserRepository`, `IHashService`, and `ITokenService` through its constructor, and `auth.module.ts` binds the tokens to implementations:
+
+```ts
+{ provide: TOKEN_SERVICE_TOKEN, useFactory: (jwt) => new JwtTokenService(jwt), inject: ['JwtService'] }
+```
+
+## AOP — Cross-Cutting Concerns
+
+Logging and error handling are aspects, kept out of the business logic and applied around it. The strategy is built on Dependency Inversion: both aspects depend on the `ILoggerService` *port* (resolved through `LOGGER_SERVICE_TOKEN`), never on a concrete logger.
+
+- **`LoggingInterceptor`** ([`shared/aspects/logging.interceptor.ts`](src/shared/aspects/logging.interceptor.ts)) logs the inbound request and, via an RxJS `tap`, the outbound response with elapsed time. Registered globally as an `APP_INTERCEPTOR`, so no controller mentions logging.
+- **`DomainExceptionFilter`** ([`shared/aspects/domain-exception.filter.ts`](src/shared/aspects/domain-exception.filter.ts)) catches any `DomainException` and maps it to the correct HTTP status, so controllers stay free of `try/catch` and a missing level returns `404`, not `500`.
+
+```ts
+@Injectable()
+export class LoggingInterceptor implements NestInterceptor {
+  constructor(@Inject(LOGGER_SERVICE_TOKEN) private readonly logger: ILoggerService) {}
+  intercept(context: ExecutionContext, next: CallHandler) {
+    const { method, url } = context.switchToHttp().getRequest();
+    const start = Date.now();
+    this.logger.log(`→ ${method} ${url}`, LoggingInterceptor.name);
+    return next.handle().pipe(tap(() =>
+      this.logger.log(`← ${method} ${url} (${Date.now() - start}ms)`, LoggingInterceptor.name)));
+  }
+}
+```
+
+## API Endpoints
+
+| Method | Path           | Auth | Description                       |
+|--------|----------------|------|-----------------------------------|
+| GET    | `/levels/:id`  | No   | Retrieve a level grid by UUID     |
+| POST   | `/auth/register` | No | Register a user; returns a JWT    |
+| POST   | `/auth/login`  | No   | Authenticate a user; returns a JWT |
+
+```jsonc
+// POST /auth/register  → 201   |   POST /auth/login → 200
 { "token": "<jwt>" }
-```
 
-**Request body for /auth/register:**
-```json
-{ "email": "user@example.com", "password": "minlength8" }
-```
-
-**Request body for /auth/login:**
-```json
-{ "email": "user@example.com", "password": "yourpassword" }
-```
-
-**Error responses:** domain exceptions are translated to HTTP status codes by a
-global `DomainExceptionFilter` (AOP):
-
-| Exception                    | HTTP Status       |
-|------------------------------|-------------------|
-| `LevelNotFoundException`     | 404 Not Found     |
-| `InvalidCredentialsException`| 401 Unauthorized  |
-| Other `DomainException`      | 400 Bad Request   |
-
-```json
+// Error shape (produced by DomainExceptionFilter)
 { "statusCode": 401, "error": "InvalidCredentialsException", "message": "Invalid email or password" }
 ```
 
-## Environment Variables
+Domain exceptions map to status codes as follows: `LevelNotFoundException → 404`, `InvalidCredentialsException → 401`, any other `DomainException → 400`.
 
-Create a `.env` file at the project root with the following variables:
+## Getting Started
+
+### Prerequisites
+
+- Node.js >= 20 and npm
+- A PostgreSQL instance
+
+### Environment variables
+
+Create a `.env` file at the project root:
 
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
 JWT_SECRET="your-secret-key"
-JWT_EXPIRATION="3600s"
+JWT_EXPIRATION="7d"
 PORT=3000
 ```
 
-| Variable        | Required | Description                                      |
-|-----------------|----------|--------------------------------------------------|
-| `DATABASE_URL`  | Yes      | PostgreSQL connection string (Prisma format)     |
-| `JWT_SECRET`    | Yes      | Secret used to sign and verify JWT tokens        |
-| `JWT_EXPIRATION`| Yes      | Token lifespan (e.g. `3600s`, `1d`)              |
-| `PORT`          | No       | HTTP port (defaults to `3000`)                   |
+| Variable          | Required | Description                                  |
+|-------------------|----------|----------------------------------------------|
+| `DATABASE_URL`    | Yes      | PostgreSQL connection string (Prisma format) |
+| `JWT_SECRET`      | Yes      | Secret used to sign and verify JWTs          |
+| `JWT_EXPIRATION`  | No       | Token lifespan (defaults to `7d`)            |
+| `PORT`            | No       | HTTP port (defaults to `3000`)               |
 
-## Project setup
-
-```bash
-$ npm install
-$ npx prisma migrate dev
-```
-
-## Compile and run the project
+### Install and run
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm install
+npx prisma migrate dev      # create the schema (User, Level) in your database
+npm run start:dev           # watch mode at http://localhost:3000
 ```
 
-## Run tests
+## Running Tests
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm test            # unit tests (Jest, AAA, mocked dependencies) — 61 tests
+npm run test:cov    # with coverage
+npm run test:e2e    # end-to-end (no DB-backed e2e specs yet; passes with none)
 ```
 
-## Deployment
+Unit tests isolate the unit under test by mocking its ports, so the suite runs without a real database.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## AI Usage Documentation
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+This codebase was built with AI assistance (Claude Code), and every significant fragment is logged in [`AI_HISTORY.MD`](AI_HISTORY.MD) at the repository root. Each entry records the task, the tool used, the prompt, the resulting design decisions, and a field reserved for manual edits by the team. Read that file to trace how — and why — each module came to exist, sublote by sublote, from project setup through the auth backend.
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+## Contributing
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+- **Commits** follow [Conventional Commits](https://www.conventionalcommits.org/): `<type>(<scope>): <description>` in the imperative present, one significant fragment per commit (for example, `feat(back/application): add LoginUseCase`).
+- **Branching**: feature work happens on a `feat/<name>` branch cut from `main`; this milestone lives on `feat/main-sprint`.
+- **Pull requests**: open a PR against `main`, ensure `npm test` and `npm run build` are green, and update `AI_HISTORY.MD` (and this README when public behavior changes) as part of the change.
+- **CI/CD** is not configured yet; running the test suite and build locally is the current gate.
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+This is a private academic project; `package.json` declares it `UNLICENSED`, so no usage rights are granted by default. If the project is later opened up, add a `LICENSE` file (MIT is a sensible default) and update this section.
