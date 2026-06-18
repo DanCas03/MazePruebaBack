@@ -23,7 +23,36 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+ArrowMaze backend — REST API built with NestJS, Clean Architecture (domain / application / adapters / infrastructure), PostgreSQL + Prisma, JWT authentication, and AOP logging.
+
+## Architecture
+
+```
+src/
+├── domain/            ← Entities, Value Objects, domain exceptions (pure TypeScript)
+├── application/       ← Use cases, Ports (ILevelRepository, ILoggerService)
+├── adapters/          ← Controllers, Mappers, NestJS Modules (DI wiring)
+└── infrastructure/    ← PrismaService, repositories, NestLoggerAdapter
+shared/aspects/        ← LoggingInterceptor (AOP cross-cutting concern)
+```
+
+## Available Endpoints
+
+| Method | Path           | Description                        |
+|--------|----------------|------------------------------------|
+| GET    | /levels/:id    | Retrieve a level grid by UUID      |
+
+**Response shape for GET /levels/:id:**
+```json
+{
+  "cells": [
+    [
+      { "type": "ARROW", "position": { "row": 0, "col": 0 }, "direction": "RIGHT", "length": 2 },
+      { "type": "EMPTY", "position": { "row": 0, "col": 1 } }
+    ]
+  ]
+}
+```
 
 ## Project setup
 
