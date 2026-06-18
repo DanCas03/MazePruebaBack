@@ -1,68 +1,5 @@
 # AI History — MazePruebaBack
 
-## Entrada 014 — Task 3.5: DTOs + AuthController + AuthModule + AppModule
-
-**Fecha:** 2026-06-18
-**Tarea o problema abordado:** Implementar la capa de adaptadores HTTP para autenticación: `RegisterDto` y `LoginDto` con class-validator, `AuthController` (POST /auth/register -> 201 {token}; POST /auth/login -> 200 {token}), `AuthModule` con `useFactory` para cablear los use cases de forma framework-free (DIP, imitando patrón de LevelModule), y registro de `AuthModule` en `AppModule`. Extender `DomainExceptionFilter` para mapear `InvalidCredentialsException` a HTTP 401 (OCP).
-**Herramienta de IA utilizada:** Claude Code (subagent-driven-development, sonnet)
-**Prompt o instrucción proporcionada:** > "Implementa Task 3.5 (Adapters: DTOs + AuthController + AuthModule): TDD AAA, DTOs con class-validator, AuthController invoca solo use cases, AuthModule usa useFactory para wiring, registra AuthModule en AppModule, extiende DomainExceptionFilter para 401, npm test todo verde, npm run build exit 0, commit por fragmento."
-**Resultado obtenido:**
-- `src/adapters/dtos/register.dto.ts`: `RegisterDto` con `@IsEmail()` y `@MinLength(8)` en password.
-- `src/adapters/dtos/login.dto.ts`: `LoginDto` con `@IsEmail()` y `@IsString()` en password.
-- `src/adapters/controllers/auth.controller.ts`: patrón Adapter documentado inline; `POST /auth/register` retorna 201 `{ token }`, `POST /auth/login` retorna 200 `{ token }`. Solo invoca use cases, sin contacto con IUserRepository.
-- `src/adapters/auth.module.ts`: registra `DatabaseModule`, `PassportModule`, `JwtModule.registerAsync` (lee `JWT_SECRET` de `ConfigService`), y cablea `USER_REPOSITORY_TOKEN`, `HASH_SERVICE_TOKEN`, `TOKEN_SERVICE_TOKEN`, `RegisterUseCase`, `LoginUseCase` con `useFactory` (todos framework-free). Registra `JwtStrategy`.
-- `src/app.module.ts`: importa `AuthModule`.
-- `src/shared/aspects/domain-exception.filter.ts`: añade `[InvalidCredentialsException, HttpStatus.UNAUTHORIZED]` al mapa (OCP — sin tocar lógica de `catch`).
-- Tests AAA: `auth.controller.spec.ts` (4 tests: register delega en use case, register propaga UserAlreadyExistsException, login delega en use case, login propaga InvalidCredentialsException — ambos use cases mockeados); `domain-exception.filter.spec.ts` extendido con test para 401.
-- `npm test` → 20 suites, 61/61 tests pasan. `npm run build` → exit 0.
-**Modificaciones realizadas por el equipo:**
-
-## Entrada 013 — Task 3.4: JwtStrategy + JwtAuthGuard
-
-**Fecha:** 2026-06-18
-**Tarea o problema abordado:** Implementar la estrategia JWT de Passport (`JwtStrategy`) y el guardia de autenticación (`JwtAuthGuard`) en la capa `infrastructure/security/`. `JwtStrategy` extiende `PassportStrategy(Strategy)` y lee `JWT_SECRET` vía `ConfigService` (DIP — nunca `process.env` directo); su método `validate` extrae `{ userId, email }` del payload. `JwtAuthGuard` extiende `AuthGuard('jwt')` como guardia reutilizable para proteger rutas. Ambas clases existen y compilan; no se usan para proteger `/auth/*` (register/login son públicos) pero están listas para decorar cualquier ruta futura.
-**Herramienta de IA utilizada:** Claude Code (subagent-driven-development, sonnet)
-**Prompt o instrucción proporcionada:** > "Implementa Task 3.4 (Infrastructure: JwtStrategy + JwtAuthGuard): TDD AAA, JwtStrategy lee JWT_SECRET via ConfigService, JwtAuthGuard extiende AuthGuard('jwt'), tests RED→GREEN, npm test 56 verde, npm run build exit 0, commit por fragmento."
-**Resultado obtenido:**
-- `src/infrastructure/security/jwt.strategy.ts`: patrón Adapter documentado inline; extiende `PassportStrategy(Strategy)` con extracción de token del header `Authorization: Bearer`, sin ignorar expiración y con `secretOrKey` leído de `ConfigService.getOrThrow('JWT_SECRET')`. `validate(payload)` mapea `sub → userId` y retorna `{ userId, email }`.
-- `src/infrastructure/security/jwt-auth.guard.ts`: extiende `AuthGuard('jwt')` (patrón OCP documentado inline). Clase minimal, la lógica de validación queda en `JwtStrategy`.
-- Tests AAA: `jwt.strategy.spec.ts` (3 tests: `ConfigService.getOrThrow` llamado con `'JWT_SECRET'`, `validate` con payload A, `validate` con payload B — `ConfigService` mockeado para aislar de env vars), `jwt-auth.guard.spec.ts` (2 tests: instanceof `AuthGuard('jwt')`, instanciable). RED inicial por módulos inexistentes; GREEN tras implementar.
-- `npm test` → 19 suites, 56/56 tests pasan. `npm run build` → exit 0.
-- Sin cambios en API pública HTTP (ningún endpoint protegido por el guard todavía); README.md no modificado.
-**Modificaciones realizadas por el equipo:**
-
-## Entrada 012 — Task 3.3: BcryptHashService + JwtTokenService + PrismaUserRepository + User model
-
-**Fecha:** 2026-06-18
-**Tarea o problema abordado:** Implementar los tres adaptadores de infraestructura para el flujo de autenticación: `BcryptHashService` (puerto `IHashService` usando `bcryptjs`), `JwtTokenService` (puerto `ITokenService` usando `@nestjs/jwt`), y `PrismaUserRepository` (puerto `IUserRepository` usando Prisma). Añadir el modelo `User` a `prisma/schema.prisma` y regenerar el cliente Prisma. Ninguno de estos adaptadores requiere base de datos real — los tests mockean `PrismaService` y `JwtService`.
-**Herramienta de IA utilizada:** Claude Code (subagent-driven-development, sonnet)
-**Prompt o instrucción proporcionada:** > "Implementa Task 3.3 (Infrastructure: BcryptHashService + JwtTokenService + PrismaUserRepository): añade modelo User a schema.prisma, ejecuta npx prisma generate, crea los tres adapters en infrastructure/security/ e infrastructure/database/, TDD con tests AAA que mockean dependencias externas, npm test verde y npm run build exit 0, commit por fragmento."
-**Resultado obtenido:**
-- `prisma/schema.prisma`: modelo `User` añadido (`id` uuid, `email` unique, `password`, `createdAt`). `npx prisma generate` → cliente regenerado (v6.19.3) sin requerir DB.
-- `src/infrastructure/security/bcrypt-hash.service.ts`: patrón Adapter documentado inline; implementa `IHashService` delegando en `bcryptjs` con `saltRounds = 10`. Cero dependencias de `@nestjs` salvo el decorador `@Injectable`.
-- `src/infrastructure/security/jwt-token.service.ts`: patrón Adapter documentado inline; implementa `ITokenService` delegando en `JwtService` de `@nestjs/jwt`. Constructor recibe `JwtService` por inyección (DIP).
-- `src/infrastructure/database/prisma-user.repository.ts`: patrón Adapter documentado inline; implementa `IUserRepository` con `findByEmail` (consulta por email, mapea record → entidad `User`) y `save` (inserta con `prisma.user.create`). Mapeo explícito entre record de persistencia y Value Objects de dominio.
-- Tests AAA (3 nuevas suites): `bcrypt-hash.service.spec.ts` (3 tests: hash distinto del plain, compare true, compare false — usa bcrypt real), `jwt-token.service.spec.ts` (1 test: delega en `JwtService.sign` mockeado), `prisma-user.repository.spec.ts` (3 tests: findByEmail null, findByEmail retorna User entity, save llama a prisma.user.create con datos correctos — `PrismaService` mockeado). RED → GREEN.
-- `npm test` → 17 suites, 51/51 tests pasan. `npm run build` → exit 0.
-- Sin cambios en API pública HTTP (capa `infrastructure/`, aún no cableada a un módulo NestJS de auth); README.md no modificado.
-**Modificaciones realizadas por el equipo:**
-
-## Entrada 011 — Task 3.2: Puertos de Auth + RegisterUseCase + LoginUseCase
-
-**Fecha:** 2026-06-18
-**Tarea o problema abordado:** Definir los tres puertos de la capa `application/` para el flujo de autenticación (`IUserRepository`, `IHashService`, `ITokenService`) con sus tokens de DI, e implementar los casos de uso `RegisterUseCase` y `LoginUseCase` como TypeScript puro (cero imports `@nestjs`), orquestando los puertos vía constructor (DIP). Completa el slice vertical de aplicación para auth, listo para que la capa `infrastructure/` provea las implementaciones concretas.
-**Herramienta de IA utilizada:** Claude Code (subagent-driven-development, sonnet)
-**Prompt o instrucción proporcionada:** > "Implementa Task 3.2 (Application: Puertos de Auth + RegisterUseCase + LoginUseCase): crear los 3 puertos con tokens en application/ports/, escribir tests AAA que fallan (RED: 5 casos), implementar los use cases mínimos para verde (GREEN), npm run build exit 0, commit por fragmento."
-**Resultado obtenido:**
-- `src/application/ports/i-user.repository.ts`: interfaz `IUserRepository` con `findByEmail(email: Email): Promise<User | null>` y `save(user: User): Promise<void>` + token `USER_REPOSITORY_TOKEN`. Sin imports de `@nestjs`.
-- `src/application/ports/i-hash.service.ts`: interfaz `IHashService` con `hash(plain: string): Promise<string>` y `compare(plain: string, hashed: string): Promise<boolean>` + token `HASH_SERVICE_TOKEN`.
-- `src/application/ports/i-token.service.ts`: interfaz `ITokenService` con `sign(payload: { sub: string; email: string }): string` + token `TOKEN_SERVICE_TOKEN`.
-- `src/application/use-cases/register.use-case.ts`: `RegisterUseCase` (Command pattern documentado inline, DIP). Flujo: valida `Email` VO, comprueba duplicado lanzando `UserAlreadyExistsException`, hashea contraseña, construye `User` con UUID aleatorio, guarda y devuelve token. Cero imports de `@nestjs`.
-- `src/application/use-cases/login.use-case.ts`: `LoginUseCase` (Command pattern documentado inline, DIP). Flujo: busca usuario, lanza `InvalidCredentialsException` si no existe, compara hash y lanza misma excepción si falla, devuelve token. Cero imports de `@nestjs`.
-- Tests AAA (`register.use-case.spec.ts`, `login.use-case.spec.ts`): RED inicial (Cannot find module); GREEN tras implementar (5 tests nuevos: register ok, email duplicado, login ok, usuario inexistente, password incorrecta). Suite completa: 44/44. `npm run build` → exit 0.
-- Sin cambios en API pública HTTP (capa `application/`, aún no cableada a un módulo NestJS ni a una ruta); README.md no modificado.
-**Modificaciones realizadas por el equipo:**
-
 ## Entrada 001 — Phase 0: Inicialización rama main-sprint
 
 **Fecha:** 2026-06-17
@@ -130,19 +67,6 @@
 - Sin cambios en API pública HTTP (capa `infrastructure/`, aún no cableada a `AppModule` ni a una ruta; el modelo Prisma no expone endpoint todavía); README.md no modificado, alineado con las entradas 002–004 de este sprint.
 **Modificaciones realizadas por el equipo:**
 
-## Entrada 007 — Task 2A.6: AOP (LoggingInterceptor)
-
-**Fecha:** 2026-06-17
-**Tarea o problema abordado:** Implementar el aspecto transversal de logging HTTP del backend como un `NestInterceptor` en `shared/aspects/`. El `LoggingInterceptor` registra el inicio de cada request (`→ MÉTODO url`) y la finalización de la respuesta (`← MÉTODO url (Nms)`) consumiendo el puerto `ILoggerService` (vía `LOGGER_SERVICE_TOKEN`), de modo que el logging no contamina la lógica de negocio (AOP). Destinado a registrarse globalmente en `AppModule`.
-**Herramienta de IA utilizada:** Claude Code (subagent-driven-development, opus)
-**Prompt o instrucción proporcionada:** > "Implementa Task 2A.6 (AOP: LoggingInterceptor) siguiendo TDD: escribir el test que falla (RED), crear el LoggingInterceptor que envuelve cada request/response y delega en ILoggerService, verificar verde (GREEN) y commitear con el mensaje exacto del plan."
-**Resultado obtenido:**
-- `LoggingInterceptor` (`src/shared/aspects/logging.interceptor.ts`): patrón AOP documentado inline; implementa `NestInterceptor`. Inyecta `ILoggerService` mediante `@Inject(LOGGER_SERVICE_TOKEN)`, manteniendo la dependencia sobre la abstracción de `application/` (DIP) y no sobre el logger concreto. En `intercept` extrae `method`/`url` de la request HTTP, registra el log de entrada, mide la duración con `Date.now()` y, mediante el operador `tap` de RxJS sobre `next.handle()`, registra el log de salida sin alterar el flujo de la respuesta. Usa `LoggingInterceptor.name` como contexto del log.
-- Tests AAA (`logging.interceptor.spec.ts`): RED inicial por módulo `./logging.interceptor` inexistente; GREEN tras implementar (1 test nuevo: con un `ExecutionContext`/`CallHandler` mockeados y un `ILoggerService` mockeado, verifica que `log` se invoca dos veces y que la primera llamada contiene `→ GET /levels/1` con un contexto string). Suite completa 31/31.
-- Ajuste de entorno (no de código): la versión de Jest instalada reemplazó `--testPathPattern` por `--testPathPatterns`; los tests focalizados se ejecutaron con el flag vigente. El código del interceptor se transcribió del plan sin modificaciones.
-- Sin cambios en API pública HTTP (aspecto transversal en `shared/aspects/`, aún no cableado a `AppModule`); README.md no modificado, alineado con las entradas 002–006 de este sprint.
-**Modificaciones realizadas por el equipo:**
-
 ## Entrada 006 — Task 2A.5: Infraestructura (PrismaLevelRepository)
 
 **Fecha:** 2026-06-17
@@ -156,18 +80,17 @@
 - Sin cambios en API pública HTTP (capa `infrastructure/`, aún no cableada a `AppModule` ni a una ruta); README.md no modificado, alineado con las entradas 002–005 de este sprint.
 **Modificaciones realizadas por el equipo:**
 
-## Entrada 010 — Task 3.1: HashedPassword VO (equals) + spec + User entity
+## Entrada 007 — Task 2A.6: AOP (LoggingInterceptor)
 
-**Fecha:** 2026-06-18
-**Tarea o problema abordado:** Completar el Value Object `HashedPassword` con el método `equals`, añadir su test AAA completo (`hashed-password.vo.spec.ts`) y crear la entidad de dominio pura `User` (id, email, password). El VO ya existía de la Task 2A.1 con la validación de vacío/whitespace; este fragmento añade el método que faltaba y cubre los 5 casos de test del spec del plan.
-**Herramienta de IA utilizada:** Claude Code (subagent-driven-development, sonnet)
-**Prompt o instrucción proporcionada:** > "Implementa Task 3.1 (Domain: HashedPassword VO + User entity): el VO ya existe, añadir equals, crear spec AAA (5 tests: creación, empty, whitespace, equals true/false) y crear user.entity.ts (id: UserId, email: Email, password: HashedPassword). TDD, build y commit."
+**Fecha:** 2026-06-17
+**Tarea o problema abordado:** Implementar el aspecto transversal de logging HTTP del backend como un `NestInterceptor` en `shared/aspects/`. El `LoggingInterceptor` registra el inicio de cada request (`→ MÉTODO url`) y la finalización de la respuesta (`← MÉTODO url (Nms)`) consumiendo el puerto `ILoggerService` (vía `LOGGER_SERVICE_TOKEN`), de modo que el logging no contamina la lógica de negocio (AOP). Destinado a registrarse globalmente en `AppModule`.
+**Herramienta de IA utilizada:** Claude Code (subagent-driven-development, opus)
+**Prompt o instrucción proporcionada:** > "Implementa Task 2A.6 (AOP: LoggingInterceptor) siguiendo TDD: escribir el test que falla (RED), crear the LoggingInterceptor que envuelve cada request/response y delega en ILoggerService, verificar verde (GREEN) y commitear con el mensaje exacto del plan."
 **Resultado obtenido:**
-- `HashedPassword.equals(other)` añadido a `src/domain/value-objects/hashed-password.vo.ts`; la validación de vacío/whitespace ya existía (`value.trim() === ''`), no se modificó.
-- `src/domain/value-objects/hashed-password.vo.spec.ts`: 5 tests AAA (creación válida, `InvalidHashedPasswordException` para `""` y `"   "`, `equals` true, `equals` false). GREEN inmediato (el VO existente ya cubría whitespace-only).
-- `src/domain/entities/user.entity.ts`: entidad pura, contenedor de tres VOs, sin lógica propia ni imports de framework.
-- `npm test` → 39/39 tests pasan (12 suites). `npm run build` → exit 0.
-- Sin cambios en API pública HTTP; README.md no modificado.
+- `LoggingInterceptor` (`src/shared/aspects/logging.interceptor.ts`): patrón AOP documentado inline; implementa `NestInterceptor`. Inyecta `ILoggerService` mediante `@Inject(LOGGER_SERVICE_TOKEN)`, manteniendo la dependencia sobre la abstracción de `application/` (DIP) y no sobre el logger concreto. En `intercept` extrae `method`/`url` de la request HTTP, registra el log de entrada, mide la duración con `Date.now()` y, mediante el operador `tap` de RxJS sobre `next.handle()`, registra el log de salida sin alterar el flujo de la respuesta. Usa `LoggingInterceptor.name` como contexto del log.
+- Tests AAA (`logging.interceptor.spec.ts`): RED inicial por módulo `./logging.interceptor` inexistente; GREEN tras implementar (1 test nuevo: con un `ExecutionContext`/`CallHandler` mockeados y un `ILoggerService` mockeado, verifica que `log` se invoca dos veces y que la primera llamada contiene `→ GET /levels/1` con un contexto string). Suite completa 31/31.
+- Ajuste de entorno (no de código): la versión de Jest instalada reemplazó `--testPathPattern` por `--testPathPatterns`; los tests focalizados se ejecutaron con el flag vigente. El código del interceptor se transcribió del plan sin modificaciones.
+- Sin cambios en API pública HTTP (aspecto transversal en `shared/aspects/`, aún no cableada a `AppModule`); README.md no modificado, alineado con las entradas 002–006 de este sprint.
 **Modificaciones realizadas por el equipo:**
 
 ## Entrada 008 — Task 2A.7: Adapters (LevelMapper, LevelController, LevelModule) + AppModule + main.ts
@@ -179,7 +102,7 @@
 **Resultado obtenido:**
 - `LevelMapper` (`src/adapters/mappers/level.mapper.ts`): convierte `ICell[][]` a `LevelResponseDto`; usa `instanceof ArrowCell` para incluir `direction` y `length` solo en celdas de tipo ARROW. Expone interfaces `CellDto` y `LevelResponseDto`.
 - `LevelController` (`src/adapters/controllers/level.controller.ts`): `@Controller('levels')`, `@Get(':id')`; construye `LevelId` desde el parámetro de ruta y delega en `GetLevelUseCase`, mapea el resultado via `LevelMapper.toDto`.
-- `LevelModule` (`src/adapters/level.module.ts`): wires `PrismaLevelRepository` (token `LEVEL_REPOSITORY_TOKEN`), `NestLoggerAdapter` (token `LOGGER_SERVICE_TOKEN`) y `GetLevelUseCase` via `useFactory` manteniendo la regla de que el use case es framework-free (instanciado con `new`).
+- `LevelModule` (`src/adapters/level.module.ts`): wires `PrismaLevelRepository` (token `LEVEL_REPOSITORY_TOKEN`), `NestLoggerAdapter` (token `LOGGER_SERVICE_TOKEN`) y `GetLevelUseCase` via `useFactory` manteniendo la regla de que the use case es framework-free (instanciado con `new`).
 - `AppModule` (`src/app.module.ts`): importa `ConfigModule.forRoot({ isGlobal: true })` y `LevelModule`; provee `LOGGER_SERVICE_TOKEN` y registra `LoggingInterceptor` como `APP_INTERCEPTOR` global.
 - `main.ts`: añade `ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })` como global pipe.
 - `npm run build` → exit 0, sin errores TypeScript.
@@ -196,9 +119,86 @@
 **Resultado obtenido:**
 - `DomainExceptionFilter` (`src/shared/aspects/domain-exception.filter.ts`): filtro AOP global (`@Catch(DomainException)`) que traduce excepciones de dominio a HTTP. Registro `Map<constructor, HttpStatus>` con `LevelNotFoundException -> 404`; default `400` para subtipos no mapeados (nunca 500). Extensible para las excepciones de auth de la Fase 3 (OCP: se añaden entradas al registro sin tocar el `catch`). Registrado como `APP_FILTER` en `AppModule`.
 - `level.controller.spec.ts`: AAA con `GetLevelUseCase` mockeado. (a) delega construyendo un `LevelId` desde el `:id` y devuelve el DTO mapeado; (b) propaga `LevelNotFoundException` cuando el use case lanza (el filtro global lo convierte en 404). Sin DB.
-- `domain-exception.filter.spec.ts`: AAA verificando el mapeo real 404 y el default 400.
+- `domain-exception.filter.spec.ts`: AAA verificando el mapeo real 404 y the default 400.
 - DRY: nuevo `LoggerModule` (`src/infrastructure/logger/logger.module.ts`, `@Global`) centraliza el binding `LOGGER_SERVICE_TOKEN -> NestLoggerAdapter` y lo exporta; eliminada la doble declaración en `LevelModule` y `AppModule` (una sola instancia del adapter).
 - OCP: `LevelMapper` discrimina por `cell.type === CellType.ARROW` en vez de `instanceof ArrowCell`, desacoplando el mapper de la jerarquía concreta.
 - `npm run build` → exit 0; `npm test` → 11 suites, 34/34 tests pasan (antes 30).
 - API pública: README.md actualizado con la forma de respuesta de error 404 y la mención del `DomainExceptionFilter` en la arquitectura.
+**Modificaciones realizadas por el equipo:**
+
+## Entrada 010 — Task 3.1: HashedPassword VO (equals) + spec + User entity
+
+**Fecha:** 2026-06-18
+**Tarea o problema abordado:** Completar el Value Object `HashedPassword` con el método `equals`, añadir su test AAA completo (`hashed-password.vo.spec.ts`) y crear la entidad de dominio pura `User` (id, email, password). El VO ya existía de la Task 2A.1 con la validación de vacío/whitespace; este fragmento añade el método que faltaba y cubre los 5 casos de test del spec del plan.
+**Herramienta de IA utilizada:** Claude Code (subagent-driven-development, sonnet)
+**Prompt o instrucción proporcionada:** > "Implementa Task 3.1 (Domain: HashedPassword VO + User entity): el VO ya existe, añadir equals, crear spec AAA (5 tests: creación, empty, whitespace, equals true/false) y crear user.entity.ts (id: UserId, email: Email, password: HashedPassword). TDD, build y commit."
+**Resultado obtenido:**
+- `HashedPassword.equals(other)` añadido a `src/domain/value-objects/hashed-password.vo.ts`; la validación de vacío/whitespace ya existía (`value.trim() === ''`), no se modificó.
+- `src/domain/value-objects/hashed-password.vo.spec.ts`: 5 tests AAA (creación válida, `InvalidHashedPasswordException` para `""` y `"   "`, `equals` true, `equals` false). GREEN inmediato (el VO existente ya cubría whitespace-only).
+- `src/domain/entities/user.entity.ts`: entidad pura, contenedor de tres VOs, sin lógica propia ni imports de framework.
+- `npm test` → 39/39 tests pasan (12 suites). `npm run build` → exit 0.
+- Sin cambios en API pública HTTP; README.md no modificado.
+**Modificaciones realizadas por el equipo:**
+
+## Entrada 011 — Task 3.2: Puertos de Auth + RegisterUseCase + LoginUseCase
+
+**Fecha:** 2026-06-18
+**Tarea o problema abordado:** Definir los tres puertos de la capa `application/` para el flujo de autenticación (`IUserRepository`, `IHashService`, `ITokenService`) con sus tokens de DI, e implementar los casos de uso `RegisterUseCase` y `LoginUseCase` como TypeScript puro (cero imports `@nestjs`), orquestando los puertos vía constructor (DIP). Completa el slice vertical de aplicación para auth, listo para que la capa `infrastructure/` provea las implementaciones concretas.
+**Herramienta de IA utilizada:** Claude Code (subagent-driven-development, sonnet)
+**Prompt o instrucción proporcionada:** > "Implementa Task 3.2 (Application: Puertos de Auth + RegisterUseCase + LoginUseCase): crear los 3 puertos con tokens en application/ports/, escribir tests AAA que fallan (RED: 5 casos), implementar los use cases mínimos para verde (GREEN), npm run build exit 0, commit por fragmento."
+**Resultado obtenido:**
+- `src/application/ports/i-user.repository.ts`: interfaz `IUserRepository` con `findByEmail(email: Email): Promise<User | null>` y `save(user: User): Promise<void>` + token `USER_REPOSITORY_TOKEN`. Sin imports de `@nestjs`.
+- `src/application/ports/i-hash.service.ts`: interfaz `IHashService` con `hash(plain: string): Promise<string>` y `compare(plain: string, hashed: string): Promise<boolean>` + token `HASH_SERVICE_TOKEN`.
+- `src/application/ports/i-token.service.ts`: interfaz `ITokenService` con `sign(payload: { sub: string; email: string }): string` + token `TOKEN_SERVICE_TOKEN`.
+- `src/application/use-cases/register.use-case.ts`: `RegisterUseCase` (Command pattern documentado inline, DIP). Flujo: valida `Email` VO, comprueba duplicado lanzando `UserAlreadyExistsException`, hashea contraseña, construye `User` con UUID aleatorio, guarda y devuelve token. Cero imports de `@nestjs`.
+- `src/application/use-cases/login.use-case.ts`: `LoginUseCase` (Command pattern documentado inline, DIP). Flujo: busca usuario, lanza `InvalidCredentialsException` si no existe, compara hash y lanza misma excepción si falla, devuelve token. Cero imports de `@nestjs`.
+- Tests AAA (`register.use-case.spec.ts`, `login.use-case.spec.ts`): RED inicial (Cannot find module); GREEN tras implementar (5 tests nuevos: register ok, email duplicado, login ok, usuario inexistente, password incorrecta). Suite completa: 44/44. `npm run build` → exit 0.
+- Sin cambios en API pública HTTP (capa `application/`, aún no cableada a un módulo NestJS ni a una ruta); README.md no modificado.
+**Modificaciones realizadas por el equipo:**
+
+## Entrada 012 — Task 3.3: BcryptHashService + JwtTokenService + PrismaUserRepository + User model
+
+**Fecha:** 2026-06-18
+**Tarea o problema abordado:** Implementar los tres adaptadores de infraestructura para el flujo de autenticación: `BcryptHashService` (puerto `IHashService` usando `bcryptjs`), `JwtTokenService` (puerto `ITokenService` usando `@nestjs/jwt`), y `PrismaUserRepository` (puerto `IUserRepository` usando Prisma). Añadir el modelo `User` a `prisma/schema.prisma` y regenerar el cliente Prisma. Ninguno de estos adaptadores requiere base de datos real — los tests mockean `PrismaService` y `JwtService`.
+**Herramienta de IA utilizada:** Claude Code (subagent-driven-development, sonnet)
+**Prompt o instrucción proporcionada:** > "Implementa Task 3.3 (Infrastructure: BcryptHashService + JwtTokenService + PrismaUserRepository): añade modelo User a schema.prisma, ejecuta npx prisma generate, crea los tres adapters en infrastructure/security/ e infrastructure/database/, TDD con tests AAA que mockean dependencias externas, npm test verde y npm run build exit 0, commit por fragmento."
+**Resultado obtenido:**
+- `prisma/schema.prisma`: modelo `User` añadido (`id` uuid, `email` unique, `password`, `createdAt`). `npx prisma generate` → cliente regenerado (v6.19.3) sin requerir DB.
+- `src/infrastructure/security/bcrypt-hash.service.ts`: patrón Adapter documentado inline; implementa `IHashService` delegando en `bcryptjs` con `saltRounds = 10`. Cero dependencias de `@nestjs` salvo el decorador `@Injectable`.
+- `src/infrastructure/security/jwt-token.service.ts`: patrón Adapter documentado inline; implementa `ITokenService` delegando en `JwtService` de `@nestjs/jwt`. Constructor recibe `JwtService` por inyección (DIP).
+- `src/infrastructure/database/prisma-user.repository.ts`: patrón Adapter documentado inline; implementa `IUserRepository` con `findByEmail` (consulta por email, mapea record → entidad `User`) y `save` (inserta con `prisma.user.create`). Mapeo explícito entre record de persistencia y Value Objects de dominio.
+- Tests AAA (3 nuevas suites): `bcrypt-hash.service.spec.ts` (3 tests: hash distinto del plain, compare true, compare false — usa bcrypt real), `jwt-token.service.spec.ts` (1 test: delega en `JwtService.sign` mockeado), `prisma-user.repository.spec.ts` (3 tests: findByEmail null, findByEmail retorna User entity, save llama a prisma.user.create con datos correctos — `PrismaService` mockeado). RED → GREEN.
+- `npm test` → 17 suites, 51/51 tests pasan. `npm run build` → exit 0.
+- Sin cambios en API pública HTTP (capa `infrastructure/`, aún no cableada a un módulo NestJS de auth); README.md no modificado.
+**Modificaciones realizadas por el equipo:**
+
+## Entrada 013 — Task 3.4: JwtStrategy + JwtAuthGuard
+
+**Fecha:** 2026-06-18
+**Tarea o problema abordado:** Implementar la estrategia JWT de Passport (`JwtStrategy`) y el guardia de autenticación (`JwtAuthGuard`) en la capa `infrastructure/security/`. `JwtStrategy` extiende `PassportStrategy(Strategy)` y lee `JWT_SECRET` vía `ConfigService` (DIP — nunca `process.env` directo); su método `validate` extrae `{ userId, email }` del payload. `JwtAuthGuard` extiende `AuthGuard('jwt')` como guardia reutilizable para proteger rutas. Ambas clases existen y compilan; no se usan para proteger `/auth/*` (register/login son públicos) pero están listas para decorar cualquier ruta futura.
+**Herramienta de IA utilizada:** Claude Code (subagent-driven-development, sonnet)
+**Prompt o instrucción proporcionada:** > "Implementa Task 3.4 (Infrastructure: JwtStrategy + JwtAuthGuard): TDD AAA, JwtStrategy lee JWT_SECRET via ConfigService, JwtAuthGuard extiende AuthGuard('jwt'), tests RED→GREEN, npm test 56 verde, npm run build exit 0, commit por fragmento."
+**Resultado obtenido:**
+- `src/infrastructure/security/jwt.strategy.ts`: patrón Adapter documentado inline; extiende `PassportStrategy(Strategy)` con extracción de token del header `Authorization: Bearer`, sin ignorar expiración y con `secretOrKey` leído de `ConfigService.getOrThrow('JWT_SECRET')`. `validate(payload)` mapea `sub → userId` y retorna `{ userId, email }`.
+- `src/infrastructure/security/jwt-auth.guard.ts`: extiende `AuthGuard('jwt')` (patrón OCP documentado inline). Clase minimal, la lógica de validación queda en `JwtStrategy`.
+- Tests AAA: `jwt.strategy.spec.ts` (3 tests: `ConfigService.getOrThrow` llamado con `'JWT_SECRET'`, `validate` con payload A, `validate` con payload B — `ConfigService` mockeado para aislar de env vars), `jwt-auth.guard.spec.ts` (2 tests: instanceof `AuthGuard('jwt')`, instanciable). RED inicial por módulos inexistentes; GREEN tras implementar.
+- `npm test` → 19 suites, 56/56 tests pasan. `npm run build` → exit 0.
+- Sin cambios en API pública HTTP (ningún endpoint protegido por el guard todavía); README.md no modificado.
+**Modificaciones realizadas por el equipo:**
+
+## Entrada 014 — Task 3.5: DTOs + AuthController + AuthModule + AppModule
+
+**Fecha:** 2026-06-18
+**Tarea o problema abordado:** Implementar la capa de adaptadores HTTP para autenticación: `RegisterDto` y `LoginDto` con class-validator, `AuthController` (POST /auth/register -> 201 {token}; POST /auth/login -> 200 {token}), `AuthModule` con `useFactory` para cablear los use cases de forma framework-free (DIP, imitando patrón de LevelModule), y registro de `AuthModule` en `AppModule`. Extender `DomainExceptionFilter` para mapear `InvalidCredentialsException` a HTTP 401 (OCP).
+**Herramienta de IA utilizada:** Claude Code (subagent-driven-development, sonnet)
+**Prompt o instrucción proporcionada:** > "Implementa Task 3.5 (Adapters: DTOs + AuthController + AuthModule): TDD AAA, DTOs con class-validator, AuthController invoca solo use cases, AuthModule usa useFactory para wiring, registra AuthModule en AppModule, extiende DomainExceptionFilter para 401, npm test todo verde, npm run build exit 0, commit por fragmento."
+**Resultado obtenido:**
+- `src/adapters/dtos/register.dto.ts`: `RegisterDto` con `@IsEmail()` y `@MinLength(8)` en password.
+- `src/adapters/dtos/login.dto.ts`: `LoginDto` con `@IsEmail()` y `@IsString()` en password.
+- `src/adapters/controllers/auth.controller.ts`: patrón Adapter documentado inline; `POST /auth/register` retorna 201 `{ token }`, `POST /auth/login` retorna 200 `{ token }`. Solo invoca use cases, sin contacto con IUserRepository.
+- `src/adapters/auth.module.ts`: registra `DatabaseModule`, `PassportModule`, `JwtModule.registerAsync` (lee `JWT_SECRET` de `ConfigService`), y cablea `USER_REPOSITORY_TOKEN`, `HASH_SERVICE_TOKEN`, `TOKEN_SERVICE_TOKEN`, `RegisterUseCase`, `LoginUseCase` con `useFactory` (todos framework-free). Registra `JwtStrategy`.
+- `src/app.module.ts`: importa `AuthModule`.
+- `src/shared/aspects/domain-exception.filter.ts`: añade `[InvalidCredentialsException, HttpStatus.UNAUTHORIZED]` al mapa (OCP — sin tocar lógica de `catch`).
+- Tests AAA: `auth.controller.spec.ts` (4 tests: register delega en use case, register propaga UserAlreadyExistsException, login delega en use case, login propaga InvalidCredentialsException — ambos use cases mockeados); `domain-exception.filter.spec.ts` extendido con test para 401.
+- `npm test` → 20 suites, 61/61 tests pasan. `npm run build` → exit 0.
 **Modificaciones realizadas por el equipo:**
