@@ -268,3 +268,19 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - Tests AAA: 1 spec, 3 tests verdes (aplanado de VOs a columnas en `save`; forma/orden/límite de la query; reconstrucción de entidades en `findTopByLevel`). PrismaService mockeado (sin BD real).
 - Verificación global: `npx jest` → 29 suites, 103/103 tests. `npm run build` → exit 0. `npx eslint` acotado a los archivos tocados → limpio.
 **Modificaciones realizadas por el equipo:**
+
+## Entrada 019 — back#9: `POST /scores` y `GET /leaderboard/:levelId`
+
+**Fecha:** 2026-07-08
+**Tarea o problema abordado:** Issue back#9 — exponer vía HTTP el dominio de puntajes modelado en back#7 (ScoreEntry, IScoreRepository, SubmitScoreUseCase, GetLeaderboardUseCase). Rama abierta sobre `feat/#7-scoreentry` (aún no mergeada a `main`) porque back#9 depende directamente de ese código; se rebasará/mergeará sobre `main` cuando back#7 aterrice. Decisiones de diseño: (1) un único `ScoreController` para ambos endpoints — comparten el mismo recurso de dominio (ScoreEntry) y cambian juntos, así que separarlos en dos controladores no aportaría cohesión adicional; (2) `POST /scores` protegido con `JwtAuthGuard` (reutiliza la estrategia `'jwt'` ya registrada por `AuthModule`/`JwtStrategy`, sin volver a importar `PassportModule`); el `userId` se toma del token (`req.user.userId`), nunca del body, para que un cliente no pueda falsear puntajes a nombre de otro usuario; (3) `GET /leaderboard/:levelId` es público (ver un ranking no requiere sesión) y acepta `?limit=` opcional — la validación/clamping ya vive en `GetLeaderboardUseCase` (back#7), el controlador solo parsea el string a number; (4) `ScoreMapper` (Adapter, mismo patrón que `LevelMapper`) aplana la entidad + VOs a un DTO plano para la respuesta HTTP.
+**Herramienta de IA utilizada:** Claude Code (skill arrowmaze-backend, opus)
+**Prompt o instrucción proporcionada:** > "Empecemos con back#9 mientras revisan el PR"
+**Resultado obtenido:**
+- `ScoreMapper` (`src/adapters/mappers/score.mapper.ts`): `ScoreEntry` → `ScoreEntryResponseDto` plano.
+- `SubmitScoreDto` (`src/adapters/dtos/submit-score.dto.ts`): `levelId`, `score`, `stars` (1–3), `moves`, `timeSeconds` con `class-validator` + `@ApiProperty`.
+- `ScoreController` (`src/adapters/controllers/score.controller.ts`): `POST /scores` (`@UseGuards(JwtAuthGuard)`, `@ApiBearerAuth()`) y `GET /leaderboard/:levelId` (`@Query('limit')` opcional), ambos anotados con Swagger.
+- `ScoreModule` (`src/adapters/score.module.ts`): cablea `SCORE_REPOSITORY_TOKEN` → `PrismaScoreRepository`, `SubmitScoreUseCase` y `GetLeaderboardUseCase` vía `useFactory` (mismo patrón que `LevelModule`/`AuthModule`); registrado en `AppModule`.
+- Tests AAA: 2 specs nuevos, 6 tests verdes (`score.mapper.spec.ts`: aplanado de la entidad; `score.controller.spec.ts`: delegación con `userId` del request, propagación de `InvalidScoreException`, parseo de `limit` con y sin query param).
+- README actualizado (tabla de endpoints + ejemplos de payload) por exponer API pública nueva.
+- Verificación global: `npx jest` → 31 suites, 108/108 tests. `npm run build` → exit 0. `npx eslint` acotado a los archivos tocados → limpio (solo quedan los warnings `no-unsafe-argument` ya presentes en `level.module.ts`/`auth.module.ts` para el mismo patrón `useFactory`).
+**Modificaciones realizadas por el equipo:**

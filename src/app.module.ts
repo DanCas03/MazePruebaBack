@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { LevelModule } from './adapters/level.module';
 import { AuthModule } from './adapters/auth.module';
+import { ScoreModule } from './adapters/score.module';
 import { LoggerModule } from './infrastructure/logger/logger.module';
 import { LoggingInterceptor } from './shared/aspects/logging.interceptor';
 import { DomainExceptionFilter } from './shared/aspects/domain-exception.filter';
@@ -13,6 +14,7 @@ import { DomainExceptionFilter } from './shared/aspects/domain-exception.filter'
     LoggerModule,
     LevelModule,
     AuthModule,
+    ScoreModule,
   ],
   providers: [
     // AOP global: logging de requests y traducción de excepciones de dominio
