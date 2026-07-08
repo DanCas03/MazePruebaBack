@@ -129,7 +129,7 @@ Domain exceptions map to status codes as follows: `LevelNotFoundException → 40
 
 ### Environment variables
 
-Create a `.env` file at the project root:
+Create a `.env` file at the project root (copy `.env.example` as a starting point):
 
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
