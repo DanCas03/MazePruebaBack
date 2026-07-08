@@ -202,3 +202,20 @@
 - Tests AAA: `auth.controller.spec.ts` (4 tests: register delega en use case, register propaga UserAlreadyExistsException, login delega en use case, login propaga InvalidCredentialsException — ambos use cases mockeados); `domain-exception.filter.spec.ts` extendido con test para 401.
 - `npm test` → 20 suites, 61/61 tests pasan. `npm run build` → exit 0.
 **Modificaciones realizadas por el equipo:**
+
+---
+
+## Entrada 015 — back#2: token de sesión largo + Swagger en /auth
+
+**Fecha:** 2026-07-07
+**Tarea o problema abordado:** Issue back#2 — documentar el JWT de sesión persistente y anotar los endpoints `/auth` para Swagger. `JWT_EXPIRATION` ya era configurable vía `ConfigService` (default `7d` en `auth.module.ts`), así que el trabajo fue: (1) crear `.env.example` documentando todas las variables incluida `JWT_EXPIRATION`; (2) instalar `@nestjs/swagger` y anotar `AuthController` y los DTOs. Se dejó fuera de alcance el `SwaggerModule.setup()` global en `main.ts` porque corresponde al issue back#3 (OpenAPI global, de Daniel) — así ambos issues componen sin conflicto.
+**Herramienta de IA utilizada:** Claude Code (skill arrowmaze-backend, opus)
+**Prompt o instrucción proporcionada:** > "Implementar back#2: anotar AuthController y los DTOs con decoradores @nestjs/swagger, crear .env.example documentando JWT_EXPIRATION y JWT_SECRET, mantener verdes los tests de LoginUseCase/RegisterUseCase, no tocar main.ts."
+**Resultado obtenido:**
+- `package.json`: añade dependencia `@nestjs/swagger@^11.4.5`.
+- `.env.example` (nuevo): documenta `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRATION` (con nota de que es de larga duración para la sesión persistente del cliente) y `PORT`.
+- `src/adapters/dtos/register.dto.ts` y `login.dto.ts`: añaden `@ApiProperty` (ejemplo, descripción, `minLength` en el password de registro) sin alterar las validaciones de class-validator existentes.
+- `src/adapters/controllers/auth.controller.ts`: `@ApiTags('auth')`, `@ApiOperation` y `@ApiResponse` en ambos endpoints. Códigos documentados según el comportamiento REAL de `DomainExceptionFilter`: register 201/400 (UserAlreadyExistsException no está mapeada → cae al default 400, no 409); login 200/401.
+- Sin tests unitarios nuevos: los decoradores son metadata declarativa sin lógica de ramificación; los specs existentes de `AuthController`/`LoginUseCase`/`RegisterUseCase` cubren el comportamiento y siguen verdes (justificación explícita por regla 5 de CLAUDE.md).
+- `npm run build` → exit 0. `npx eslint` sobre los 3 archivos tocados → limpio. `npm test` → 20 suites, 61/61 tests pasan.
+**Modificaciones realizadas por el equipo:**
