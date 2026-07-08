@@ -219,3 +219,52 @@
 - Sin tests unitarios nuevos: los decoradores son metadata declarativa sin lógica de ramificación; los specs existentes de `AuthController`/`LoginUseCase`/`RegisterUseCase` cubren el comportamiento y siguen verdes (justificación explícita por regla 5 de CLAUDE.md).
 - `npm run build` → exit 0. `npx eslint` sobre los 3 archivos tocados → limpio. `npm test` → 20 suites, 61/61 tests pasan.
 **Modificaciones realizadas por el equipo:**
+
+## Entrada 016 — back#7 (fragmento 1/3): dominio ScoreEntry
+
+**Fecha:** 2026-07-08
+**Tarea o problema abordado:** Issue back#7 — modelar el dominio de puntajes que alimenta el Leaderboard (ADR 0001, decisión 7). Primer fragmento: entidad `ScoreEntry` y sus Value Objects. Decisiones de diseño: (1) cada atributo escalar del puntaje es un VO con su invariante en el constructor (consistente con `Position`/`Email`/`LevelId`), no primitivos sueltos; (2) `Stars` acota el rango 1..3 como invariante de dominio; (3) el `score`/`stars` los computa el cliente (front#12) y el backend solo los valida y almacena — no se recomputa en el back; (4) se incluye `ScoreEntryId` como VO por simetría con `UserId`/`LevelId` (toda identidad es concepto de dominio); (5) `createdAt: Date` en la entidad para permitir desempates estables en el leaderboard (Date es builtin, no rompe la pureza del dominio). back#7 se ramificó desde `main` antes de que back#2 (entrada 015) se mergeara; de ahí la numeración consecutiva pese a ser issues independientes.
+**Herramienta de IA utilizada:** Claude Code (skill arrowmaze-backend, opus)
+**Prompt o instrucción proporcionada:** > "Sí, empecemos con back#7"
+**Resultado obtenido:**
+- VOs nuevos (`src/domain/value-objects/`): `Score` (entero ≥ 0), `Stars` (entero 1..3), `MoveCount` (entero ≥ 0), `ElapsedTime` (segundos enteros ≥ 0), `ScoreEntryId` (string no vacío). Todos inmutables con `equals`.
+- Excepciones de dominio (`src/domain/exceptions/`): `InvalidScoreException`, `InvalidStarsException`, `InvalidMoveCountException`, `InvalidElapsedTimeException`, `InvalidScoreEntryIdException` (extienden `DomainException`; caen al default 400 del `DomainExceptionFilter`, correcto para entrada inválida del cliente).
+- Entidad `ScoreEntry` (`src/domain/entities/score-entry.entity.ts`) compone `ScoreEntryId`, `UserId`, `LevelId`, `Score`, `Stars`, `MoveCount`, `ElapsedTime`, `createdAt`.
+- Tests AAA: 6 specs, 32 tests verdes (casos válidos, límites e inválidos por VO + composición de la entidad).
+**Modificaciones realizadas por el equipo:**
+
+## Entrada 017 — back#7 (fragmento 2/3): puerto IScoreRepository + use-cases SubmitScore/GetLeaderboard
+
+**Fecha:** 2026-07-08
+**Tarea o problema abordado:** Segundo fragmento de back#7: capa `application/`. Puerto de persistencia y los dos casos de uso que exige el issue. Decisiones: (1) `SubmitScoreUseCase` recibe un `SubmitScoreCommand` de primitivos y delega la validación a los VOs al construir `ScoreEntry` (entrada inválida → DomainException → 400 antes de tocar el repo); genera el `ScoreEntryId` con `randomUUID()` y el `createdAt` con `new Date()`, igual que `RegisterUseCase`; devuelve la entidad creada para que back#9 pueda mapearla; (2) `GetLeaderboardUseCase` acota el `limit` (default 10, máximo 100, inválidos → default) para proteger el repositorio de paginación abusiva; (3) el ordenamiento del ranking es responsabilidad de la implementación del puerto (fragmento 3), el caso de uso solo pide "top N". Ambos casos de uso son framework-free (sin imports `@nestjs`).
+**Herramienta de IA utilizada:** Claude Code (skill arrowmaze-backend, opus)
+**Prompt o instrucción proporcionada:** > "Sí, empecemos con back#7" (continuación)
+**Resultado obtenido:**
+- Puerto `IScoreRepository` (`src/application/ports/i-score.repository.ts`): `save(entry)` + `findTopByLevel(levelId, limit)` + token `SCORE_REPOSITORY_TOKEN`.
+- `SubmitScoreUseCase` (`src/application/use-cases/submit-score.use-case.ts`) con `SubmitScoreCommand`.
+- `GetLeaderboardUseCase` (`src/application/use-cases/get-leaderboard.use-case.ts`) con `clampLimit`.
+- Tests AAA: 2 specs, 7 tests verdes (persistencia + rechazo de stars inválido; default/clamp de límite, propagación de entradas, LevelId vacío). Mocks de `IScoreRepository` e `ILoggerService`.
+**Modificaciones realizadas por el equipo:**
+
+## Entrada 018 — back#7 (fragmento 3/3): persistencia Prisma (modelo + PrismaScoreRepository)
+
+**Fecha:** 2026-07-08
+**Tarea o problema abordado:** Tercer fragmento de back#7: capa `infrastructure/`. Modelo Prisma `ScoreEntry`, su migración y la implementación del puerto. Decisiones: (1) columnas planas `userId`/`levelId` como `String` **sin FK** — los niveles se siembran en back#10 y pueden no existir al escribir en pruebas; la integridad referencial se documenta como fuera de alcance de este issue; (2) índice compuesto `@@index([levelId, score])` que soporta la consulta del leaderboard (filtra por nivel, ordena por score); (3) ordenamiento del ranking `score desc, createdAt asc` (empate → quien lo logró antes queda arriba); (4) `PrismaScoreRepository` reconstruye los VOs del dominio al leer (patrón Adapter, igual que `PrismaUserRepository`); no filtra tipos generados de Prisma hacia el dominio (interfaz `ScoreEntryRecord` local). **Migración:** el repo maneja el esquema schema-only vía `prisma db push` (no hay carpeta `prisma/migrations/`; así se agregó el modelo `User` en back#2/entrada 012), por lo que **no se commitea un archivo de migración** para no romper esa convención. Se verificó con `prisma migrate diff` que el cambio es aplicable y produce exactamente:
+```sql
+CREATE TABLE "ScoreEntry" (
+  "id" TEXT NOT NULL, "userId" TEXT NOT NULL, "levelId" TEXT NOT NULL,
+  "score" INTEGER NOT NULL, "stars" INTEGER NOT NULL, "moves" INTEGER NOT NULL,
+  "timeSeconds" INTEGER NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "ScoreEntry_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX "ScoreEntry_levelId_score_idx" ON "ScoreEntry"("levelId", "score");
+```
+Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equipo) o `npx prisma migrate dev --name add_score_entry` si se adopta el historial de migraciones.
+**Herramienta de IA utilizada:** Claude Code (skill arrowmaze-backend, opus)
+**Prompt o instrucción proporcionada:** > "Sí, empecemos con back#7" (continuación)
+**Resultado obtenido:**
+- `prisma/schema.prisma`: modelo `ScoreEntry` + índice compuesto. `npx prisma validate` → válido; `npx prisma generate` → cliente regenerado (ahora tipado, incluye `scoreEntry`).
+- `PrismaScoreRepository` (`src/infrastructure/database/prisma-score.repository.ts`): implementa `save` y `findTopByLevel` (Adapter). No se cablea a un módulo NestJS: la exposición HTTP (controller + módulo + Swagger) corresponde a back#9.
+- Tests AAA: 1 spec, 3 tests verdes (aplanado de VOs a columnas en `save`; forma/orden/límite de la query; reconstrucción de entidades en `findTopByLevel`). PrismaService mockeado (sin BD real).
+- Verificación global: `npx jest` → 29 suites, 103/103 tests. `npm run build` → exit 0. `npx eslint` acotado a los archivos tocados → limpio.
+**Modificaciones realizadas por el equipo:**
