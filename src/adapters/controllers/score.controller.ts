@@ -14,16 +14,14 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import type { Request } from 'express';
 import { SubmitScoreUseCase } from '../../application/use-cases/submit-score.use-case';
 import { GetLeaderboardUseCase } from '../../application/use-cases/get-leaderboard.use-case';
 import { JwtAuthGuard } from '../../infrastructure/security/jwt-auth.guard';
 import { SubmitScoreDto } from '../dtos/submit-score.dto';
 import { ScoreMapper, ScoreEntryResponseDto } from '../mappers/score.mapper';
+import type { AuthenticatedRequest } from '../http/authenticated-request.interface';
 
-export interface AuthenticatedRequest extends Request {
-  user: { userId: string; email: string };
-}
+export type { AuthenticatedRequest } from '../http/authenticated-request.interface';
 
 // Adapter: expone ScoreEntry (back#7) vía HTTP. El controlador solo traduce
 // HTTP <-> use cases (DIP); no conoce IScoreRepository ni Prisma.

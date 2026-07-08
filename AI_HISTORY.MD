@@ -284,3 +284,23 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - README actualizado (tabla de endpoints + ejemplos de payload) por exponer API pública nueva.
 - Verificación global: `npx jest` → 31 suites, 108/108 tests. `npm run build` → exit 0. `npx eslint` acotado a los archivos tocados → limpio (solo quedan los warnings `no-unsafe-argument` ya presentes en `level.module.ts`/`auth.module.ts` para el mismo patrón `useFactory`).
 **Modificaciones realizadas por el equipo:**
+
+## Entrada 020 — back#8: `POST /progress` y `GET /progress`
+
+**Fecha:** 2026-07-08
+**Tarea o problema abordado:** Issue back#8 — sincronizar el progreso del jugador (niveles completados + mejores scores, CONTEXT.md "Progress") entre cliente y servidor, autenticado. Bloqueadores (#1, #2) ya mergeados a `main`; rama abierta desde `main` actualizado. Decisiones de diseño: (1) entidad `ProgressEntry` (plana, sin lógica propia, mismo estilo que `ScoreEntry`/`User`) compuesta por `UserId`, `LevelId` y los VOs ya existentes `Score`/`Stars` (reutilizados de back#7, `bestScore`/`bestStars` nullable — un nivel puede completarse sin haber enviado un `ScoreEntry`); identidad natural `(userId, levelId)`, sin id sintético; (2) el **merge vive en `SyncProgressUseCase`, no en la entidad ni en el repositorio**: sync nunca degrada progreso ya persistido — `completed` se combina con OR, `bestScore`/`bestStars` se quedan con el mayor entre lo existente y lo entrante (protege contra un cliente que reinstala y sincroniza con estado local desactualizado); (3) `IProgressRepository` expone `findOne`/`upsert` de bajo nivel (no un método "merge") para mantener el repositorio ignorante de la regla de negocio (SRP); (4) se extrajo `AuthenticatedRequest` (antes solo en `score.controller.ts`) a `adapters/http/authenticated-request.interface.ts` para no duplicarla en `ProgressController`; `score.controller.ts` re-exporta el tipo para no romper su spec existente; (5) modelo Prisma `Progress` con `@@unique([userId, levelId])`, sin migración commiteada (mismo flujo schema-only vía `prisma db push` que `ScoreEntry`/`User`, entrada 018).
+**Herramienta de IA utilizada:** Claude Code (skill arrowmaze-backend, Sonnet 5)
+**Prompt o instrucción proporcionada:** > "quiero seguir con la siguiente tarea back#8 (progress) asignada en ArrowMaze/docs/superpowers/plans/2026-06-23-critical-path-and-team-split.md"
+**Resultado obtenido:**
+- `domain/entities/progress-entry.entity.ts`: entidad `ProgressEntry`.
+- `application/ports/i-progress.repository.ts`: puerto `IProgressRepository` (`findAllByUser`, `findOne`, `upsert`).
+- `application/use-cases/sync-progress.use-case.ts` y `get-progress.use-case.ts`: `SyncProgressUseCase` (merge nunca-degrada) y `GetProgressUseCase`.
+- `adapters/dtos/sync-progress.dto.ts`, `adapters/mappers/progress.mapper.ts`, `adapters/controllers/progress.controller.ts`: `POST /progress` y `GET /progress`, ambos `@UseGuards(JwtAuthGuard)` + Swagger; `userId` siempre del token, nunca del body.
+- `adapters/progress.module.ts`: cablea `PROGRESS_REPOSITORY_TOKEN` → `PrismaProgressRepository` vía `useFactory` (mismo patrón que `ScoreModule`); registrado en `AppModule`.
+- `infrastructure/database/prisma-progress.repository.ts`: `PrismaProgressRepository` (Adapter), `upsert` sobre la clave compuesta `userId_levelId`.
+- `prisma/schema.prisma`: modelo `Progress` + `@@unique([userId, levelId])`. `npx prisma generate` → cliente regenerado.
+- `adapters/http/authenticated-request.interface.ts`: extracción del tipo compartido (refactor menor, sin cambio de comportamiento).
+- Tests AAA: 9 specs nuevos, 20 tests verdes (entidad, ambos casos de uso incluyendo la semántica de merge, mapper, controlador, repositorio Prisma).
+- README actualizado (tabla de endpoints + ejemplos de payload) por exponer API pública nueva.
+- Verificación global: `npx jest` → 37 suites, 128/128 tests. `npm run build` → exit 0. `npx eslint` acotado a los archivos tocados → limpio (solo quedan los warnings `no-unsafe-argument` en `progress.module.ts` y los errores `unbound-method` en los specs de casos de uso, ambos patrones ya presentes y aceptados en `score.module.ts`/`submit-score.use-case.spec.ts`).
+**Modificaciones realizadas por el equipo:**

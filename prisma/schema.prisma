@@ -35,3 +35,17 @@ model ScoreEntry {
   // en back#10 y pueden no existir aún al escribir en entornos de prueba).
   @@index([levelId, score])
 }
+
+model Progress {
+  id         String   @id @default(uuid())
+  userId     String
+  levelId    String
+  completed  Boolean
+  bestScore  Int?
+  bestStars  Int?
+  updatedAt  DateTime @updatedAt
+
+  // Un registro por (usuario, nivel): el sync hace upsert sobre esta clave,
+  // nunca inserta duplicados para el mismo par.
+  @@unique([userId, levelId])
+}
