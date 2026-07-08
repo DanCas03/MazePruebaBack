@@ -104,15 +104,24 @@ export class LoggingInterceptor implements NestInterceptor {
 
 ## API Endpoints
 
-| Method | Path           | Auth | Description                       |
-|--------|----------------|------|-----------------------------------|
-| GET    | `/levels/:id`  | No   | Retrieve a level grid by UUID     |
-| POST   | `/auth/register` | No | Register a user; returns a JWT    |
-| POST   | `/auth/login`  | No   | Authenticate a user; returns a JWT |
+| Method | Path                  | Auth | Description                          |
+|--------|-----------------------|------|--------------------------------------|
+| GET    | `/levels/:id`         | No   | Retrieve a level grid by UUID        |
+| POST   | `/auth/register`      | No   | Register a user; returns a JWT       |
+| POST   | `/auth/login`         | No   | Authenticate a user; returns a JWT   |
+| POST   | `/scores`             | Yes  | Submit a score for a completed level |
+| GET    | `/leaderboard/:levelId` | No | Top scores for a level (desc, default limit 10, max 100) |
 
 ```jsonc
 // POST /auth/register  → 201   |   POST /auth/login → 200
 { "token": "<jwt>" }
+
+// POST /scores (Bearer token required) → 201
+// body: { "levelId": "level-07", "score": 1200, "stars": 3, "moves": 12, "timeSeconds": 45 }
+{ "id": "...", "userId": "...", "levelId": "level-07", "score": 1200, "stars": 3, "moves": 12, "timeSeconds": 45, "createdAt": "2026-07-08T12:00:00.000Z" }
+
+// GET /leaderboard/:levelId?limit=10 → 200
+[{ "id": "...", "userId": "...", "levelId": "level-07", "score": 1200, "stars": 3, "moves": 12, "timeSeconds": 45, "createdAt": "..." }]
 
 // Error shape (produced by DomainExceptionFilter)
 { "statusCode": 401, "error": "InvalidCredentialsException", "message": "Invalid email or password" }
