@@ -12,10 +12,7 @@ export class ListLevelsUseCase {
 
   async execute(): Promise<Level[]> {
     const levels = await this.levelRepo.findAllOrdered();
-    this.logger.log(
-      `Listed ${levels.length} level(s)`,
-      ListLevelsUseCase.name,
-    );
+    this.logger.log(`Listed ${levels.length} level(s)`, ListLevelsUseCase.name);
     return levels;
   }
 }

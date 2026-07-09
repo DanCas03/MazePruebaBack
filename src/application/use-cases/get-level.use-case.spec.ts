@@ -1,6 +1,7 @@
 import { GetLevelUseCase } from './get-level.use-case';
 import type { ILevelRepository } from '../ports/i-level.repository';
 import type { ILoggerService } from '../ports/i-logger.service';
+import type { Level } from '../../domain/entities/level.entity';
 import { LevelId } from '../../domain/value-objects/level-id.vo';
 import { InvalidLevelIdException } from '../../domain/exceptions/invalid-level-id.exception';
 import { LevelNotFoundException } from '../../domain/exceptions/level-not-found.exception';
@@ -18,7 +19,7 @@ describe('GetLevelUseCase', () => {
 
   it('should return the level produced by the repository', async () => {
     // Arrange
-    const level = { id: {} } as any;
+    const level = { id: {} } as unknown as Level;
     mockLevelRepo.findById.mockResolvedValue(level);
     // Act
     const result = await sut.execute('level-1');
