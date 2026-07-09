@@ -340,3 +340,57 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 **Prompt o instrucción proporcionada:** > "Ejecutar Fragmento 4 del plan docs/superpowers/plans/2026-07-08-back1-arrow-path-domain.md (issue MazePruebaBack#1)."
 **Resultado obtenido:** arrow.factory.ts (con comentario inline del problema que resuelve el patrón) + InvalidDirectionException + spec AAA vía TDD (rojo→verde). README recupera la fila Factory Method apuntando a arrow.factory.ts. back#5 (repositorio de niveles) y back#10 (seed) la reutilizarán. Suite (163 tests)/build/lint verdes. Ajuste sobre el plan: la comparación del parseo de dirección usa cast explícito a string para satisfacer no-unsafe-enum-comparison.
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 025 — back#5 F1: LevelBuilder (Builder re-fundado)
+
+**Fecha:** 2026-07-09
+**Tarea o problema abordado:** Fragmento 1/4 del issue back#5: construir un `Level` válido a partir del JSON crudo arrow-path (`Level.data`) sin duplicar las invariantes que ya validan `ArrowFactory` y el constructor de `Level`.
+**Herramienta de IA utilizada:** Claude Code (tests delegados a subagente)
+**Prompt o instrucción proporcionada:** > "Ejecutar Fragmento 1 del plan back#5 (servir niveles arrow-path vía GET /levels[/:id])."
+**Resultado obtenido:** `level.builder.ts` — Builder GoF fluido y step-by-step (`withDimensions().withTimeLimit().addArrow()...build()`), no un método estático único, para que sea un Builder genuino y no un Factory Method redundante con `ArrowFactory` (que `addArrow` usa internamente). Re-funda el patrón pedido por ADR 0001 (decisión 4). `build()` delega las invariantes de tablero en `Level`; no las duplica. Spec AAA (7 tests) sin mocks, mismo estilo que `level.entity.spec.ts`, cubre construcción válida (ejemplo exacto de CONTEXT-MAP.md), `timeLimitSec` omitido/`undefined`, y propagación de `InvalidArrowException`/`InvalidDirectionException`/`InvalidLevelException` desde sus colaboradores. Suite verde (170 tests).
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 026 — back#5 F2: ILevelRepository + GetLevelUseCase + ListLevelsUseCase
+
+**Fecha:** 2026-07-09
+**Tarea o problema abordado:** Fragmento 2/4 del issue back#5: puerto de persistencia de niveles y los dos casos de uso que necesitan `GET /levels` (lista) y `GET /levels/:id` (detalle).
+**Herramienta de IA utilizada:** Claude Code (tests delegados a subagente)
+**Prompt o instrucción proporcionada:** > "Ejecutar Fragmento 2 del plan back#5 (servir niveles arrow-path vía GET /levels[/:id])."
+**Resultado obtenido:** `i-level.repository.ts` (`ILevelRepository.findById`/`findAllOrdered` + `LEVEL_REPOSITORY_TOKEN`, mismo patrón que `i-progress.repository.ts`/`i-score.repository.ts`). `get-level.use-case.ts`: parsea el id crudo a `LevelId` (propaga `InvalidLevelIdException`), lanza `LevelNotFoundException` si el repo devuelve `null`. `list-levels.use-case.ts`: delega en `findAllOrdered`. Ambos framework-free, sin `@Injectable()`, mismo estilo que `get-leaderboard.use-case.ts`. Specs AAA con mocks (`jest.Mocked<ILevelRepository>`/`jest.Mocked<ILoggerService>`), mismo estilo que `get-leaderboard.use-case.spec.ts`. Suite verde (175 tests).
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 027 — back#5 F3: columna `order` + PrismaLevelRepository
+
+**Fecha:** 2026-07-09
+**Tarea o problema abordado:** Fragmento 3/4 del issue back#5: persistencia. El modelo `Level` no tenía forma de expresar el orden de juego ("GET /levels lista ids en orden"); se decidió una columna explícita en vez de depender de `createdAt` porque el seed curado (back#10) necesita control expreso de la secuencia, no solo el de inserción.
+**Herramienta de IA utilizada:** Claude Code (tests escritos directamente — el subagente de tests fue bloqueado por el clasificador de auto mode por un bloque de instrucciones de un plugin MCP inyectado automáticamente en el contexto de todo agente nuevo; no es un problema de este fragmento)
+**Prompt o instrucción proporcionada:** > "Ejecutar Fragmento 3 del plan back#5 (servir niveles arrow-path vía GET /levels[/:id])."
+**Resultado obtenido:** `schema.prisma`: `Level.order Int @unique`. `prisma-level.repository.ts`: `@Injectable()`, implementa `ILevelRepository`; `toDomain` privado y estático reconstruye `Level` desde `record.data` vía `LevelBuilder` (mismo patrón `*Record` local que `prisma-progress.repository.ts`, para no filtrar tipos de Prisma al dominio). Se sigue la práctica real del repo (sin `prisma/migrations/` versionado, `db push`) sobre lo que documenta el README, por decisión explícita del usuario. Spec con mocks de `PrismaService` (5 tests), mismo estilo que `prisma-progress.repository.spec.ts`. Suite verde (180 tests). Pendiente: aplicar `db push` contra la DB local (Postgres estaba detenido, requiere permisos de admin) — se aplicará en la verificación final.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 028 — back#5 F4: LevelMapper + LevelController + LevelModule + Swagger + README
+
+**Fecha:** 2026-07-09
+**Tarea o problema abordado:** Fragmento 4/4 del issue back#5: exponer `GET /levels` y `GET /levels/:id` por HTTP, cerrando el DoD del issue (endpoints documentados en Swagger, README actualizado).
+**Herramienta de IA utilizada:** Claude Code (tests escritos directamente por el mismo bloqueo del clasificador de auto mode descrito en la entrada 027)
+**Prompt o instrucción proporcionada:** > "Ejecutar Fragmento 4 del plan back#5 (servir niveles arrow-path vía GET /levels[/:id])."
+**Resultado obtenido:** `level.mapper.ts` (`LevelMapper.toDto`/`toSummaryDto`, DTOs planos sin decoradores, mismo estilo que `score.mapper.ts`). `level.controller.ts`: `@Controller('levels')` (estilo `ProgressController`), `GET /` → `ListLevelsUseCase` → ids en orden; `GET /:id` → `GetLevelUseCase` → nivel completo; decorado con `@ApiTags`/`@ApiOperation`/`@ApiResponse` incl. 404. `level.module.ts` wireado en `app.module.ts` (mismo patrón `useFactory` que `score.module.ts`). README: fila de endpoints, ejemplos de payload, patrón Builder añadido a la tabla de Design Patterns, descripción actualizada (ya no dice "grid retirado, vuelve en back#5" — ya volvió). Specs de controller (3 tests) con mocks de use cases, mismo estilo que `score.controller.spec.ts`. Suite verde (183 tests); `npm run build` y `npx eslint` sobre los archivos tocados limpios salvo los mismos patrones ya aceptados (`no-unsafe-argument` en `*.module.ts`, `unbound-method` en specs de casos de uso).
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 029 — fix(back/adapters): AuthModule inyectaba JwtService por string token roto
+
+**Fecha:** 2026-07-09
+**Tarea o problema abordado:** No forma parte de back#5. Al hacer el smoke test end-to-end de back#5 (`npm run start:dev` + curl contra `GET /levels[/:id]`), la app entera fallaba al arrancar: `UnknownDependenciesException` resolviendo `ITokenService`. `auth.module.ts` inyectaba `JwtService` de `@nestjs/jwt` vía el token string `'JwtService'` (`inject: ['JwtService']`), pero `JwtModule` registra `JwtService` bajo la referencia de la clase, no bajo ese string — bug preexistente desde que se creó `AuthModule` (commit `fad9588`), nunca detectado porque ningún test unitario/controller bootstrapea Nest de verdad y nadie había corrido `start:dev` antes en esta sesión.
+**Herramienta de IA utilizada:** Claude Code
+**Prompt o instrucción proporcionada:** > "Ya esta prendido postgres" (retomando la verificación de back#5; el fix surgió como bloqueante del smoke test, no fue pedido explícitamente).
+**Resultado obtenido:** `inject: ['JwtService']` → `inject: [JwtService]` (import de la clase agregado), comentario inline corregido. Suite (183 tests) y build siguen verdes. Con el fix, `npm run start:dev` arranca limpio y el smoke test de back#5 pasó: `GET /levels` → `[{"levelId":"l-007"}]`; `GET /levels/l-007` → JSON arrow-path completo igual al wire contract; `GET /levels/no-existe` → 404 con el shape uniforme de `DomainExceptionFilter`.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 030 — back#5: test de smoke de wiring de DI (cierra el hueco de la 029)
+
+**Fecha:** 2026-07-09
+**Tarea o problema abordado:** La entrada 029 arreglo un bug de DI de `AuthModule` que sobrevivio desde `fad9588` porque ningun test bootstrapea Nest; el fix quedo sin cobertura y una regresion del mismo tipo volveria a pasar desapercibida hasta el arranque. Anadir el test que faltaba y verificar el modulo en vivo.
+**Herramienta de IA utilizada:** Claude Code (revision con skills arrowmaze-code-reviewer, arrowmaze-qa, arrowmaze-backend)
+**Prompt o instruccion proporcionada:** > "Anade lo que hace falta y comprueba entonces que el modulo funcione correctamente (aparte de los tests)"
+**Resultado obtenido:** Nuevo `src/app.module.spec.ts`: smoke test de wiring que compila el `AppModule` completo con `Test.createTestingModule` y `PrismaService` sobre-escrito (sin BD, `compile()` no invoca `onModuleInit`). Corre bajo `npm test`, cerrando el hueco de que la suite por defecto nunca bootstrapeaba Nest. Verificado por mutacion: reintroduciendo `inject: ['JwtService']` el test falla con `UnknownDependenciesException` (no es autocomplaciente); restaurado el fix, verde. Suite 43 suites / 184 tests; `npm run build` y `npx eslint` limpios. Verificacion en vivo (`node dist/src/main.js`, aparte de los tests): la app arranca con `AuthModule dependencies initialized` sin errores; `GET /levels` -> `[{"levelId":"l-007"}]`; `GET /levels/l-007` -> wire contract completo; `GET /levels/no-existe` -> 404 `LevelNotFoundException`; `POST /auth/register` y `POST /auth/login` devuelven un JWT real (prueba que el `JwtService` recableado firma tokens end-to-end); login con password erronea -> 401 `InvalidCredentialsException`. Nota lateral no corregida (fuera de scope): `npm run start:prod` apunta a `node dist/main` pero `nest build` emite `dist/src/main.js` (script preexistente roto).
+**Modificaciones realizadas por el equipo:** (completar manualmente)

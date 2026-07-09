@@ -14,7 +14,7 @@ REST API for **Arrow Maze**, a casual mobile puzzle game. It handles user regist
 
 ## Description
 
-The API exposes three capabilities: registering and authenticating users with JWT, submitting scores with per-level leaderboards, and syncing player progress. The grid-based level pipeline was retired together with the grid domain model (ADR 0001: the snake/arrow-path model is canonical); arrow-path level endpoints return in back#5. What makes it worth reading is not the feature surface but how the layers are kept apart. A use case such as `LoginUseCase` or `SubmitScoreUseCase` is plain TypeScript with zero `@nestjs/*` imports; it depends on interfaces (ports), and the concrete adapters (Prisma repositories, bcrypt, JWT) are injected from the outside. Cross-cutting concerns (request logging, domain-to-HTTP error translation) are handled with aspects, not scattered through controllers.
+The API exposes four capabilities: registering and authenticating users with JWT, serving hand-curated arrow-path levels, submitting scores with per-level leaderboards, and syncing player progress. The grid-based level pipeline was retired together with the grid domain model (ADR 0001: the snake/arrow-path model is canonical); levels are now served as arrow-path JSON via `GET /levels[/:id]`. What makes it worth reading is not the feature surface but how the layers are kept apart. A use case such as `LoginUseCase` or `SubmitScoreUseCase` is plain TypeScript with zero `@nestjs/*` imports; it depends on interfaces (ports), and the concrete adapters (Prisma repositories, bcrypt, JWT) are injected from the outside. Cross-cutting concerns (request logging, domain-to-HTTP error translation) are handled with aspects, not scattered through controllers.
 
 **Tech stack:** NestJS 11, TypeScript 5.7, Prisma 6 over PostgreSQL, `@nestjs/jwt` + `passport-jwt` + `bcryptjs` for auth, `class-validator` for input validation, Jest for tests.
 
@@ -41,6 +41,7 @@ Patterns are used where they solve a concrete problem, and each one carries an i
 | Pattern | Where | Problem it solves |
 |---|---|---|
 | **Factory Method** | [`arrow.factory.ts`](src/domain/entities/arrow.factory.ts) | Guards the primitives→domain boundary: raw arrow-path JSON (`{ id, headDir, cells }`) becomes a validated `Arrow` — direction parsed case-insensitively, cell shape checked — failing with domain exceptions so no invalid arrow ever enters the system. |
+| **Builder** | [`level.builder.ts`](src/domain/entities/level.builder.ts) | Assembles a `Level` from raw arrow-path JSON via a fluent step-by-step API (`withDimensions`/`withTimeLimit`/`addArrow`/`build`), delegating per-arrow parsing to `ArrowFactory` and board invariants to `Level` itself — separates the multi-step assembly process from the validated result. |
 | **Adapter** | [`nest-logger.adapter.ts`](src/infrastructure/logger/nest-logger.adapter.ts), [`jwt-token.service.ts`](src/infrastructure/security/jwt-token.service.ts), [`bcrypt-hash.service.ts`](src/infrastructure/security/bcrypt-hash.service.ts) | Wraps concrete libraries (NestJS `Logger`, `@nestjs/jwt`, `bcryptjs`) behind application ports, so the core never imports them directly. |
 | **Strategy (Passport)** | [`jwt.strategy.ts`](src/infrastructure/security/jwt.strategy.ts) | Encapsulates the JWT validation algorithm as a swappable Passport strategy reading its secret from `ConfigService`. |
 | **Dependency Injection / Composition Root** | [`auth.module.ts`](src/adapters/auth.module.ts) | `useFactory` instantiates framework-free use cases with their ports, keeping construction out of the business code. |
@@ -108,16 +109,34 @@ export class LoggingInterceptor implements NestInterceptor {
 |--------|-----------------------|------|--------------------------------------|
 | POST   | `/auth/register`      | No   | Register a user; returns a JWT       |
 | POST   | `/auth/login`         | No   | Authenticate a user; returns a JWT   |
+| GET    | `/levels`             | No   | List level ids, in play order        |
+| GET    | `/levels/:id`         | No   | Get a level as arrow-path JSON       |
 | POST   | `/scores`             | Yes  | Submit a score for a completed level |
 | GET    | `/leaderboard/:levelId` | No | Top scores for a level (desc, default limit 10, max 100) |
 | POST   | `/progress`           | Yes  | Sync completed levels + best scores (merges, never degrades) |
 | GET    | `/progress`           | Yes  | Get the authenticated user's progress |
 
-> The levels endpoint (`GET /levels/:id`) was retired together with the grid domain model; arrow-path level endpoints return in back#5 (ADR 0001). The `LevelNotFoundException → 404` mapping in the filter is kept for that reuse.
+> The `order` on a `Level` record is an explicit, curatable sequence (not insertion order) — the curated 15-level seed (back#10) controls it directly.
 
 ```jsonc
 // POST /auth/register  → 201   |   POST /auth/login → 200
 { "token": "<jwt>" }
+
+// GET /levels → 200
+[{ "levelId": "l-007" }, { "levelId": "l-008" }]
+
+// GET /levels/:id → 200 (arrow-path wire contract, CONTEXT-MAP.md)
+{
+  "levelId": "l-007",
+  "cols": 8,
+  "rows": 11,
+  "timeLimitSec": 90,
+  "arrows": [
+    { "id": "a1", "headDir": "up", "cells": [[10, 3], [9, 3], [9, 4]] },
+    { "id": "a2", "headDir": "right", "cells": [[2, 0], [2, 1]] }
+  ]
+}
+// GET /levels/:id → 404 when the id does not exist
 
 // POST /scores (Bearer token required) → 201
 // body: { "levelId": "level-07", "score": 1200, "stars": 3, "moves": 12, "timeSeconds": 45 }
