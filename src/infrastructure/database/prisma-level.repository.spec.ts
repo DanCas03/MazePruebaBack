@@ -17,7 +17,9 @@ describe('PrismaLevelRepository', () => {
   });
 
   // Fixture: ejemplo exacto del wire contract (CONTEXT-MAP.md).
-  const wireContractRecord = (overrides: Partial<{ timeLimitSec?: number }> = {}) => ({
+  const wireContractRecord = (
+    overrides: Partial<{ timeLimitSec?: number }> = {},
+  ) => ({
     id: 'l-007',
     order: 1,
     data: {
@@ -25,8 +27,23 @@ describe('PrismaLevelRepository', () => {
       rows: 11,
       timeLimitSec: 90,
       arrows: [
-        { id: 'a1', headDir: 'up', cells: [[10, 3], [9, 3], [9, 4]] },
-        { id: 'a2', headDir: 'right', cells: [[2, 0], [2, 1]] },
+        {
+          id: 'a1',
+          headDir: 'up',
+          cells: [
+            [10, 3],
+            [9, 3],
+            [9, 4],
+          ],
+        },
+        {
+          id: 'a2',
+          headDir: 'right',
+          cells: [
+            [2, 0],
+            [2, 1],
+          ],
+        },
       ],
       ...overrides,
     },
@@ -90,7 +107,16 @@ describe('PrismaLevelRepository', () => {
         data: {
           cols: 2,
           rows: 2,
-          arrows: [{ id: 'a1', headDir: 'right', cells: [[0, 0], [0, 1]] }],
+          arrows: [
+            {
+              id: 'a1',
+              headDir: 'right',
+              cells: [
+                [0, 0],
+                [0, 1],
+              ],
+            },
+          ],
         },
       };
       const second = {
@@ -99,7 +125,16 @@ describe('PrismaLevelRepository', () => {
         data: {
           cols: 2,
           rows: 2,
-          arrows: [{ id: 'a1', headDir: 'down', cells: [[0, 0], [1, 0]] }],
+          arrows: [
+            {
+              id: 'a1',
+              headDir: 'down',
+              cells: [
+                [0, 0],
+                [1, 0],
+              ],
+            },
+          ],
         },
       };
       mockPrisma.level.findMany.mockResolvedValue([first, second]);
