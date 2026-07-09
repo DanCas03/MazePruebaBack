@@ -9,13 +9,13 @@ juego** — solo guarda y sirve definiciones de nivel como datos.
 ### Niveles
 
 **Level** (Nivel):
-Definición de nivel persistida como JSON _arrow-path_ (`{ cols, rows, arrows: [...] }`),
-identificada por `LevelId`. El backend es la fuente autoritativa; se pueden añadir/actualizar
-niveles sin actualizar la app.
+Definición de nivel persistida como JSON _arrow-path_ (`{ cols, rows, arrows: [...], timeLimitSec? }`),
+identificada por `LevelId`, con límite de tiempo opcional para niveles avanzados. El backend es
+la fuente autoritativa; se pueden añadir/actualizar niveles sin actualizar la app.
 _Avoid_: grid de celdas, tablero de celdas, mapa.
 
 **Arrow** (Flecha, como dato):
-En el backend una flecha es **solo datos**: `cells` (camino) + `headDir`. No tiene
+En el backend una flecha es **solo datos**: `id` + `cells` (camino) + `headDir`. No tiene
 comportamiento de juego (eso vive en el cliente).
 _Avoid_: ArrowCell, celda-flecha, entidad con `canBeTraversed`.
 
