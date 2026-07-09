@@ -19,3 +19,33 @@ model User {
   password  String
   createdAt DateTime @default(now())
 }
+
+model ScoreEntry {
+  id          String   @id @default(uuid())
+  userId      String
+  levelId     String
+  score       Int
+  stars       Int
+  moves       Int
+  timeSeconds Int
+  createdAt   DateTime @default(now())
+
+  // Índice compuesto para la consulta del leaderboard: filtra por nivel y
+  // ordena por score. userId/levelId son String sin FK (los niveles se siembran
+  // en back#10 y pueden no existir aún al escribir en entornos de prueba).
+  @@index([levelId, score])
+}
+
+model Progress {
+  id         String   @id @default(uuid())
+  userId     String
+  levelId    String
+  completed  Boolean
+  bestScore  Int?
+  bestStars  Int?
+  updatedAt  DateTime @updatedAt
+
+  // Un registro por (usuario, nivel): el sync hace upsert sobre esta clave,
+  // nunca inserta duplicados para el mismo par.
+  @@unique([userId, levelId])
+}

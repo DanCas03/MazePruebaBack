@@ -202,3 +202,105 @@
 - Tests AAA: `auth.controller.spec.ts` (4 tests: register delega en use case, register propaga UserAlreadyExistsException, login delega en use case, login propaga InvalidCredentialsException — ambos use cases mockeados); `domain-exception.filter.spec.ts` extendido con test para 401.
 - `npm test` → 20 suites, 61/61 tests pasan. `npm run build` → exit 0.
 **Modificaciones realizadas por el equipo:**
+
+---
+
+## Entrada 015 — back#2: token de sesión largo + Swagger en /auth
+
+**Fecha:** 2026-07-07
+**Tarea o problema abordado:** Issue back#2 — documentar el JWT de sesión persistente y anotar los endpoints `/auth` para Swagger. `JWT_EXPIRATION` ya era configurable vía `ConfigService` (default `7d` en `auth.module.ts`), así que el trabajo fue: (1) crear `.env.example` documentando todas las variables incluida `JWT_EXPIRATION`; (2) instalar `@nestjs/swagger` y anotar `AuthController` y los DTOs. Se dejó fuera de alcance el `SwaggerModule.setup()` global en `main.ts` porque corresponde al issue back#3 (OpenAPI global, de Daniel) — así ambos issues componen sin conflicto.
+**Herramienta de IA utilizada:** Claude Code (skill arrowmaze-backend, opus)
+**Prompt o instrucción proporcionada:** > "Implementar back#2: anotar AuthController y los DTOs con decoradores @nestjs/swagger, crear .env.example documentando JWT_EXPIRATION y JWT_SECRET, mantener verdes los tests de LoginUseCase/RegisterUseCase, no tocar main.ts."
+**Resultado obtenido:**
+- `package.json`: añade dependencia `@nestjs/swagger@^11.4.5`.
+- `.env.example` (nuevo): documenta `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRATION` (con nota de que es de larga duración para la sesión persistente del cliente) y `PORT`.
+- `src/adapters/dtos/register.dto.ts` y `login.dto.ts`: añaden `@ApiProperty` (ejemplo, descripción, `minLength` en el password de registro) sin alterar las validaciones de class-validator existentes.
+- `src/adapters/controllers/auth.controller.ts`: `@ApiTags('auth')`, `@ApiOperation` y `@ApiResponse` en ambos endpoints. Códigos documentados según el comportamiento REAL de `DomainExceptionFilter`: register 201/400 (UserAlreadyExistsException no está mapeada → cae al default 400, no 409); login 200/401.
+- Sin tests unitarios nuevos: los decoradores son metadata declarativa sin lógica de ramificación; los specs existentes de `AuthController`/`LoginUseCase`/`RegisterUseCase` cubren el comportamiento y siguen verdes (justificación explícita por regla 5 de CLAUDE.md).
+- `npm run build` → exit 0. `npx eslint` sobre los 3 archivos tocados → limpio. `npm test` → 20 suites, 61/61 tests pasan.
+**Modificaciones realizadas por el equipo:**
+
+## Entrada 016 — back#7 (fragmento 1/3): dominio ScoreEntry
+
+**Fecha:** 2026-07-08
+**Tarea o problema abordado:** Issue back#7 — modelar el dominio de puntajes que alimenta el Leaderboard (ADR 0001, decisión 7). Primer fragmento: entidad `ScoreEntry` y sus Value Objects. Decisiones de diseño: (1) cada atributo escalar del puntaje es un VO con su invariante en el constructor (consistente con `Position`/`Email`/`LevelId`), no primitivos sueltos; (2) `Stars` acota el rango 1..3 como invariante de dominio; (3) el `score`/`stars` los computa el cliente (front#12) y el backend solo los valida y almacena — no se recomputa en el back; (4) se incluye `ScoreEntryId` como VO por simetría con `UserId`/`LevelId` (toda identidad es concepto de dominio); (5) `createdAt: Date` en la entidad para permitir desempates estables en el leaderboard (Date es builtin, no rompe la pureza del dominio). back#7 se ramificó desde `main` antes de que back#2 (entrada 015) se mergeara; de ahí la numeración consecutiva pese a ser issues independientes.
+**Herramienta de IA utilizada:** Claude Code (skill arrowmaze-backend, opus)
+**Prompt o instrucción proporcionada:** > "Sí, empecemos con back#7"
+**Resultado obtenido:**
+- VOs nuevos (`src/domain/value-objects/`): `Score` (entero ≥ 0), `Stars` (entero 1..3), `MoveCount` (entero ≥ 0), `ElapsedTime` (segundos enteros ≥ 0), `ScoreEntryId` (string no vacío). Todos inmutables con `equals`.
+- Excepciones de dominio (`src/domain/exceptions/`): `InvalidScoreException`, `InvalidStarsException`, `InvalidMoveCountException`, `InvalidElapsedTimeException`, `InvalidScoreEntryIdException` (extienden `DomainException`; caen al default 400 del `DomainExceptionFilter`, correcto para entrada inválida del cliente).
+- Entidad `ScoreEntry` (`src/domain/entities/score-entry.entity.ts`) compone `ScoreEntryId`, `UserId`, `LevelId`, `Score`, `Stars`, `MoveCount`, `ElapsedTime`, `createdAt`.
+- Tests AAA: 6 specs, 32 tests verdes (casos válidos, límites e inválidos por VO + composición de la entidad).
+**Modificaciones realizadas por el equipo:**
+
+## Entrada 017 — back#7 (fragmento 2/3): puerto IScoreRepository + use-cases SubmitScore/GetLeaderboard
+
+**Fecha:** 2026-07-08
+**Tarea o problema abordado:** Segundo fragmento de back#7: capa `application/`. Puerto de persistencia y los dos casos de uso que exige el issue. Decisiones: (1) `SubmitScoreUseCase` recibe un `SubmitScoreCommand` de primitivos y delega la validación a los VOs al construir `ScoreEntry` (entrada inválida → DomainException → 400 antes de tocar el repo); genera el `ScoreEntryId` con `randomUUID()` y el `createdAt` con `new Date()`, igual que `RegisterUseCase`; devuelve la entidad creada para que back#9 pueda mapearla; (2) `GetLeaderboardUseCase` acota el `limit` (default 10, máximo 100, inválidos → default) para proteger el repositorio de paginación abusiva; (3) el ordenamiento del ranking es responsabilidad de la implementación del puerto (fragmento 3), el caso de uso solo pide "top N". Ambos casos de uso son framework-free (sin imports `@nestjs`).
+**Herramienta de IA utilizada:** Claude Code (skill arrowmaze-backend, opus)
+**Prompt o instrucción proporcionada:** > "Sí, empecemos con back#7" (continuación)
+**Resultado obtenido:**
+- Puerto `IScoreRepository` (`src/application/ports/i-score.repository.ts`): `save(entry)` + `findTopByLevel(levelId, limit)` + token `SCORE_REPOSITORY_TOKEN`.
+- `SubmitScoreUseCase` (`src/application/use-cases/submit-score.use-case.ts`) con `SubmitScoreCommand`.
+- `GetLeaderboardUseCase` (`src/application/use-cases/get-leaderboard.use-case.ts`) con `clampLimit`.
+- Tests AAA: 2 specs, 7 tests verdes (persistencia + rechazo de stars inválido; default/clamp de límite, propagación de entradas, LevelId vacío). Mocks de `IScoreRepository` e `ILoggerService`.
+**Modificaciones realizadas por el equipo:**
+
+## Entrada 018 — back#7 (fragmento 3/3): persistencia Prisma (modelo + PrismaScoreRepository)
+
+**Fecha:** 2026-07-08
+**Tarea o problema abordado:** Tercer fragmento de back#7: capa `infrastructure/`. Modelo Prisma `ScoreEntry`, su migración y la implementación del puerto. Decisiones: (1) columnas planas `userId`/`levelId` como `String` **sin FK** — los niveles se siembran en back#10 y pueden no existir al escribir en pruebas; la integridad referencial se documenta como fuera de alcance de este issue; (2) índice compuesto `@@index([levelId, score])` que soporta la consulta del leaderboard (filtra por nivel, ordena por score); (3) ordenamiento del ranking `score desc, createdAt asc` (empate → quien lo logró antes queda arriba); (4) `PrismaScoreRepository` reconstruye los VOs del dominio al leer (patrón Adapter, igual que `PrismaUserRepository`); no filtra tipos generados de Prisma hacia el dominio (interfaz `ScoreEntryRecord` local). **Migración:** el repo maneja el esquema schema-only vía `prisma db push` (no hay carpeta `prisma/migrations/`; así se agregó el modelo `User` en back#2/entrada 012), por lo que **no se commitea un archivo de migración** para no romper esa convención. Se verificó con `prisma migrate diff` que el cambio es aplicable y produce exactamente:
+```sql
+CREATE TABLE "ScoreEntry" (
+  "id" TEXT NOT NULL, "userId" TEXT NOT NULL, "levelId" TEXT NOT NULL,
+  "score" INTEGER NOT NULL, "stars" INTEGER NOT NULL, "moves" INTEGER NOT NULL,
+  "timeSeconds" INTEGER NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "ScoreEntry_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX "ScoreEntry_levelId_score_idx" ON "ScoreEntry"("levelId", "score");
+```
+Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equipo) o `npx prisma migrate dev --name add_score_entry` si se adopta el historial de migraciones.
+**Herramienta de IA utilizada:** Claude Code (skill arrowmaze-backend, opus)
+**Prompt o instrucción proporcionada:** > "Sí, empecemos con back#7" (continuación)
+**Resultado obtenido:**
+- `prisma/schema.prisma`: modelo `ScoreEntry` + índice compuesto. `npx prisma validate` → válido; `npx prisma generate` → cliente regenerado (ahora tipado, incluye `scoreEntry`).
+- `PrismaScoreRepository` (`src/infrastructure/database/prisma-score.repository.ts`): implementa `save` y `findTopByLevel` (Adapter). No se cablea a un módulo NestJS: la exposición HTTP (controller + módulo + Swagger) corresponde a back#9.
+- Tests AAA: 1 spec, 3 tests verdes (aplanado de VOs a columnas en `save`; forma/orden/límite de la query; reconstrucción de entidades en `findTopByLevel`). PrismaService mockeado (sin BD real).
+- Verificación global: `npx jest` → 29 suites, 103/103 tests. `npm run build` → exit 0. `npx eslint` acotado a los archivos tocados → limpio.
+**Modificaciones realizadas por el equipo:**
+
+## Entrada 019 — back#9: `POST /scores` y `GET /leaderboard/:levelId`
+
+**Fecha:** 2026-07-08
+**Tarea o problema abordado:** Issue back#9 — exponer vía HTTP el dominio de puntajes modelado en back#7 (ScoreEntry, IScoreRepository, SubmitScoreUseCase, GetLeaderboardUseCase). Rama abierta sobre `feat/#7-scoreentry` (aún no mergeada a `main`) porque back#9 depende directamente de ese código; se rebasará/mergeará sobre `main` cuando back#7 aterrice. Decisiones de diseño: (1) un único `ScoreController` para ambos endpoints — comparten el mismo recurso de dominio (ScoreEntry) y cambian juntos, así que separarlos en dos controladores no aportaría cohesión adicional; (2) `POST /scores` protegido con `JwtAuthGuard` (reutiliza la estrategia `'jwt'` ya registrada por `AuthModule`/`JwtStrategy`, sin volver a importar `PassportModule`); el `userId` se toma del token (`req.user.userId`), nunca del body, para que un cliente no pueda falsear puntajes a nombre de otro usuario; (3) `GET /leaderboard/:levelId` es público (ver un ranking no requiere sesión) y acepta `?limit=` opcional — la validación/clamping ya vive en `GetLeaderboardUseCase` (back#7), el controlador solo parsea el string a number; (4) `ScoreMapper` (Adapter, mismo patrón que `LevelMapper`) aplana la entidad + VOs a un DTO plano para la respuesta HTTP.
+**Herramienta de IA utilizada:** Claude Code (skill arrowmaze-backend, opus)
+**Prompt o instrucción proporcionada:** > "Empecemos con back#9 mientras revisan el PR"
+**Resultado obtenido:**
+- `ScoreMapper` (`src/adapters/mappers/score.mapper.ts`): `ScoreEntry` → `ScoreEntryResponseDto` plano.
+- `SubmitScoreDto` (`src/adapters/dtos/submit-score.dto.ts`): `levelId`, `score`, `stars` (1–3), `moves`, `timeSeconds` con `class-validator` + `@ApiProperty`.
+- `ScoreController` (`src/adapters/controllers/score.controller.ts`): `POST /scores` (`@UseGuards(JwtAuthGuard)`, `@ApiBearerAuth()`) y `GET /leaderboard/:levelId` (`@Query('limit')` opcional), ambos anotados con Swagger.
+- `ScoreModule` (`src/adapters/score.module.ts`): cablea `SCORE_REPOSITORY_TOKEN` → `PrismaScoreRepository`, `SubmitScoreUseCase` y `GetLeaderboardUseCase` vía `useFactory` (mismo patrón que `LevelModule`/`AuthModule`); registrado en `AppModule`.
+- Tests AAA: 2 specs nuevos, 6 tests verdes (`score.mapper.spec.ts`: aplanado de la entidad; `score.controller.spec.ts`: delegación con `userId` del request, propagación de `InvalidScoreException`, parseo de `limit` con y sin query param).
+- README actualizado (tabla de endpoints + ejemplos de payload) por exponer API pública nueva.
+- Verificación global: `npx jest` → 31 suites, 108/108 tests. `npm run build` → exit 0. `npx eslint` acotado a los archivos tocados → limpio (solo quedan los warnings `no-unsafe-argument` ya presentes en `level.module.ts`/`auth.module.ts` para el mismo patrón `useFactory`).
+**Modificaciones realizadas por el equipo:**
+
+## Entrada 020 — back#8: `POST /progress` y `GET /progress`
+
+**Fecha:** 2026-07-08
+**Tarea o problema abordado:** Issue back#8 — sincronizar el progreso del jugador (niveles completados + mejores scores, CONTEXT.md "Progress") entre cliente y servidor, autenticado. Bloqueadores (#1, #2) ya mergeados a `main`; rama abierta desde `main` actualizado. Decisiones de diseño: (1) entidad `ProgressEntry` (plana, sin lógica propia, mismo estilo que `ScoreEntry`/`User`) compuesta por `UserId`, `LevelId` y los VOs ya existentes `Score`/`Stars` (reutilizados de back#7, `bestScore`/`bestStars` nullable — un nivel puede completarse sin haber enviado un `ScoreEntry`); identidad natural `(userId, levelId)`, sin id sintético; (2) el **merge vive en `SyncProgressUseCase`, no en la entidad ni en el repositorio**: sync nunca degrada progreso ya persistido — `completed` se combina con OR, `bestScore`/`bestStars` se quedan con el mayor entre lo existente y lo entrante (protege contra un cliente que reinstala y sincroniza con estado local desactualizado); (3) `IProgressRepository` expone `findOne`/`upsert` de bajo nivel (no un método "merge") para mantener el repositorio ignorante de la regla de negocio (SRP); (4) se extrajo `AuthenticatedRequest` (antes solo en `score.controller.ts`) a `adapters/http/authenticated-request.interface.ts` para no duplicarla en `ProgressController`; `score.controller.ts` re-exporta el tipo para no romper su spec existente; (5) modelo Prisma `Progress` con `@@unique([userId, levelId])`, sin migración commiteada (mismo flujo schema-only vía `prisma db push` que `ScoreEntry`/`User`, entrada 018).
+**Herramienta de IA utilizada:** Claude Code (skill arrowmaze-backend, Sonnet 5)
+**Prompt o instrucción proporcionada:** > "quiero seguir con la siguiente tarea back#8 (progress) asignada en ArrowMaze/docs/superpowers/plans/2026-06-23-critical-path-and-team-split.md"
+**Resultado obtenido:**
+- `domain/entities/progress-entry.entity.ts`: entidad `ProgressEntry`.
+- `application/ports/i-progress.repository.ts`: puerto `IProgressRepository` (`findAllByUser`, `findOne`, `upsert`).
+- `application/use-cases/sync-progress.use-case.ts` y `get-progress.use-case.ts`: `SyncProgressUseCase` (merge nunca-degrada) y `GetProgressUseCase`.
+- `adapters/dtos/sync-progress.dto.ts`, `adapters/mappers/progress.mapper.ts`, `adapters/controllers/progress.controller.ts`: `POST /progress` y `GET /progress`, ambos `@UseGuards(JwtAuthGuard)` + Swagger; `userId` siempre del token, nunca del body.
+- `adapters/progress.module.ts`: cablea `PROGRESS_REPOSITORY_TOKEN` → `PrismaProgressRepository` vía `useFactory` (mismo patrón que `ScoreModule`); registrado en `AppModule`.
+- `infrastructure/database/prisma-progress.repository.ts`: `PrismaProgressRepository` (Adapter), `upsert` sobre la clave compuesta `userId_levelId`.
+- `prisma/schema.prisma`: modelo `Progress` + `@@unique([userId, levelId])`. `npx prisma generate` → cliente regenerado.
+- `adapters/http/authenticated-request.interface.ts`: extracción del tipo compartido (refactor menor, sin cambio de comportamiento).
+- Tests AAA: 9 specs nuevos, 20 tests verdes (entidad, ambos casos de uso incluyendo la semántica de merge, mapper, controlador, repositorio Prisma).
+- README actualizado (tabla de endpoints + ejemplos de payload) por exponer API pública nueva.
+- Verificación global: `npx jest` → 37 suites, 128/128 tests. `npm run build` → exit 0. `npx eslint` acotado a los archivos tocados → limpio (solo quedan los warnings `no-unsafe-argument` en `progress.module.ts` y los errores `unbound-method` en los specs de casos de uso, ambos patrones ya presentes y aceptados en `score.module.ts`/`submit-score.use-case.spec.ts`).
+**Modificaciones realizadas por el equipo:**
