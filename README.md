@@ -111,6 +111,8 @@ export class LoggingInterceptor implements NestInterceptor {
 | POST   | `/auth/login`         | No   | Authenticate a user; returns a JWT   |
 | POST   | `/scores`             | Yes  | Submit a score for a completed level |
 | GET    | `/leaderboard/:levelId` | No | Top scores for a level (desc, default limit 10, max 100) |
+| POST   | `/progress`           | Yes  | Sync completed levels + best scores (merges, never degrades) |
+| GET    | `/progress`           | Yes  | Get the authenticated user's progress |
 
 ```jsonc
 // POST /auth/register  → 201   |   POST /auth/login → 200
@@ -122,6 +124,13 @@ export class LoggingInterceptor implements NestInterceptor {
 
 // GET /leaderboard/:levelId?limit=10 → 200
 [{ "id": "...", "userId": "...", "levelId": "level-07", "score": 1200, "stars": 3, "moves": 12, "timeSeconds": 45, "createdAt": "..." }]
+
+// POST /progress (Bearer token required) → 201
+// body: { "levels": [{ "levelId": "level-07", "completed": true, "bestScore": 1200, "bestStars": 3 }] }
+[{ "levelId": "level-07", "completed": true, "bestScore": 1200, "bestStars": 3 }]
+
+// GET /progress (Bearer token required) → 200
+[{ "levelId": "level-07", "completed": true, "bestScore": 1200, "bestStars": 3 }]
 
 // Error shape (produced by DomainExceptionFilter)
 { "statusCode": 401, "error": "InvalidCredentialsException", "message": "Invalid email or password" }
