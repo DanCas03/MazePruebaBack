@@ -10,6 +10,9 @@ datasource db {
 model Level {
   id        String   @id @default(uuid())
   data      Json
+  // Posición explícita en la secuencia de juego (back#5): el seed curado
+  // (back#10) necesita control de orden, no solo el de inserción.
+  order     Int      @unique
   createdAt DateTime @default(now())
 }
 
