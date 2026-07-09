@@ -313,3 +313,12 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 **Prompt o instrucción proporcionada:** > "Ejecutar Fragmento 1 del plan docs/superpowers/plans/2026-07-08-back1-arrow-path-domain.md (issue MazePruebaBack#1)."
 **Resultado obtenido:** 17 archivos eliminados; AppModule sin LevelModule; comentarios stale corregidos en logger.module/auth.module/score.module/progress.module; README sin el endpoint de niveles (vuelve en back#5). LevelNotFoundException/InvalidLevelIdException y el mapeo 404 del filter se conservan para back#5. Suite/build verdes (117 tests); eslint limpio en los archivos tocados (la deuda de lint pre-existente del baseline queda fuera del alcance).
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 022 — back#1 F2: Direction wire + ArrowId + Arrow arrow-path
+
+**Fecha:** 2026-07-08
+**Tarea o problema abordado:** Fragmento 2/4 del issue back#1: Direction pasa a valores wire ('up'|'down'|'left'|'right'); nuevo VO ArrowId (string no vacío) y nueva entidad-dato Arrow (id + cells + headDir) con invariantes de camino (no vacío, adyacencia ortogonal, sin repetidos) e igualdad por valor incluyendo el id. headDir no se valida contra la geometría (decisión del brief, protegida por test).
+**Herramienta de IA utilizada:** Claude Code (tests delegados a subagente qa-engineer)
+**Prompt o instrucción proporcionada:** > "Ejecutar Fragmento 2 del plan docs/superpowers/plans/2026-07-08-back1-arrow-path-domain.md (issue MazePruebaBack#1)."
+**Resultado obtenido:** direction.vo.ts con valores wire; arrow-id.vo.ts (espejo de LevelId) + InvalidArrowIdException; arrow.entity.ts inmutable (cells congeladas) + InvalidArrowException; specs AAA vía TDD (rojo→verde). Suite (135 tests)/build/lint verdes.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
