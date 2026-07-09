@@ -2,7 +2,8 @@
 
 Contexto del **servidor**: fuente autoritativa de los niveles, gestiona cuentas y sesiones,
 recibe el progreso/puntajes del cliente y publica el ranking. **No corre la mecánica de
-juego** — solo guarda y sirve definiciones de nivel como datos.
+juego interactiva** — guarda y sirve definiciones de nivel como datos; solo ejecuta la
+mecánica para validar la solubilidad y certificar la Solución (`LevelSolver`, ADR 0002).
 
 ## Language
 
@@ -18,6 +19,18 @@ _Avoid_: grid de celdas, tablero de celdas, mapa.
 En el backend una flecha es **solo datos**: `id` + `cells` (camino) + `headDir`. No tiene
 comportamiento de juego (eso vive en el cliente).
 _Avoid_: ArrowCell, celda-flecha, entidad con `canBeTraversed`.
+
+**Solvable** (Soluble):
+Propiedad de un `Level`: existe un orden de remoción que vacía el tablero; la decide
+`LevelSolver.isSolvable`. Distinto de **Cleared** (front): el estado vacío ya _alcanzado_
+durante la partida — Solvable = _alcanzable_, Cleared = _alcanzado_.
+_Avoid_: resoluble, completable, winnable.
+
+**Solution** (Solución):
+El orden de `ArrowId` que vacía el tablero, producido por `LevelSolver.solve`; `null` si no
+existe. Es el testigo de la validación de solubilidad y la base del futuro hint de
+auto-resolución (ADR 0002).
+_Avoid_: respuesta, walkthrough, camino ganador.
 
 ### Cuenta y sesión
 
