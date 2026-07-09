@@ -14,8 +14,8 @@ import { USER_REPOSITORY_TOKEN } from '../application/ports/i-user.repository';
 import { HASH_SERVICE_TOKEN } from '../application/ports/i-hash.service';
 import { TOKEN_SERVICE_TOKEN } from '../application/ports/i-token.service';
 
-// AuthModule cablea los puertos de autenticación siguiendo el mismo patrón
-// que LevelModule: useFactory para instanciar use cases framework-free (DIP).
+// AuthModule cablea los puertos de autenticación como composition root:
+// useFactory para instanciar use cases framework-free (DIP).
 // JwtModule se registra de forma asíncrona para leer JWT_SECRET desde ConfigService
 // (nunca process.env directo). El cableado de JwtTokenService usa el token 'JwtService'
 // que @nestjs/jwt exporta con ese nombre.

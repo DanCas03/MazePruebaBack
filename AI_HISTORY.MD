@@ -304,3 +304,12 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - README actualizado (tabla de endpoints + ejemplos de payload) por exponer API pública nueva.
 - Verificación global: `npx jest` → 37 suites, 128/128 tests. `npm run build` → exit 0. `npx eslint` acotado a los archivos tocados → limpio (solo quedan los warnings `no-unsafe-argument` en `progress.module.ts` y los errores `unbound-method` en los specs de casos de uso, ambos patrones ya presentes y aceptados en `score.module.ts`/`submit-score.use-case.spec.ts`).
 **Modificaciones realizadas por el equipo:**
+
+## Entrada 021 — back#1 F1: demolición de grilla y pipeline de niveles grid
+
+**Fecha:** 2026-07-08
+**Tarea o problema abordado:** Fragmento 1/4 del issue back#1 (ADR 0001): retirar el modelo de grilla (ICell, ArrowCell, WallCell, EmptyCell, ExitCell, CellType, CellFactory) y el pipeline de niveles que lo consumía (ILevelRepository, GetLevelUseCase, LevelMapper, LevelController, LevelModule, PrismaLevelRepository y sus specs), dejando la app sirviendo solo auth.
+**Herramienta de IA utilizada:** Claude Code
+**Prompt o instrucción proporcionada:** > "Ejecutar Fragmento 1 del plan docs/superpowers/plans/2026-07-08-back1-arrow-path-domain.md (issue MazePruebaBack#1)."
+**Resultado obtenido:** 17 archivos eliminados; AppModule sin LevelModule; comentarios stale corregidos en logger.module/auth.module/score.module/progress.module; README sin el endpoint de niveles (vuelve en back#5). LevelNotFoundException/InvalidLevelIdException y el mapeo 404 del filter se conservan para back#5. Suite/build verdes (117 tests); eslint limpio en los archivos tocados (la deuda de lint pre-existente del baseline queda fuera del alcance).
+**Modificaciones realizadas por el equipo:** (completar manualmente)
