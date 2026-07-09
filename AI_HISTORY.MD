@@ -304,3 +304,39 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - README actualizado (tabla de endpoints + ejemplos de payload) por exponer API pública nueva.
 - Verificación global: `npx jest` → 37 suites, 128/128 tests. `npm run build` → exit 0. `npx eslint` acotado a los archivos tocados → limpio (solo quedan los warnings `no-unsafe-argument` en `progress.module.ts` y los errores `unbound-method` en los specs de casos de uso, ambos patrones ya presentes y aceptados en `score.module.ts`/`submit-score.use-case.spec.ts`).
 **Modificaciones realizadas por el equipo:**
+
+## Entrada 021 — back#1 F1: demolición de grilla y pipeline de niveles grid
+
+**Fecha:** 2026-07-08
+**Tarea o problema abordado:** Fragmento 1/4 del issue back#1 (ADR 0001): retirar el modelo de grilla (ICell, ArrowCell, WallCell, EmptyCell, ExitCell, CellType, CellFactory) y el pipeline de niveles que lo consumía (ILevelRepository, GetLevelUseCase, LevelMapper, LevelController, LevelModule, PrismaLevelRepository y sus specs), dejando la app sirviendo solo auth.
+**Herramienta de IA utilizada:** Claude Code
+**Prompt o instrucción proporcionada:** > "Ejecutar Fragmento 1 del plan docs/superpowers/plans/2026-07-08-back1-arrow-path-domain.md (issue MazePruebaBack#1)."
+**Resultado obtenido:** 17 archivos eliminados; AppModule sin LevelModule; comentarios stale corregidos en logger.module/auth.module/score.module/progress.module; README sin el endpoint de niveles (vuelve en back#5). LevelNotFoundException/InvalidLevelIdException y el mapeo 404 del filter se conservan para back#5. Suite/build verdes (117 tests); eslint limpio en los archivos tocados (la deuda de lint pre-existente del baseline queda fuera del alcance).
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 022 — back#1 F2: Direction wire + ArrowId + Arrow arrow-path
+
+**Fecha:** 2026-07-08
+**Tarea o problema abordado:** Fragmento 2/4 del issue back#1: Direction pasa a valores wire ('up'|'down'|'left'|'right'); nuevo VO ArrowId (string no vacío) y nueva entidad-dato Arrow (id + cells + headDir) con invariantes de camino (no vacío, adyacencia ortogonal, sin repetidos) e igualdad por valor incluyendo el id. headDir no se valida contra la geometría (decisión del brief, protegida por test).
+**Herramienta de IA utilizada:** Claude Code (tests delegados a subagente qa-engineer)
+**Prompt o instrucción proporcionada:** > "Ejecutar Fragmento 2 del plan docs/superpowers/plans/2026-07-08-back1-arrow-path-domain.md (issue MazePruebaBack#1)."
+**Resultado obtenido:** direction.vo.ts con valores wire; arrow-id.vo.ts (espejo de LevelId) + InvalidArrowIdException; arrow.entity.ts inmutable (cells congeladas) + InvalidArrowException; specs AAA vía TDD (rojo→verde). Suite (135 tests)/build/lint verdes.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 023 — back#1 F3: entidad Level arrow-path
+
+**Fecha:** 2026-07-08
+**Tarea o problema abordado:** Fragmento 3/4 del issue back#1: entidad Level (id + cols + rows + arrows + timeLimitSec?) con invariantes: dimensiones enteras >= 1, toda celda de toda flecha dentro de límites, ninguna celda compartida entre flechas, ids de flecha únicos, timeLimitSec entero >= 1 cuando está presente.
+**Herramienta de IA utilizada:** Claude Code (tests delegados a subagente qa-engineer)
+**Prompt o instrucción proporcionada:** > "Ejecutar Fragmento 3 del plan docs/superpowers/plans/2026-07-08-back1-arrow-path-domain.md (issue MazePruebaBack#1)."
+**Resultado obtenido:** level.entity.ts + InvalidLevelException + spec AAA vía TDD (rojo→verde). back#5 construirá Level desde Level.data (Json) con LevelBuilder. Suite (149 tests)/build/lint verdes.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 024 — back#1 F4: ArrowFactory (Factory Method re-fundado)
+
+**Fecha:** 2026-07-08
+**Tarea o problema abordado:** Fragmento 4/4 del issue back#1: ArrowFactory como frontera primitivos→dominio para la forma wire { id, headDir, cells }: parsea headDir case-insensitive (InvalidDirectionException), valida la forma de cada celda (InvalidArrowException) y delega los invariantes en ArrowId/Position/Arrow. Re-funda el patrón Factory Method que se perdió al retirar CellFactory (ADR 0001).
+**Herramienta de IA utilizada:** Claude Code (tests delegados a subagente qa-engineer)
+**Prompt o instrucción proporcionada:** > "Ejecutar Fragmento 4 del plan docs/superpowers/plans/2026-07-08-back1-arrow-path-domain.md (issue MazePruebaBack#1)."
+**Resultado obtenido:** arrow.factory.ts (con comentario inline del problema que resuelve el patrón) + InvalidDirectionException + spec AAA vía TDD (rojo→verde). README recupera la fila Factory Method apuntando a arrow.factory.ts. back#5 (repositorio de niveles) y back#10 (seed) la reutilizarán. Suite (163 tests)/build/lint verdes. Ajuste sobre el plan: la comparación del parseo de dirección usa cast explícito a string para satisfacer no-unsafe-enum-comparison.
+**Modificaciones realizadas por el equipo:** (completar manualmente)

@@ -8,7 +8,7 @@ import { SCORE_REPOSITORY_TOKEN } from '../application/ports/i-score.repository'
 import { LOGGER_SERVICE_TOKEN } from '../application/ports/i-logger.service';
 
 @Module({
-  // LoggerModule es @Global (ver LevelModule); LOGGER_SERVICE_TOKEN no se
+  // LoggerModule es @Global (ver logger.module.ts); LOGGER_SERVICE_TOKEN no se
   // re-declara aquí.
   imports: [DatabaseModule],
   providers: [

@@ -4,17 +4,17 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)
 ![Prisma](https://img.shields.io/badge/Prisma-6-2D3748?logo=prisma&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-database-4169E1?logo=postgresql&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-61%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-163%20passing-brightgreen)
 ![Build](https://img.shields.io/badge/nest%20build-passing-brightgreen)
 ![License](https://img.shields.io/badge/license-UNLICENSED-lightgrey)
 
 > Status badges reflect the latest local verification. Continuous integration (CI/CD) is not wired up yet; see [Contributing](#contributing).
 
-REST API for **Arrow Maze**, a casual mobile puzzle game. It serves puzzle levels to the Flutter client and handles user registration and authentication. The codebase is a study in **Clean Architecture**: the business rules sit in a framework-free core, and NestJS, Prisma, and JWT live at the edges as replaceable details.
+REST API for **Arrow Maze**, a casual mobile puzzle game. It handles user registration and authentication with JWT, score submission with per-level leaderboards, and cross-device progress sync; serving arrow-path puzzle levels to the Flutter client returns with back#5 (see ADR 0001). The codebase is a study in **Clean Architecture**: the business rules sit in a framework-free core, and NestJS, Prisma, and JWT live at the edges as replaceable details.
 
 ## Description
 
-The API exposes two capabilities: retrieving a level grid by id, and authenticating users with JWT. What makes it worth reading is not the feature surface but how the layers are kept apart. A use case such as `GetLevelUseCase` or `LoginUseCase` is plain TypeScript with zero `@nestjs/*` imports; it depends on interfaces (ports), and the concrete adapters (Prisma repositories, bcrypt, JWT) are injected from the outside. Cross-cutting concerns (request logging, domain-to-HTTP error translation) are handled with aspects, not scattered through controllers.
+The API exposes three capabilities: registering and authenticating users with JWT, submitting scores with per-level leaderboards, and syncing player progress. The grid-based level pipeline was retired together with the grid domain model (ADR 0001: the snake/arrow-path model is canonical); arrow-path level endpoints return in back#5. What makes it worth reading is not the feature surface but how the layers are kept apart. A use case such as `LoginUseCase` or `SubmitScoreUseCase` is plain TypeScript with zero `@nestjs/*` imports; it depends on interfaces (ports), and the concrete adapters (Prisma repositories, bcrypt, JWT) are injected from the outside. Cross-cutting concerns (request logging, domain-to-HTTP error translation) are handled with aspects, not scattered through controllers.
 
 **Tech stack:** NestJS 11, TypeScript 5.7, Prisma 6 over PostgreSQL, `@nestjs/jwt` + `passport-jwt` + `bcryptjs` for auth, `class-validator` for input validation, Jest for tests.
 
@@ -40,10 +40,10 @@ Patterns are used where they solve a concrete problem, and each one carries an i
 
 | Pattern | Where | Problem it solves |
 |---|---|---|
-| **Factory Method** | [`cell.factory.ts`](src/domain/entities/cell.factory.ts) | Centralizes polymorphic cell creation (`ArrowCell`, `EmptyCell`, `ExitCell`, `WallCell`) so a new cell type means a new subclass and one `case`, not scattered `if/switch`. |
+| **Factory Method** | [`arrow.factory.ts`](src/domain/entities/arrow.factory.ts) | Guards the primitives→domain boundary: raw arrow-path JSON (`{ id, headDir, cells }`) becomes a validated `Arrow` — direction parsed case-insensitively, cell shape checked — failing with domain exceptions so no invalid arrow ever enters the system. |
 | **Adapter** | [`nest-logger.adapter.ts`](src/infrastructure/logger/nest-logger.adapter.ts), [`jwt-token.service.ts`](src/infrastructure/security/jwt-token.service.ts), [`bcrypt-hash.service.ts`](src/infrastructure/security/bcrypt-hash.service.ts) | Wraps concrete libraries (NestJS `Logger`, `@nestjs/jwt`, `bcryptjs`) behind application ports, so the core never imports them directly. |
 | **Strategy (Passport)** | [`jwt.strategy.ts`](src/infrastructure/security/jwt.strategy.ts) | Encapsulates the JWT validation algorithm as a swappable Passport strategy reading its secret from `ConfigService`. |
-| **Dependency Injection / Composition Root** | [`auth.module.ts`](src/adapters/auth.module.ts), [`level.module.ts`](src/adapters/level.module.ts) | `useFactory` instantiates framework-free use cases with their ports, keeping construction out of the business code. |
+| **Dependency Injection / Composition Root** | [`auth.module.ts`](src/adapters/auth.module.ts) | `useFactory` instantiates framework-free use cases with their ports, keeping construction out of the business code. |
 | **Interceptor (AOP)** | [`logging.interceptor.ts`](src/shared/aspects/logging.interceptor.ts) | Logs every request/response around the handler without touching handlers. |
 | **Exception Filter (AOP)** | [`domain-exception.filter.ts`](src/shared/aspects/domain-exception.filter.ts) | Translates domain exceptions to HTTP status codes in one place. |
 
@@ -71,7 +71,7 @@ private static readonly statusByException = new Map([
 ]); // add a row to extend; the catch() below stays untouched
 ```
 
-**Liskov Substitution.** Every concrete cell (`ArrowCell`, `EmptyCell`, `ExitCell`, `WallCell`) implements `ICell` and is returned interchangeably by `CellFactory`; callers consume `ICell` without caring which subtype they hold.
+**Liskov Substitution.** Every port implementation is substitutable for its abstraction without the client noticing: `PrismaUserRepository` stands in for `IUserRepository`, `BcryptHashService` for `IHashService`, `JwtTokenService` for `ITokenService` — and the tests swap them for mocks with no change to the use cases.
 
 **Interface Segregation.** Ports are small and focused. [`ILoggerService`](src/application/ports/i-logger.service.ts) exposes three methods (`log`, `error`, `warn`); auth splits into `IUserRepository`, `IHashService`, and `ITokenService` rather than one fat service.
 
@@ -86,7 +86,7 @@ private static readonly statusByException = new Map([
 Logging and error handling are aspects, kept out of the business logic and applied around it. The strategy is built on Dependency Inversion: both aspects depend on the `ILoggerService` *port* (resolved through `LOGGER_SERVICE_TOKEN`), never on a concrete logger.
 
 - **`LoggingInterceptor`** ([`shared/aspects/logging.interceptor.ts`](src/shared/aspects/logging.interceptor.ts)) logs the inbound request and, via an RxJS `tap`, the outbound response with elapsed time. Registered globally as an `APP_INTERCEPTOR`, so no controller mentions logging.
-- **`DomainExceptionFilter`** ([`shared/aspects/domain-exception.filter.ts`](src/shared/aspects/domain-exception.filter.ts)) catches any `DomainException` and maps it to the correct HTTP status, so controllers stay free of `try/catch` and a missing level returns `404`, not `500`.
+- **`DomainExceptionFilter`** ([`shared/aspects/domain-exception.filter.ts`](src/shared/aspects/domain-exception.filter.ts)) catches any `DomainException` and maps it to the correct HTTP status, so controllers stay free of `try/catch` and invalid credentials return `401`, not `500`.
 
 ```ts
 @Injectable()
@@ -106,13 +106,14 @@ export class LoggingInterceptor implements NestInterceptor {
 
 | Method | Path                  | Auth | Description                          |
 |--------|-----------------------|------|--------------------------------------|
-| GET    | `/levels/:id`         | No   | Retrieve a level grid by UUID        |
 | POST   | `/auth/register`      | No   | Register a user; returns a JWT       |
 | POST   | `/auth/login`         | No   | Authenticate a user; returns a JWT   |
 | POST   | `/scores`             | Yes  | Submit a score for a completed level |
 | GET    | `/leaderboard/:levelId` | No | Top scores for a level (desc, default limit 10, max 100) |
 | POST   | `/progress`           | Yes  | Sync completed levels + best scores (merges, never degrades) |
 | GET    | `/progress`           | Yes  | Get the authenticated user's progress |
+
+> The levels endpoint (`GET /levels/:id`) was retired together with the grid domain model; arrow-path level endpoints return in back#5 (ADR 0001). The `LevelNotFoundException → 404` mapping in the filter is kept for that reuse.
 
 ```jsonc
 // POST /auth/register  → 201   |   POST /auth/login → 200
@@ -174,7 +175,7 @@ npm run start:dev           # watch mode at http://localhost:3000
 ## Running Tests
 
 ```bash
-npm test            # unit tests (Jest, AAA, mocked dependencies) — 61 tests
+npm test            # unit tests (Jest, AAA, mocked dependencies) — 163 tests
 npm run test:cov    # with coverage
 npm run test:e2e    # end-to-end (no DB-backed e2e specs yet; passes with none)
 ```
