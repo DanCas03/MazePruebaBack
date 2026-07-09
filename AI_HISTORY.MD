@@ -340,3 +340,12 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 **Prompt o instrucción proporcionada:** > "Ejecutar Fragmento 4 del plan docs/superpowers/plans/2026-07-08-back1-arrow-path-domain.md (issue MazePruebaBack#1)."
 **Resultado obtenido:** arrow.factory.ts (con comentario inline del problema que resuelve el patrón) + InvalidDirectionException + spec AAA vía TDD (rojo→verde). README recupera la fila Factory Method apuntando a arrow.factory.ts. back#5 (repositorio de niveles) y back#10 (seed) la reutilizarán. Suite (163 tests)/build/lint verdes. Ajuste sobre el plan: la comparación del parseo de dirección usa cast explícito a string para satisfacer no-unsafe-enum-comparison.
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 025 — back#5 F1: LevelBuilder (Builder re-fundado)
+
+**Fecha:** 2026-07-09
+**Tarea o problema abordado:** Fragmento 1/4 del issue back#5: construir un `Level` válido a partir del JSON crudo arrow-path (`Level.data`) sin duplicar las invariantes que ya validan `ArrowFactory` y el constructor de `Level`.
+**Herramienta de IA utilizada:** Claude Code (tests delegados a subagente)
+**Prompt o instrucción proporcionada:** > "Ejecutar Fragmento 1 del plan back#5 (servir niveles arrow-path vía GET /levels[/:id])."
+**Resultado obtenido:** `level.builder.ts` — Builder GoF fluido y step-by-step (`withDimensions().withTimeLimit().addArrow()...build()`), no un método estático único, para que sea un Builder genuino y no un Factory Method redundante con `ArrowFactory` (que `addArrow` usa internamente). Re-funda el patrón pedido por ADR 0001 (decisión 4). `build()` delega las invariantes de tablero en `Level`; no las duplica. Spec AAA (7 tests) sin mocks, mismo estilo que `level.entity.spec.ts`, cubre construcción válida (ejemplo exacto de CONTEXT-MAP.md), `timeLimitSec` omitido/`undefined`, y propagación de `InvalidArrowException`/`InvalidDirectionException`/`InvalidLevelException` desde sus colaboradores. Suite verde (170 tests).
+**Modificaciones realizadas por el equipo:** (completar manualmente)
