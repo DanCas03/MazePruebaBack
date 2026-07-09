@@ -331,3 +331,12 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 **Prompt o instrucción proporcionada:** > "Ejecutar Fragmento 3 del plan docs/superpowers/plans/2026-07-08-back1-arrow-path-domain.md (issue MazePruebaBack#1)."
 **Resultado obtenido:** level.entity.ts + InvalidLevelException + spec AAA vía TDD (rojo→verde). back#5 construirá Level desde Level.data (Json) con LevelBuilder. Suite (149 tests)/build/lint verdes.
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 024 — back#1 F4: ArrowFactory (Factory Method re-fundado)
+
+**Fecha:** 2026-07-08
+**Tarea o problema abordado:** Fragmento 4/4 del issue back#1: ArrowFactory como frontera primitivos→dominio para la forma wire { id, headDir, cells }: parsea headDir case-insensitive (InvalidDirectionException), valida la forma de cada celda (InvalidArrowException) y delega los invariantes en ArrowId/Position/Arrow. Re-funda el patrón Factory Method que se perdió al retirar CellFactory (ADR 0001).
+**Herramienta de IA utilizada:** Claude Code (tests delegados a subagente qa-engineer)
+**Prompt o instrucción proporcionada:** > "Ejecutar Fragmento 4 del plan docs/superpowers/plans/2026-07-08-back1-arrow-path-domain.md (issue MazePruebaBack#1)."
+**Resultado obtenido:** arrow.factory.ts (con comentario inline del problema que resuelve el patrón) + InvalidDirectionException + spec AAA vía TDD (rojo→verde). README recupera la fila Factory Method apuntando a arrow.factory.ts. back#5 (repositorio de niveles) y back#10 (seed) la reutilizarán. Suite (163 tests)/build/lint verdes. Ajuste sobre el plan: la comparación del parseo de dirección usa cast explícito a string para satisfacer no-unsafe-enum-comparison.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
