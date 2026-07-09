@@ -88,9 +88,7 @@ describe('LevelBuilder', () => {
 
     it('should throw InvalidLevelException when dimensions are never set', () => {
       // Arrange
-      const sut = new LevelBuilder(new LevelId('l-007')).addArrow(
-        bentArrowA1,
-      );
+      const sut = new LevelBuilder(new LevelId('l-007')).addArrow(bentArrowA1);
       // Act / Assert
       expect(() => sut.build()).toThrow(InvalidLevelException);
     });
@@ -120,7 +118,7 @@ describe('LevelBuilder', () => {
       const malformed: ArrowPrimitives = {
         id: 'a1',
         headDir: 'up',
-        cells: [[10, 3], [9] as unknown as number[]],
+        cells: [[10, 3], [9]],
       };
       const sut = new LevelBuilder(new LevelId('l-007')).withDimensions(
         COLS,
