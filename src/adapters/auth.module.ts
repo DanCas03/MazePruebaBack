@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
+import { JwtModule, JwtService } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 import { DatabaseModule } from '../infrastructure/database/database.module';
@@ -17,8 +17,8 @@ import { TOKEN_SERVICE_TOKEN } from '../application/ports/i-token.service';
 // AuthModule cablea los puertos de autenticación como composition root:
 // useFactory para instanciar use cases framework-free (DIP).
 // JwtModule se registra de forma asíncrona para leer JWT_SECRET desde ConfigService
-// (nunca process.env directo). El cableado de JwtTokenService usa el token 'JwtService'
-// que @nestjs/jwt exporta con ese nombre.
+// (nunca process.env directo). El cableado de JwtTokenService inyecta la clase
+// JwtService (token real que exporta @nestjs/jwt), no el string 'JwtService'.
 @Module({
   imports: [
     DatabaseModule,
@@ -39,8 +39,8 @@ import { TOKEN_SERVICE_TOKEN } from '../application/ports/i-token.service';
       // Adapter: inyecta JwtService de @nestjs/jwt en el puerto ITokenService.
       // useFactory mantiene el use case libre de acoplamiento a @nestjs/jwt (DIP).
       provide: TOKEN_SERVICE_TOKEN,
-      useFactory: (jwtService: any) => new JwtTokenService(jwtService),
-      inject: ['JwtService'],
+      useFactory: (jwtService: JwtService) => new JwtTokenService(jwtService),
+      inject: [JwtService],
     },
     {
       // Command pattern: RegisterUseCase encapsula el caso de uso "registrar usuario".
