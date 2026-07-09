@@ -349,3 +349,12 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 **Prompt o instrucción proporcionada:** > "Ejecutar Fragmento 1 del plan back#5 (servir niveles arrow-path vía GET /levels[/:id])."
 **Resultado obtenido:** `level.builder.ts` — Builder GoF fluido y step-by-step (`withDimensions().withTimeLimit().addArrow()...build()`), no un método estático único, para que sea un Builder genuino y no un Factory Method redundante con `ArrowFactory` (que `addArrow` usa internamente). Re-funda el patrón pedido por ADR 0001 (decisión 4). `build()` delega las invariantes de tablero en `Level`; no las duplica. Spec AAA (7 tests) sin mocks, mismo estilo que `level.entity.spec.ts`, cubre construcción válida (ejemplo exacto de CONTEXT-MAP.md), `timeLimitSec` omitido/`undefined`, y propagación de `InvalidArrowException`/`InvalidDirectionException`/`InvalidLevelException` desde sus colaboradores. Suite verde (170 tests).
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 026 — back#5 F2: ILevelRepository + GetLevelUseCase + ListLevelsUseCase
+
+**Fecha:** 2026-07-09
+**Tarea o problema abordado:** Fragmento 2/4 del issue back#5: puerto de persistencia de niveles y los dos casos de uso que necesitan `GET /levels` (lista) y `GET /levels/:id` (detalle).
+**Herramienta de IA utilizada:** Claude Code (tests delegados a subagente)
+**Prompt o instrucción proporcionada:** > "Ejecutar Fragmento 2 del plan back#5 (servir niveles arrow-path vía GET /levels[/:id])."
+**Resultado obtenido:** `i-level.repository.ts` (`ILevelRepository.findById`/`findAllOrdered` + `LEVEL_REPOSITORY_TOKEN`, mismo patrón que `i-progress.repository.ts`/`i-score.repository.ts`). `get-level.use-case.ts`: parsea el id crudo a `LevelId` (propaga `InvalidLevelIdException`), lanza `LevelNotFoundException` si el repo devuelve `null`. `list-levels.use-case.ts`: delega en `findAllOrdered`. Ambos framework-free, sin `@Injectable()`, mismo estilo que `get-leaderboard.use-case.ts`. Specs AAA con mocks (`jest.Mocked<ILevelRepository>`/`jest.Mocked<ILoggerService>`), mismo estilo que `get-leaderboard.use-case.spec.ts`. Suite verde (175 tests).
+**Modificaciones realizadas por el equipo:** (completar manualmente)
