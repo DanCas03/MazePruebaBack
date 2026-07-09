@@ -322,3 +322,12 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 **Prompt o instrucción proporcionada:** > "Ejecutar Fragmento 2 del plan docs/superpowers/plans/2026-07-08-back1-arrow-path-domain.md (issue MazePruebaBack#1)."
 **Resultado obtenido:** direction.vo.ts con valores wire; arrow-id.vo.ts (espejo de LevelId) + InvalidArrowIdException; arrow.entity.ts inmutable (cells congeladas) + InvalidArrowException; specs AAA vía TDD (rojo→verde). Suite (135 tests)/build/lint verdes.
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 023 — back#1 F3: entidad Level arrow-path
+
+**Fecha:** 2026-07-08
+**Tarea o problema abordado:** Fragmento 3/4 del issue back#1: entidad Level (id + cols + rows + arrows + timeLimitSec?) con invariantes: dimensiones enteras >= 1, toda celda de toda flecha dentro de límites, ninguna celda compartida entre flechas, ids de flecha únicos, timeLimitSec entero >= 1 cuando está presente.
+**Herramienta de IA utilizada:** Claude Code (tests delegados a subagente qa-engineer)
+**Prompt o instrucción proporcionada:** > "Ejecutar Fragmento 3 del plan docs/superpowers/plans/2026-07-08-back1-arrow-path-domain.md (issue MazePruebaBack#1)."
+**Resultado obtenido:** level.entity.ts + InvalidLevelException + spec AAA vía TDD (rojo→verde). back#5 construirá Level desde Level.data (Json) con LevelBuilder. Suite (149 tests)/build/lint verdes.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
