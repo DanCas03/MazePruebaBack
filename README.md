@@ -191,10 +191,26 @@ npx prisma migrate dev      # create the schema (User, Level) in your database
 npm run start:dev           # watch mode at http://localhost:3000
 ```
 
+### Seeding levels
+
+The game ships with **15 curated, progressively harder levels** (`level-01`…`level-15`), frozen as arrow-path fixtures in [`prisma/levels/`](prisma/levels) and seeded with an explicit play order. Every level is guaranteed solvable by the domain `LevelSolver`.
+
+```bash
+npm run db:seed     # upsert the 15 curated levels into the database
+```
+
+Requires a reachable `DATABASE_URL` with the schema already migrated (`npx prisma migrate dev`). The seed is:
+
+- **Idempotent** — it upserts by level id, so re-running it never duplicates rows and preserves ids referenced by scores and progress.
+- **Fail-fast** — before writing anything it rebuilds each level and asserts board invariants and solvability, aborting the whole batch if any fixture is invalid.
+- **Automatic on reset** — configured via `migrations.seed` in `prisma.config.ts`, so `prisma migrate dev` / `prisma migrate reset` run it for you after applying migrations.
+
+See [`prisma/levels/manifest.md`](prisma/levels/manifest.md) for the provenance of each level and the deterministic selection rule.
+
 ## Running Tests
 
 ```bash
-npm test            # unit tests (Jest, AAA, mocked dependencies) — 163 tests
+npm test            # unit tests (Jest, AAA, mocked dependencies) — 219 tests
 npm run test:cov    # with coverage
 npm run test:e2e    # end-to-end (no DB-backed e2e specs yet; passes with none)
 ```

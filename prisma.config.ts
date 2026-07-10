@@ -8,6 +8,10 @@ export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
+    // back#10: comando que ejecuta `prisma db seed` (y el auto-seed tras
+    // `prisma migrate dev/reset`). En Prisma 6 la config de seed vive aqui, no
+    // en package.json#prisma.seed, que el config file ignoraria si lo definiera.
+    seed: "ts-node --project tsconfig.json prisma/seed.ts",
   },
   engine: "classic",
   datasource: {
