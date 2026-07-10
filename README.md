@@ -210,7 +210,7 @@ See [`prisma/levels/manifest.md`](prisma/levels/manifest.md) for the provenance 
 ## Running Tests
 
 ```bash
-npm test            # unit tests (Jest, AAA, mocked dependencies) — 163 tests
+npm test            # unit tests (Jest, AAA, mocked dependencies) — 219 tests
 npm run test:cov    # with coverage
 npm run test:e2e    # end-to-end (no DB-backed e2e specs yet; passes with none)
 ```
