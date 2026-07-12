@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
+import type { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/infrastructure/database/prisma.service';
 import { configureApp } from '../src/app.setup';
@@ -36,4 +37,10 @@ export async function createTestApp(
   configureApp(app);
   await app.init();
   return app;
+}
+
+// getHttpServer() devuelve `any` en los tipos de Nest; concentrar aquí el
+// único cast mantiene los specs libres de aserciones repetidas.
+export function httpServer(app: INestApplication): App {
+  return app.getHttpServer() as App;
 }

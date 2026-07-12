@@ -3,8 +3,19 @@ import request from 'supertest';
 import {
   createPrismaServiceMock,
   createTestApp,
+  httpServer,
   PrismaServiceMock,
 } from './create-test-app';
+
+// Vista mínima del documento OpenAPI: solo lo que estos tests asertan.
+interface OpenApiDocument {
+  openapi: string;
+  info: { title: string };
+  paths: Record<string, unknown>;
+  components: {
+    schemas: Record<string, { properties: Record<string, unknown> }>;
+  };
+}
 
 // e2e de OpenAPI (back#3): el documento generado por DocumentBuilder se sirve
 // (UI en /api, JSON en /api-json) y cubre los endpoints y el esquema de error.
@@ -23,12 +34,13 @@ describe('OpenAPI document (e2e)', () => {
 
   it('serves a valid OpenAPI 3 document at /api-json', async () => {
     // Act
-    const res = await request(app.getHttpServer()).get('/api-json').expect(200);
+    const res = await request(httpServer(app)).get('/api-json').expect(200);
 
     // Assert
-    expect(res.body.openapi).toMatch(/^3\./);
-    expect(res.body.info.title).toBe('Arrow Maze API');
-    expect(Object.keys(res.body.paths)).toEqual(
+    const doc = res.body as OpenApiDocument;
+    expect(doc.openapi).toMatch(/^3\./);
+    expect(doc.info.title).toBe('Arrow Maze API');
+    expect(Object.keys(doc.paths)).toEqual(
       expect.arrayContaining([
         '/auth/register',
         '/auth/login',
@@ -43,10 +55,11 @@ describe('OpenAPI document (e2e)', () => {
 
   it('documents the uniform error schema (ErrorResponseDto) in the components', async () => {
     // Act
-    const res = await request(app.getHttpServer()).get('/api-json').expect(200);
+    const res = await request(httpServer(app)).get('/api-json').expect(200);
 
     // Assert
-    const schema = res.body.components.schemas.ErrorResponseDto;
+    const doc = res.body as OpenApiDocument;
+    const schema = doc.components.schemas.ErrorResponseDto;
     expect(schema).toBeDefined();
     expect(Object.keys(schema.properties)).toEqual(
       expect.arrayContaining(['statusCode', 'code', 'message']),
@@ -55,7 +68,7 @@ describe('OpenAPI document (e2e)', () => {
 
   it('serves the Swagger UI at /api', async () => {
     // Act
-    const res = await request(app.getHttpServer()).get('/api').expect(200);
+    const res = await request(httpServer(app)).get('/api').expect(200);
 
     // Assert
     expect(res.type).toBe('text/html');

@@ -3,6 +3,7 @@ import request from 'supertest';
 import {
   createPrismaServiceMock,
   createTestApp,
+  httpServer,
   PrismaServiceMock,
 } from './create-test-app';
 
@@ -27,7 +28,7 @@ describe('Domain error contract (e2e)', () => {
     prisma.level.findUnique.mockResolvedValue(null);
 
     // Act
-    const res = await request(app.getHttpServer())
+    const res = await request(httpServer(app))
       .get('/levels/level-99')
       .expect(404);
 
@@ -35,7 +36,7 @@ describe('Domain error contract (e2e)', () => {
     expect(res.body).toEqual({
       statusCode: 404,
       code: 'LEVEL_NOT_FOUND',
-      message: expect.any(String),
+      message: expect.any(String) as string,
     });
   });
 
@@ -44,7 +45,7 @@ describe('Domain error contract (e2e)', () => {
     prisma.user.findUnique.mockResolvedValue(null);
 
     // Act
-    const res = await request(app.getHttpServer())
+    const res = await request(httpServer(app))
       .post('/auth/login')
       .send({ email: 'ghost@arrowmaze.com', password: 'whatever123' })
       .expect(401);
@@ -53,7 +54,7 @@ describe('Domain error contract (e2e)', () => {
     expect(res.body).toEqual({
       statusCode: 401,
       code: 'INVALID_CREDENTIALS',
-      message: expect.any(String),
+      message: expect.any(String) as string,
     });
   });
 
@@ -66,7 +67,7 @@ describe('Domain error contract (e2e)', () => {
     });
 
     // Act
-    const res = await request(app.getHttpServer())
+    const res = await request(httpServer(app))
       .post('/auth/register')
       .send({ email: 'taken@arrowmaze.com', password: 'secret123' })
       .expect(409);
@@ -75,7 +76,7 @@ describe('Domain error contract (e2e)', () => {
     expect(res.body).toEqual({
       statusCode: 409,
       code: 'USER_ALREADY_EXISTS',
-      message: expect.any(String),
+      message: expect.any(String) as string,
     });
   });
 });
