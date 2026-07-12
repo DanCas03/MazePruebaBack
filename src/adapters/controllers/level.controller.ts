@@ -7,6 +7,7 @@ import {
   LevelResponseDto,
   LevelSummaryDto,
 } from '../mappers/level.mapper';
+import { ErrorResponseDto } from '../dtos/error-response.dto';
 
 // Adapter: expone Level (back#5) vía HTTP. El controlador solo traduce
 // HTTP <-> use cases (DIP); no conoce ILevelRepository ni Prisma.
@@ -29,7 +30,11 @@ export class LevelController {
   @Get(':id')
   @ApiOperation({ summary: 'Get a level by id (arrow-path wire contract)' })
   @ApiResponse({ status: 200, description: 'Full arrow-path level.' })
-  @ApiResponse({ status: 404, description: 'Level not found.' })
+  @ApiResponse({
+    status: 404,
+    description: 'Level not found.',
+    type: ErrorResponseDto,
+  })
   async getById(@Param('id') id: string): Promise<LevelResponseDto> {
     const level = await this.getLevelUseCase.execute(id);
     return LevelMapper.toDto(level);

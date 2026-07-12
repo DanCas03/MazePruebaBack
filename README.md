@@ -105,6 +105,10 @@ export class LoggingInterceptor implements NestInterceptor {
 
 ## API Endpoints
 
+Interactive OpenAPI documentation (Swagger UI) is served at **`/api`**; the raw
+OpenAPI 3 document is available at **`/api-json`**. Both are generated at
+bootstrap from the controllers' decorators via `DocumentBuilder` (`src/app.setup.ts`).
+
 | Method | Path                  | Auth | Description                          |
 |--------|-----------------------|------|--------------------------------------|
 | POST   | `/auth/register`      | No   | Register a user; returns a JWT       |
@@ -152,11 +156,13 @@ export class LoggingInterceptor implements NestInterceptor {
 // GET /progress (Bearer token required) → 200
 [{ "levelId": "level-07", "completed": true, "bestScore": 1200, "bestStars": 3 }]
 
-// Error shape (produced by DomainExceptionFilter)
-{ "statusCode": 401, "error": "InvalidCredentialsException", "message": "Invalid email or password" }
+// Error shape for every domain exception (produced by DomainExceptionFilter)
+// `code` is the stable machine-readable identifier — clients discriminate on
+// it, never on `message`.
+{ "statusCode": 401, "code": "INVALID_CREDENTIALS", "message": "Invalid email or password" }
 ```
 
-Domain exceptions map to status codes as follows: `LevelNotFoundException → 404`, `InvalidCredentialsException → 401`, any other `DomainException → 400`.
+Domain exceptions map to status codes as follows: `LevelNotFoundException → 404`, `InvalidCredentialsException → 401`, `UserAlreadyExistsException → 409`, any other `DomainException → 400` (never 500).
 
 ## Getting Started
 
