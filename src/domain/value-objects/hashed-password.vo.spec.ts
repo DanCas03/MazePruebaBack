@@ -8,15 +8,21 @@ describe('HashedPassword', () => {
   });
 
   it('should throw InvalidHashedPasswordException for empty string', () => {
-    expect(() => new HashedPassword('')).toThrow(InvalidHashedPasswordException);
+    expect(() => new HashedPassword('')).toThrow(
+      InvalidHashedPasswordException,
+    );
   });
 
   it('should throw InvalidHashedPasswordException for whitespace-only string', () => {
-    expect(() => new HashedPassword('   ')).toThrow(InvalidHashedPasswordException);
+    expect(() => new HashedPassword('   ')).toThrow(
+      InvalidHashedPasswordException,
+    );
   });
 
   it('equals returns true for the same hash', () => {
-    expect(new HashedPassword('hash').equals(new HashedPassword('hash'))).toBe(true);
+    expect(new HashedPassword('hash').equals(new HashedPassword('hash'))).toBe(
+      true,
+    );
   });
 
   it('equals returns false for different hashes', () => {

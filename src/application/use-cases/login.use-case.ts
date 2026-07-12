@@ -16,11 +16,19 @@ export class LoginUseCase {
   async execute(rawEmail: string, plainPassword: string): Promise<string> {
     const email = new Email(rawEmail);
     const user = await this.userRepo.findByEmail(email);
-    if (!user) throw new InvalidCredentialsException('Invalid email or password');
+    if (!user)
+      throw new InvalidCredentialsException('Invalid email or password');
 
-    const valid = await this.hashService.compare(plainPassword, user.password.value);
-    if (!valid) throw new InvalidCredentialsException('Invalid email or password');
+    const valid = await this.hashService.compare(
+      plainPassword,
+      user.password.value,
+    );
+    if (!valid)
+      throw new InvalidCredentialsException('Invalid email or password');
 
-    return this.tokenService.sign({ sub: user.id.value, email: user.email.value });
+    return this.tokenService.sign({
+      sub: user.id.value,
+      email: user.email.value,
+    });
   }
 }

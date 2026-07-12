@@ -41,7 +41,9 @@ describe('DomainExceptionFilter', () => {
 
   it('maps InvalidCredentialsException to HTTP 401 Unauthorized', () => {
     // Arrange
-    const exception = new InvalidCredentialsException('Invalid email or password');
+    const exception = new InvalidCredentialsException(
+      'Invalid email or password',
+    );
 
     // Act
     sut.catch(exception, mockHost);
@@ -57,7 +59,9 @@ describe('DomainExceptionFilter', () => {
 
   it('maps UserAlreadyExistsException to HTTP 409 Conflict', () => {
     // Arrange
-    const exception = new UserAlreadyExistsException('Email already registered');
+    const exception = new UserAlreadyExistsException(
+      'Email already registered',
+    );
 
     // Act
     sut.catch(exception, mockHost);

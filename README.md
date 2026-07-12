@@ -4,11 +4,10 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)
 ![Prisma](https://img.shields.io/badge/Prisma-6-2D3748?logo=prisma&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-database-4169E1?logo=postgresql&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-163%20passing-brightgreen)
-![Build](https://img.shields.io/badge/nest%20build-passing-brightgreen)
+[![CI](https://github.com/DanCas03/MazePruebaBack/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/DanCas03/MazePruebaBack/actions/workflows/ci.yml)
 ![License](https://img.shields.io/badge/license-UNLICENSED-lightgrey)
 
-> Status badges reflect the latest local verification. Continuous integration (CI/CD) is not wired up yet; see [Contributing](#contributing).
+> The CI badge reflects the [GitHub Actions workflow](.github/workflows/ci.yml) on `main`: ESLint, the full Jest suite, and `nest build` run on every pull request; see [Contributing](#contributing).
 
 REST API for **Arrow Maze**, a casual mobile puzzle game. It handles user registration and authentication with JWT, score submission with per-level leaderboards, and cross-device progress sync; serving arrow-path puzzle levels to the Flutter client returns with back#5 (see ADR 0001). The codebase is a study in **Clean Architecture**: the business rules sit in a framework-free core, and NestJS, Prisma, and JWT live at the edges as replaceable details.
 
@@ -232,7 +231,7 @@ This codebase was built with AI assistance (Claude Code), and every significant 
 - **Commits** follow [Conventional Commits](https://www.conventionalcommits.org/): `<type>(<scope>): <description>` in the imperative present, one significant fragment per commit (for example, `feat(back/application): add LoginUseCase`).
 - **Branching**: feature work happens on a `feat/<name>` branch cut from `main`; this milestone lives on `feat/main-sprint`.
 - **Pull requests**: open a PR against `main`, ensure `npm test` and `npm run build` are green, and update `AI_HISTORY.MD` (and this README when public behavior changes) as part of the change.
-- **CI/CD** is not configured yet; running the test suite and build locally is the current gate.
+- **CI**: every pull request runs the [`CI` workflow](.github/workflows/ci.yml) (`npm run lint:check` + `npm test` + `npm run build` on Node 22); merging to `main` requires the `CI / lint · test · build` check to be green (branch protection is configured in Settings → Branches). Run the same three commands locally to reproduce the gate.
 
 ## License
 

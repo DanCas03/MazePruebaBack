@@ -32,4 +32,14 @@ export default tseslint.config(
       "prettier/prettier": ["error", { endOfLine: "auto" }],
     },
   },
+  {
+    // Specs assert on mock methods (`expect(mock.method)`), a false positive
+    // of this rule that typescript-eslint documents for Jest suites. Adopting
+    // eslint-plugin-jest's mock-aware jest/unbound-method is the planned
+    // upgrade; until then the base rule is off for specs only.
+    files: ['**/*.spec.ts'],
+    rules: {
+      '@typescript-eslint/unbound-method': 'off',
+    },
+  },
 );

@@ -5,7 +5,9 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export class Email {
   constructor(readonly value: string) {
     if (!EMAIL_REGEX.test(value)) {
-      throw new InvalidEmailException(`'${value}' is not a valid email address`);
+      throw new InvalidEmailException(
+        `'${value}' is not a valid email address`,
+      );
     }
   }
 
