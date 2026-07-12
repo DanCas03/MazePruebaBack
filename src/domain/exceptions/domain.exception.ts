@@ -1,7 +1,7 @@
 // `code` es el identificador estable y legible por máquina del tipo de error
-// (p.ej. LEVEL_NOT_FOUND) que expone el contrato HTTP público. Se deriva del
-// nombre de la subclase para que ninguna necesite boilerplate; una subclase
-// puede fijarlo explícitamente si su código debe desacoplarse del nombre.
+// (p.ej. LEVEL_NOT_FOUND); las capas externas lo exponen en sus contratos.
+// Se deriva del nombre de la subclase para que ninguna necesite boilerplate;
+// una subclase puede fijarlo explícitamente si debe desacoplarse del nombre.
 export class DomainException extends Error {
   readonly code: string;
 

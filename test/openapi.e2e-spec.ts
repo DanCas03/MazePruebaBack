@@ -11,7 +11,10 @@ import {
 interface OpenApiDocument {
   openapi: string;
   info: { title: string };
-  paths: Record<string, unknown>;
+  paths: Record<
+    string,
+    Record<string, { responses?: Record<string, unknown> } | undefined>
+  >;
   components: {
     schemas: Record<string, { properties: Record<string, unknown> }>;
   };
@@ -64,6 +67,25 @@ describe('OpenAPI document (e2e)', () => {
     expect(Object.keys(schema.properties)).toEqual(
       expect.arrayContaining(['statusCode', 'code', 'message']),
     );
+  });
+
+  it('references ErrorResponseDto exactly where the domain filter responds', async () => {
+    // Act
+    const res = await request(httpServer(app)).get('/api-json').expect(200);
+
+    // Assert
+    const doc = res.body as OpenApiDocument;
+    const responseOf = (path: string, method: string, status: string) =>
+      JSON.stringify(doc.paths[path]?.[method]?.responses?.[status] ?? {});
+    const ERROR_REF = '#/components/schemas/ErrorResponseDto';
+
+    expect(responseOf('/levels/{id}', 'get', '404')).toContain(ERROR_REF);
+    expect(responseOf('/auth/login', 'post', '401')).toContain(ERROR_REF);
+    expect(responseOf('/auth/register', 'post', '409')).toContain(ERROR_REF);
+    // Los 401 de los guards JWT tienen la forma estándar de Nest, no la del
+    // filtro de dominio: NO deben documentarse con este esquema.
+    expect(responseOf('/scores', 'post', '401')).not.toContain(ERROR_REF);
+    expect(responseOf('/progress', 'post', '401')).not.toContain(ERROR_REF);
   });
 
   it('serves the Swagger UI at /api', async () => {

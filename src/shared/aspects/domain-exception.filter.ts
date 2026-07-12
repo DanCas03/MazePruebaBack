@@ -9,6 +9,7 @@ import { DomainException } from '../../domain/exceptions/domain.exception';
 import { LevelNotFoundException } from '../../domain/exceptions/level-not-found.exception';
 import { InvalidCredentialsException } from '../../domain/exceptions/invalid-credentials.exception';
 import { UserAlreadyExistsException } from '../../domain/exceptions/user-already-exists.exception';
+import type { DomainErrorBody } from '../contracts/domain-error-body';
 
 // AOP: filtro transversal que traduce excepciones de dominio a respuestas HTTP.
 // Sin él, una DomainException no capturada produce un 500 genérico (p.ej.
@@ -40,10 +41,11 @@ export class DomainExceptionFilter implements ExceptionFilter {
         exception.constructor as new (...args: any[]) => DomainException,
       ) ?? HttpStatus.BAD_REQUEST;
 
-    response.status(status).json({
+    const body: DomainErrorBody = {
       statusCode: status,
       code: exception.code,
       message: exception.message,
-    });
+    };
+    response.status(status).json(body);
   }
 }
