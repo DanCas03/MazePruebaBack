@@ -20,12 +20,22 @@ export class RegisterUseCase {
   async execute(rawEmail: string, plainPassword: string): Promise<string> {
     const email = new Email(rawEmail);
     const existing = await this.userRepo.findByEmail(email);
-    if (existing) throw new UserAlreadyExistsException(`Email '${rawEmail}' already registered`);
+    if (existing)
+      throw new UserAlreadyExistsException(
+        `Email '${rawEmail}' already registered`,
+      );
 
     const hashed = await this.hashService.hash(plainPassword);
-    const user = new User(new UserId(randomUUID()), email, new HashedPassword(hashed));
+    const user = new User(
+      new UserId(randomUUID()),
+      email,
+      new HashedPassword(hashed),
+    );
     await this.userRepo.save(user);
 
-    return this.tokenService.sign({ sub: user.id.value, email: user.email.value });
+    return this.tokenService.sign({
+      sub: user.id.value,
+      email: user.email.value,
+    });
   }
 }

@@ -3,7 +3,10 @@ import type { IUserRepository } from '../ports/i-user.repository';
 import type { IHashService } from '../ports/i-hash.service';
 import type { ITokenService } from '../ports/i-token.service';
 import { UserAlreadyExistsException } from '../../domain/exceptions/user-already-exists.exception';
+import { User } from '../../domain/entities/user.entity';
+import { UserId } from '../../domain/value-objects/user-id.vo';
 import { Email } from '../../domain/value-objects/email.vo';
+import { HashedPassword } from '../../domain/value-objects/hashed-password.vo';
 
 describe('RegisterUseCase', () => {
   let sut: RegisterUseCase;
@@ -32,8 +35,12 @@ describe('RegisterUseCase', () => {
 
   it('should throw UserAlreadyExistsException when email is taken', async () => {
     // Arrange
-    const existingUser = { id: {} as any, email: new Email('user@example.com'), password: {} as any };
-    mockUserRepo.findByEmail.mockResolvedValue(existingUser as any);
+    const existingUser = new User(
+      new UserId('user-1'),
+      new Email('user@example.com'),
+      new HashedPassword('$2b$10$hashedPassword'),
+    );
+    mockUserRepo.findByEmail.mockResolvedValue(existingUser);
     // Act / Assert
     await expect(sut.execute('user@example.com', 'secret123')).rejects.toThrow(
       UserAlreadyExistsException,

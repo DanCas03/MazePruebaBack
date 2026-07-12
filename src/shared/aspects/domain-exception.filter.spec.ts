@@ -40,7 +40,9 @@ describe('DomainExceptionFilter', () => {
 
   it('maps InvalidCredentialsException to HTTP 401 Unauthorized', () => {
     // Arrange
-    const exception = new InvalidCredentialsException('Invalid email or password');
+    const exception = new InvalidCredentialsException(
+      'Invalid email or password',
+    );
 
     // Act
     sut.catch(exception, mockHost);

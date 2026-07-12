@@ -26,22 +26,31 @@ describe('AuthController', () => {
       mockRegisterUseCase.execute.mockResolvedValue('signed.jwt.token');
 
       // Act
-      const result = await sut.register(dto as any);
+      const result = await sut.register(dto);
 
       // Assert
       expect(mockRegisterUseCase.execute).toHaveBeenCalledTimes(1);
-      expect(mockRegisterUseCase.execute).toHaveBeenCalledWith('user@example.com', 'secret123');
+      expect(mockRegisterUseCase.execute).toHaveBeenCalledWith(
+        'user@example.com',
+        'secret123',
+      );
       expect(result).toEqual({ token: 'signed.jwt.token' });
     });
 
     it('propagates UserAlreadyExistsException when the use case throws (surfaced as 400 by the global filter)', async () => {
       // Arrange
       mockRegisterUseCase.execute.mockRejectedValue(
-        new UserAlreadyExistsException("Email 'user@example.com' already registered"),
+        new UserAlreadyExistsException(
+          "Email 'user@example.com' already registered",
+        ),
       );
 
       // Act
-      const act = () => sut.register({ email: 'user@example.com', password: 'secret123' } as any);
+      const act = () =>
+        sut.register({
+          email: 'user@example.com',
+          password: 'secret123',
+        });
 
       // Assert
       await expect(act()).rejects.toBeInstanceOf(UserAlreadyExistsException);
@@ -55,11 +64,14 @@ describe('AuthController', () => {
       mockLoginUseCase.execute.mockResolvedValue('signed.jwt.token');
 
       // Act
-      const result = await sut.login(dto as any);
+      const result = await sut.login(dto);
 
       // Assert
       expect(mockLoginUseCase.execute).toHaveBeenCalledTimes(1);
-      expect(mockLoginUseCase.execute).toHaveBeenCalledWith('user@example.com', 'secret123');
+      expect(mockLoginUseCase.execute).toHaveBeenCalledWith(
+        'user@example.com',
+        'secret123',
+      );
       expect(result).toEqual({ token: 'signed.jwt.token' });
     });
 
@@ -70,7 +82,8 @@ describe('AuthController', () => {
       );
 
       // Act
-      const act = () => sut.login({ email: 'user@example.com', password: 'wrongpass' } as any);
+      const act = () =>
+        sut.login({ email: 'user@example.com', password: 'wrongpass' });
 
       // Assert
       await expect(act()).rejects.toBeInstanceOf(InvalidCredentialsException);
