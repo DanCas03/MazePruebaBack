@@ -430,3 +430,12 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 **Prompt o instrucción proporcionada:** > "Toma el issue 3 del back y desarrollalo. Este issue tiene que ser desarrollado en una rama propia y debes de hacer solo hasta el pull request, no el merge"
 **Resultado obtenido:** `DomainException` gana `readonly code: string`, derivado del nombre de la subclase en SCREAMING_SNAKE sin el sufijo Exception (`LevelNotFoundException` → `LEVEL_NOT_FOUND`), con override opcional por parámetro para subclases que necesiten desacoplar el código del nombre de clase. Ninguna subclase existente requiere cambios (el parámetro es opcional). `domain.exception.spec.ts` (AAA, 4 tests): derivación, sufijo, override explícito y preservación de name/message/cadena de prototipos.
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 035 — back#3: contrato de error uniforme {statusCode, code, message} + 409 Conflict
+
+**Fecha:** 2026-07-12
+**Tarea o problema abordado:** back#3 — fragmento 2: `DomainExceptionFilter` emitía `{statusCode, error: <nombre de clase>, message}` (detalle de implementación filtrado al contrato) y `UserAlreadyExistsException` caía al default 400 en vez del 409 semánticamente correcto.
+**Herramienta de IA utilizada:** Claude Code (skill arrowmaze-backend, TDD rojo→verde)
+**Prompt o instrucción proporcionada:** > "Toma el issue 3 del back y desarrollalo."
+**Resultado obtenido:** El cuerpo de error pasa a `{statusCode, code, message}` con `code = DomainException.code` (Entrada 034); los clientes discriminan por `code`, nunca por `message`. Registro de estados completado: `UserAlreadyExistsException → 409 CONFLICT` (además de 404/401 existentes; el resto cae a 400, nunca 500). `@ApiResponse` de `POST /auth/register` actualizado de 400 → 409 y eliminado el comentario que documentaba el mapeo ausente. Spec del filtro reescrita al nuevo contrato + caso 409 (4 tests); nombre del test de propagación en `auth.controller.spec.ts` corregido (400→409). El front no parsea el cuerpo de error (discrimina por status HTTP vía Dio), así que el cambio de `error`→`code` no lo rompe.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
