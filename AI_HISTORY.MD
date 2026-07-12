@@ -421,3 +421,48 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 **Prompt o instrucción proporcionada:** > "Lee el handoff y ejecuta el plan para resolver el issue #10 de github."
 **Resultado obtenido:** `src/infrastructure/database/curated-levels.spec.ts` (AAA, 24 tests): (a) los 15 fixtures se cargan desde `prisma/levels`, cada uno se reconstruye vía `LevelBuilder` y `LevelSolver.isSolvable` lo declara soluble; (b) rampa — ids `level-01..15`, `order` 1..15 único y contiguo, dims no-decrecientes por orden, nº de flechas no-decreciente dentro de cada tier (agrupado por dims); (c) límites — orders 10..12 (t4) `timeLimitSec===120`, 13..15 (t5) `===180`, 1..9 (t1–t3) `undefined`. Lee los fixtures desde `process.cwd()/prisma/levels` (jest corre desde la raíz; rootDir=src). Suite completa: 45 suites/219 tests verdes; `npm run build` limpio. La deuda de lint es preexistente (82 problemas en 23 archivos ajenos); los archivos nuevos pasan lint limpio y la spec está en el scope de `npm run lint`.
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 034 — back#3: code estable legible por máquina en DomainException
+
+**Fecha:** 2026-07-12
+**Tarea o problema abordado:** back#3 (Swagger global + errores HTTP consistentes) — fragmento 1: el contrato de error uniforme `{statusCode, code, message}` necesita un identificador estable del tipo de error; `exception.name` (nombre de clase) no es un código de API sino un detalle de implementación TypeScript.
+**Herramienta de IA utilizada:** Claude Code (skill arrowmaze-backend, TDD rojo→verde)
+**Prompt o instrucción proporcionada:** > "Toma el issue 3 del back y desarrollalo. Este issue tiene que ser desarrollado en una rama propia y debes de hacer solo hasta el pull request, no el merge"
+**Resultado obtenido:** `DomainException` gana `readonly code: string`, derivado del nombre de la subclase en SCREAMING_SNAKE sin el sufijo Exception (`LevelNotFoundException` → `LEVEL_NOT_FOUND`), con override opcional por parámetro para subclases que necesiten desacoplar el código del nombre de clase. Ninguna subclase existente requiere cambios (el parámetro es opcional). `domain.exception.spec.ts` (AAA, 4 tests): derivación, sufijo, override explícito y preservación de name/message/cadena de prototipos.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 035 — back#3: contrato de error uniforme {statusCode, code, message} + 409 Conflict
+
+**Fecha:** 2026-07-12
+**Tarea o problema abordado:** back#3 — fragmento 2: `DomainExceptionFilter` emitía `{statusCode, error: <nombre de clase>, message}` (detalle de implementación filtrado al contrato) y `UserAlreadyExistsException` caía al default 400 en vez del 409 semánticamente correcto.
+**Herramienta de IA utilizada:** Claude Code (skill arrowmaze-backend, TDD rojo→verde)
+**Prompt o instrucción proporcionada:** > "Toma el issue 3 del back y desarrollalo."
+**Resultado obtenido:** El cuerpo de error pasa a `{statusCode, code, message}` con `code = DomainException.code` (Entrada 034); los clientes discriminan por `code`, nunca por `message`. Registro de estados completado: `UserAlreadyExistsException → 409 CONFLICT` (además de 404/401 existentes; el resto cae a 400, nunca 500). `@ApiResponse` de `POST /auth/register` actualizado de 400 → 409 y eliminado el comentario que documentaba el mapeo ausente. Spec del filtro reescrita al nuevo contrato + caso 409 (4 tests); nombre del test de propagación en `auth.controller.spec.ts` corregido (400→409). El front no parsea el cuerpo de error (discrimina por status HTTP vía Dio), así que el cambio de `error`→`code` no lo rompe.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 036 — back#3: OpenAPI global servido en /api vía DocumentBuilder
+
+**Fecha:** 2026-07-12
+**Tarea o problema abordado:** back#3 — fragmento 3: los controladores ya tenían decoradores Swagger (@ApiTags/@ApiOperation/@ApiResponse) pero `main.ts` nunca cableó `SwaggerModule`, así que `/api` no servía nada.
+**Herramienta de IA utilizada:** Claude Code (skill arrowmaze-backend)
+**Prompt o instrucción proporcionada:** > "Toma el issue 3 del back y desarrollalo."
+**Resultado obtenido:** `src/app.setup.ts` con `configureApp(app)`: ValidationPipe global (movido desde main.ts) + `DocumentBuilder` (título, descripción, versión, `addBearerAuth`) + `SwaggerModule.setup('api', …)` — UI en `/api`, JSON en `/api-json`. `main.ts` reducido a `create → configureApp → listen`; la extracción existe para que las e2e (fragmento 4) apliquen exactamente la misma configuración que producción (sin drift). `ErrorResponseDto` (`adapters/dtos/error-response.dto.ts`, solo anotaciones @ApiProperty) documenta el contrato `{statusCode, code, message}` y se referencia en los @ApiResponse de error que sí produce el filtro de dominio: login 401, register 409, level 404. Deliberadamente NO se referencia en los 401 de los guards JWT ni en los 400 de ValidationPipe: esos cuerpos los construye Nest con su forma estándar, no el filtro — documentar lo real, no lo asumido. README: aviso de `/api`//`/api-json` + ejemplo de error actualizado + mapeo 409. Sin tests unitarios propios: `configureApp` es glue de composición sin lógica y `ErrorResponseDto` es una clase de anotaciones; su contraparte de verificación son las e2e del fragmento 4 (forma de error real + documento OpenAPI servido).
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 037 — back#3: e2e del contrato de error y del documento OpenAPI
+
+**Fecha:** 2026-07-12
+**Tarea o problema abordado:** back#3 — fragmento 4: no existía ninguna prueba e2e (test/ solo tenía el jest-e2e.json de plantilla y el script llevaba --passWithNoTests); los criterios de aceptación piden verificar extremo a extremo la forma de error y que el JSON de Swagger se sirve.
+**Herramienta de IA utilizada:** Claude Code (skill arrowmaze-backend)
+**Prompt o instrucción proporcionada:** > "Toma el issue 3 del back y desarrollalo."
+**Resultado obtenido:** `test/create-test-app.ts`: helper que levanta el AppModule real con `overrideProvider(PrismaService)` → mock (`user.findUnique/create`, `level.findUnique/findMany`) — las e2e verifican el contrato HTTP, no la persistencia, y corren sin Postgres; aplica `configureApp` compartido con main.ts, así que pipes y OpenAPI son exactamente los de producción; `JWT_SECRET` de test si no está definido. `error-contract.e2e-spec.ts` (3 tests, AAA): 404 LEVEL_NOT_FOUND, 401 INVALID_CREDENTIALS, 409 USER_ALREADY_EXISTS — `toEqual` estricto prueba que el cuerpo es EXACTAMENTE `{statusCode, code, message}`. `openapi.e2e-spec.ts` (3 tests): `/api-json` responde OpenAPI 3 con los 7 paths de la API y el esquema `ErrorResponseDto` con las tres propiedades; `/api` sirve la UI (HTML). `--passWithNoTests` retirado del script `test:e2e` — con specs reales solo enmascararía errores de configuración. Suite e2e: 2 suites/6 tests verdes.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 038 — back#3: fixes de la revisión adversaria multi-agente
+
+**Fecha:** 2026-07-12
+**Tarea o problema abordado:** back#3 — hallazgos confirmados por la revisión adversaria (workflow de 4 dimensiones × 3 refutadores por hallazgo) antes de abrir el PR.
+**Herramienta de IA utilizada:** Claude Code (workflow multi-agente ultracode: review + verificación adversaria)
+**Prompt o instrucción proporcionada:** > "Toma el issue 3 del back y desarrollalo. [...] solo hasta el pull request, no el merge"
+**Resultado obtenido:** 3 hallazgos confirmados, 3 fixes: (1) el cuerpo del filtro y `ErrorResponseDto` duplicaban el contrato sin vínculo de compilación → `DomainErrorBody` en `shared/contracts/` que el filtro usa para tipar el body y el DTO `implements` — renombrar un campo ahora rompe el build en ambos sitios en vez de divergir en silencio; (2) el comentario de `DomainException` definía `code` en términos del "contrato HTTP público" (doc del núcleo acoplada a un adaptador) → reformulado transport-agnóstico; (3) `openapi.e2e-spec` solo comprobaba que `ErrorResponseDto` existía en `components` — una regresión que quitara el `type:` de un endpoint quedaba verde → nueva prueba que fija el `$ref` exactamente donde responde el filtro (404 level, 401 login, 409 register) y su ausencia en los 401 de guards JWT. Hallazgos no confirmados descartados con razón (subclases de excepciones mapeadas: no existen; minificación de constructor.name: backend no minificado; default 400 sin e2e: cubierto por spec unitaria). Verificación: 46 suites/224 unitarios + 7 e2e verdes, build y lint limpios.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
