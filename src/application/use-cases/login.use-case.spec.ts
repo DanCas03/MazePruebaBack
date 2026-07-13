@@ -6,6 +6,7 @@ import { InvalidCredentialsException } from '../../domain/exceptions/invalid-cre
 import { Email } from '../../domain/value-objects/email.vo';
 import { HashedPassword } from '../../domain/value-objects/hashed-password.vo';
 import { UserId } from '../../domain/value-objects/user-id.vo';
+import { Username } from '../../domain/value-objects/username.vo';
 import { User } from '../../domain/entities/user.entity';
 
 describe('LoginUseCase', () => {
@@ -16,12 +17,17 @@ describe('LoginUseCase', () => {
   let existingUser: User;
 
   beforeEach(() => {
-    mockUserRepo = { findByEmail: jest.fn(), save: jest.fn() };
+    mockUserRepo = {
+      findByEmail: jest.fn(),
+      findByUsername: jest.fn(),
+      save: jest.fn(),
+    };
     mockHashService = { hash: jest.fn(), compare: jest.fn() };
     mockTokenService = { sign: jest.fn() };
     existingUser = new User(
       new UserId('user-uuid-1'),
       new Email('user@example.com'),
+      new Username('player_01'),
       new HashedPassword('$2b$10$hashedPassword'),
     );
     sut = new LoginUseCase(mockUserRepo, mockHashService, mockTokenService);

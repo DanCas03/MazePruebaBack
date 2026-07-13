@@ -4,6 +4,7 @@ import type { IUserRepository } from '../../application/ports/i-user.repository'
 import { User } from '../../domain/entities/user.entity';
 import { UserId } from '../../domain/value-objects/user-id.vo';
 import { Email } from '../../domain/value-objects/email.vo';
+import { Username } from '../../domain/value-objects/username.vo';
 import { HashedPassword } from '../../domain/value-objects/hashed-password.vo';
 
 // Adapter: implementa IUserRepository usando Prisma como ORM.
@@ -16,12 +17,14 @@ export class PrismaUserRepository implements IUserRepository {
     const record = await this.prisma.user.findUnique({
       where: { email: email.value },
     });
-    if (!record) return null;
-    return new User(
-      new UserId(record.id),
-      new Email(record.email),
-      new HashedPassword(record.password),
-    );
+    return record ? PrismaUserRepository.toDomain(record) : null;
+  }
+
+  async findByUsername(username: Username): Promise<User | null> {
+    const record = await this.prisma.user.findUnique({
+      where: { username: username.value },
+    });
+    return record ? PrismaUserRepository.toDomain(record) : null;
   }
 
   async save(user: User): Promise<void> {
@@ -29,8 +32,23 @@ export class PrismaUserRepository implements IUserRepository {
       data: {
         id: user.id.value,
         email: user.email.value,
+        username: user.username.value,
         password: user.password.value,
       },
     });
+  }
+
+  private static toDomain(record: {
+    id: string;
+    email: string;
+    username: string;
+    password: string;
+  }): User {
+    return new User(
+      new UserId(record.id),
+      new Email(record.email),
+      new Username(record.username),
+      new HashedPassword(record.password),
+    );
   }
 }

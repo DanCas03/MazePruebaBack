@@ -107,7 +107,7 @@ export class LoggingInterceptor implements NestInterceptor {
 
 | Method | Path                  | Auth | Description                          |
 |--------|-----------------------|------|--------------------------------------|
-| POST   | `/auth/register`      | No   | Register a user; returns a JWT       |
+| POST   | `/auth/register`      | No   | Register a user with a unique `email` + `username`; returns a JWT |
 | POST   | `/auth/login`         | No   | Authenticate a user; returns a JWT   |
 | GET    | `/levels`             | No   | List level ids, in play order        |
 | GET    | `/levels/:id`         | No   | Get a level as arrow-path JSON       |
@@ -119,7 +119,10 @@ export class LoggingInterceptor implements NestInterceptor {
 > The `order` on a `Level` record is an explicit, curatable sequence (not insertion order) — the curated 15-level seed (back#10) controls it directly.
 
 ```jsonc
-// POST /auth/register  → 201   |   POST /auth/login → 200
+// POST /auth/register → 201
+// body: { "email": "player@arrowmaze.com", "username": "player_01", "password": "sup3rs3cret" }
+// username: 3-20 chars, letters/digits/underscore only, unique (409-ish 400 via DomainExceptionFilter if taken)
+// POST /auth/login → 200
 { "token": "<jwt>" }
 
 // GET /levels → 200

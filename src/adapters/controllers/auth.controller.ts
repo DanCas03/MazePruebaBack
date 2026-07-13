@@ -23,7 +23,11 @@ export class AuthController {
   // cae al default 400 (no 409). Documentar el código real, no el asumido.
   @ApiResponse({ status: 400, description: 'Email already registered.' })
   async register(@Body() dto: RegisterDto): Promise<{ token: string }> {
-    const token = await this.registerUseCase.execute(dto.email, dto.password);
+    const token = await this.registerUseCase.execute(
+      dto.email,
+      dto.username,
+      dto.password,
+    );
     return { token };
   }
 

@@ -423,3 +423,24 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - **Verificación honesta — NADA se aplicó a ninguna BD** (no hay `DATABASE_URL`/Postgres esta sesión, decisión del usuario). El usuario debe aplicar el esquema con `npx prisma db push` y el backfill según `prisma/backfill-username.sql` cuando tenga BD. No se afirma que la migración/backfill se haya ejecutado ni verificado contra datos.
 - **Estado transitorio de build:** tras regenerar el cliente, el árbol de trabajo falla `tsc` en `prisma-user.repository.ts` porque `UserCreateInput` ya exige `username` pero la entidad/repo aún no lo cablean — eso se completa en el fragmento 3/4 (registro con username), que deja el build en verde. El contenido de ESTE commit es solo esquema + SQL + doc (sin TypeScript).
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 033 — back#24 — Registro requiere username único (front#50)
+
+**Fecha:** 2026-07-13
+**Tarea o problema abordado:** Fragmento 3/4 de back#24: cablear `username` de punta a punta en el registro. `User` gana `username: Username`; `IUserRepository` gana `findByUsername`; `RegisterUseCase.execute` pasa a firma `(rawEmail, rawUsername, plainPassword)` y valida unicidad de username además de email; `RegisterDto` y `AuthController.register` propagan el campo; `PrismaUserRepository` lee/escribe `username`. Nueva `UsernameAlreadyTakenException` (mismo patrón que `UserAlreadyExistsException`). Este fragmento deja `npx tsc --noEmit` en verde (estaba rojo desde el fragmento 2/4 por diseño, ya que `UserCreateInput` exigía `username` sin que el repo lo cableara).
+**Herramienta de IA utilizada:** Claude Code (agent dedicado a Task B3)
+**Prompt o instrucción proporcionada:** > "Implementa Task B3 (back#24): registro requiere username único, siguiendo TDD — spec que falla (RED) por firma/API inexistente, implementar entidad/puerto/caso de uso/repo/DTO/controller, specs que pasan (GREEN), tsc verde, AI_HISTORY + README + commit."
+**Resultado obtenido:**
+- `src/domain/entities/user.entity.ts`: constructor gana tercer parámetro `username: Username` (orden `id, email, username, password`).
+- `src/domain/exceptions/username-already-taken.exception.ts`: nueva, extiende `DomainException`, mismo patrón que `UserAlreadyExistsException`.
+- `src/application/ports/i-user.repository.ts`: nuevo método `findByUsername(username: Username): Promise<User | null>`.
+- `src/application/use-cases/register.use-case.ts`: `execute(rawEmail, rawUsername, plainPassword)` — valida email libre, luego username libre (`UsernameAlreadyTakenException` si no), antes de hashear password y guardar.
+- `src/infrastructure/database/prisma-user.repository.ts`: `findByUsername` vía `prisma.user.findUnique({ where: { username } })`; `save` persiste `username`; `toDomain` privado estático reconstruye el nuevo shape de `User`.
+- `src/adapters/dtos/register.dto.ts`: campo `username` con `@IsString() @MinLength(3) @MaxLength(20) @Matches(/^[A-Za-z0-9_]+$/)`, espejando el invariante del VO `Username` en la capa HTTP (fail-fast antes de llegar al dominio).
+- `src/adapters/controllers/auth.controller.ts`: `register` pasa `dto.username` al use case.
+- Specs actualizados: `register.use-case.spec.ts` (reescrito — firma de 3 args, caso "username libre", caso "username tomado" → `UsernameAlreadyTakenException`, mock de `findByUsername`); `prisma-user.repository.spec.ts` (`username` en records mockeados, aserción en `save`, nuevo `describe('findByUsername', ...)` con 2 tests espejando `findByEmail`); `login.use-case.spec.ts` y `auth.controller.spec.ts` (`new User(...)`/DTOs/aserciones actualizados al nuevo shape de 4 args y 3 args respectivamente).
+- TDD verificado: `npx jest src/application/use-cases/register.use-case.spec.ts` en rojo antes de crear la excepción/campo (`Cannot find module '.../username-already-taken.exception'`); verde tras implementar los pasos 3-9 del brief.
+- Verificación final: `npx jest` → 44 suites / 194 tests, todo verde. `npx tsc --noEmit` → exit 0 (sin errores), confirmando que el fragmento cierra el estado rojo heredado del fragmento 2/4.
+- **Verificación honesta — sin base de datos esta sesión.** Todos los tests son unitarios con `PrismaService` mockeado (`jest.fn()` sobre `findUnique`/`create`); no se ejecutó `prisma db push`, `prisma migrate`, ni ninguna query real contra Postgres. La unicidad de `username`/`email` a nivel de constraint de BD (`@unique` en `schema.prisma`, entrada 032) sigue sin verificarse contra datos reales; solo se verificó la lógica de aplicación (use case + repo) contra mocks.
+- README.md: fila de `/auth/register` actualizada para mencionar `username`; ejemplo de request body añadido junto a la respuesta `{ "token": "<jwt>" }`.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
