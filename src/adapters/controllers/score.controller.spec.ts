@@ -10,6 +10,7 @@ import { Stars } from '../../domain/value-objects/stars.vo';
 import { MoveCount } from '../../domain/value-objects/move-count.vo';
 import { ElapsedTime } from '../../domain/value-objects/elapsed-time.vo';
 import { InvalidScoreException } from '../../domain/exceptions/invalid-score.exception';
+import type { LeaderboardRow } from '../../application/read-models/leaderboard-row';
 
 const buildRequest = (userId: string, email: string): AuthenticatedRequest =>
   ({ user: { userId, email } }) as unknown as AuthenticatedRequest;
@@ -32,6 +33,19 @@ describe('ScoreController', () => {
       new ElapsedTime(45),
       new Date('2026-07-08T12:00:00.000Z'),
     );
+
+  const buildRow = (over: Partial<LeaderboardRow> = {}): LeaderboardRow => ({
+    id: 'entry-1',
+    userId: 'user-1',
+    username: 'ana',
+    levelId: 'level-7',
+    score: 1200,
+    stars: 3,
+    moves: 12,
+    timeSeconds: 45,
+    createdAt: new Date('2026-07-08T12:00:00.000Z'),
+    ...over,
+  });
 
   beforeEach(() => {
     mockSubmitScoreUseCase = { execute: jest.fn() };
@@ -104,9 +118,9 @@ describe('ScoreController', () => {
   });
 
   describe('getLeaderboard', () => {
-    it('delegates to GetLeaderboardUseCase with the levelId param and parsed limit, and returns mapped entries', async () => {
+    it('delegates to GetLeaderboardUseCase with the levelId param and parsed limit, and returns mapped rows with username', async () => {
       // Arrange
-      mockGetLeaderboardUseCase.execute.mockResolvedValue([buildEntry()]);
+      mockGetLeaderboardUseCase.execute.mockResolvedValue([buildRow()]);
 
       // Act
       const result = await sut.getLeaderboard('level-7', '5');
@@ -120,6 +134,7 @@ describe('ScoreController', () => {
         {
           id: 'entry-1',
           userId: 'user-1',
+          username: 'ana',
           levelId: 'level-7',
           score: 1200,
           stars: 3,

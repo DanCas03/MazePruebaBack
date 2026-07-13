@@ -1,13 +1,14 @@
 import type { ScoreEntry } from '../../domain/entities/score-entry.entity';
 import type { LevelId } from '../../domain/value-objects/level-id.vo';
+import type { LeaderboardRow } from '../read-models/leaderboard-row';
 
 // Puerto (DIP): contrato de persistencia de puntajes. La capa de aplicación
 // depende de esta abstracción; infrastructure la implementa con Prisma.
 export interface IScoreRepository {
   save(entry: ScoreEntry): Promise<void>;
-  // Devuelve los mejores `limit` puntajes de un nivel, ordenados de mayor a
-  // menor score. El orden de desempate es responsabilidad de la implementación.
-  findTopByLevel(levelId: LevelId, limit: number): Promise<ScoreEntry[]>;
+  // Devuelve el top `limit` del nivel como filas de lectura (con username
+  // resuelto), ordenadas por score desc. El desempate lo decide la impl.
+  findLeaderboard(levelId: LevelId, limit: number): Promise<LeaderboardRow[]>;
 }
 
 export const SCORE_REPOSITORY_TOKEN = 'IScoreRepository';

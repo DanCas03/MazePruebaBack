@@ -112,7 +112,7 @@ export class LoggingInterceptor implements NestInterceptor {
 | GET    | `/levels`             | No   | List level ids, in play order        |
 | GET    | `/levels/:id`         | No   | Get a level as arrow-path JSON       |
 | POST   | `/scores`             | Yes  | Submit a score for a completed level |
-| GET    | `/leaderboard/:levelId` | No | Top scores for a level (desc, default limit 10, max 100) |
+| GET    | `/leaderboard/:levelId` | No | Top scores for a level, with each row's `username` resolved (desc, default limit 10, max 100) |
 | POST   | `/progress`           | Yes  | Sync completed levels + best scores (merges, never degrades) |
 | GET    | `/progress`           | Yes  | Get the authenticated user's progress |
 
@@ -145,8 +145,8 @@ export class LoggingInterceptor implements NestInterceptor {
 // body: { "levelId": "level-07", "score": 1200, "stars": 3, "moves": 12, "timeSeconds": 45 }
 { "id": "...", "userId": "...", "levelId": "level-07", "score": 1200, "stars": 3, "moves": 12, "timeSeconds": 45, "createdAt": "2026-07-08T12:00:00.000Z" }
 
-// GET /leaderboard/:levelId?limit=10 → 200
-[{ "id": "...", "userId": "...", "levelId": "level-07", "score": 1200, "stars": 3, "moves": 12, "timeSeconds": 45, "createdAt": "..." }]
+// GET /leaderboard/:levelId?limit=10 → 200 (each row includes the player's username)
+[{ "id": "...", "userId": "...", "username": "player_01", "levelId": "level-07", "score": 1200, "stars": 3, "moves": 12, "timeSeconds": 45, "createdAt": "..." }]
 
 // POST /progress (Bearer token required) → 201
 // body: { "levels": [{ "levelId": "level-07", "completed": true, "bestScore": 1200, "bestStars": 3 }] }

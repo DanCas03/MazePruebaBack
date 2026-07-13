@@ -18,7 +18,11 @@ import { SubmitScoreUseCase } from '../../application/use-cases/submit-score.use
 import { GetLeaderboardUseCase } from '../../application/use-cases/get-leaderboard.use-case';
 import { JwtAuthGuard } from '../../infrastructure/security/jwt-auth.guard';
 import { SubmitScoreDto } from '../dtos/submit-score.dto';
-import { ScoreMapper, ScoreEntryResponseDto } from '../mappers/score.mapper';
+import {
+  ScoreMapper,
+  ScoreEntryResponseDto,
+  LeaderboardEntryResponseDto,
+} from '../mappers/score.mapper';
 import type { AuthenticatedRequest } from '../http/authenticated-request.interface';
 
 export type { AuthenticatedRequest } from '../http/authenticated-request.interface';
@@ -64,12 +68,9 @@ export class ScoreController {
   async getLeaderboard(
     @Param('levelId') levelId: string,
     @Query('limit') limit?: string,
-  ): Promise<ScoreEntryResponseDto[]> {
+  ): Promise<LeaderboardEntryResponseDto[]> {
     const parsedLimit = limit === undefined ? undefined : Number(limit);
-    const entries = await this.getLeaderboardUseCase.execute(
-      levelId,
-      parsedLimit,
-    );
-    return entries.map((entry) => ScoreMapper.toDto(entry));
+    const rows = await this.getLeaderboardUseCase.execute(levelId, parsedLimit);
+    return rows.map((row) => ScoreMapper.leaderboardRowToDto(row));
   }
 }
