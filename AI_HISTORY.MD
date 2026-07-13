@@ -409,3 +409,17 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - Nota de verificación honesta: `npx tsc --noEmit` de todo el proyecto **falla** por un error **preexistente** en `src/infrastructure/database/prisma-level.repository.ts` (el cliente Prisma en disco está desactualizado y le falta `Level.order`, que sí existe en `schema.prisma`). Es ajeno a este fragmento (viene heredado de `origin/main`) y se resolverá al regenerar el cliente Prisma en el fragmento de esquema (B2). Los tests de Jest no dependen de ese build.
 - Sin cambios en API pública HTTP (capa `domain/`, consumida más adelante en back#24 para validar/almacenar usernames); README.md no modificado.
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 032 — back#24 — columna username en User (schema + backfill helper)
+
+**Fecha:** 2026-07-13
+**Tarea o problema abordado:** Fragmento 2/4 de back#24: añadir `username String @unique` (requerido) al modelo `User` en `schema.prisma` y regenerar el cliente Prisma. Al hacerlo se descubrió y resolvió un conflicto de flujo: el spec/plan asumía una **migración Prisma** con backfill inline, pero este repo **no usa migraciones** — el flujo del equipo es `npx prisma db push` (no existe `prisma/migrations/` en `origin/main`; cf. entrada 030). Se descartó la carpeta de migración generada por error y se adoptó el flujo `db push`.
+**Herramienta de IA utilizada:** Claude Code (agent dedicado a Task B2 + orquestador)
+**Prompt o instrucción proporcionada:** > "Task B2 (back#24): schema + backfill de username, SIN aplicar (no hay BD esta sesión); alinear al flujo real del repo."
+**Resultado obtenido:**
+- `prisma/schema.prisma`: `User` gana `username String @unique` (requerido). Fuente de verdad para `db push`.
+- `prisma/backfill-username.sql`: helper SQL con la receta de aplicación bajo `db push` (BD desechable → `db push` directo; BD con datos → nullable/backfill/required en 3 pasos). El backfill usa `'player_' || substr(id,1,8)`, coherente con la invariante del VO `Username`.
+- `npx prisma generate` ejecutado (sin BD; lee `schema.prisma`): el cliente ahora incluye `username`, y de paso incorpora `Level.order`, resolviendo el error de tsc preexistente reportado en la entrada 031.
+- **Verificación honesta — NADA se aplicó a ninguna BD** (no hay `DATABASE_URL`/Postgres esta sesión, decisión del usuario). El usuario debe aplicar el esquema con `npx prisma db push` y el backfill según `prisma/backfill-username.sql` cuando tenga BD. No se afirma que la migración/backfill se haya ejecutado ni verificado contra datos.
+- **Estado transitorio de build:** tras regenerar el cliente, el árbol de trabajo falla `tsc` en `prisma-user.repository.ts` porque `UserCreateInput` ya exige `username` pero la entidad/repo aún no lo cablean — eso se completa en el fragmento 3/4 (registro con username), que deja el build en verde. El contenido de ESTE commit es solo esquema + SQL + doc (sin TypeScript).
+**Modificaciones realizadas por el equipo:** (completar manualmente)
