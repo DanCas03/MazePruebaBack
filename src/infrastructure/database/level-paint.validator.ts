@@ -43,7 +43,9 @@ export function validateLevelPaint(fixture: PaintFixtureShape): void {
   }
 
   for (const arrow of rolesInUse) {
-    if (!(arrow.paintRole! in fixture.palette)) {
+    if (
+      !Object.prototype.hasOwnProperty.call(fixture.palette, arrow.paintRole!)
+    ) {
       throw new Error(
         `Level ${fixture.levelId}: arrow '${arrow.id}' references ` +
           `paintRole '${arrow.paintRole}' missing from the palette — ` +
