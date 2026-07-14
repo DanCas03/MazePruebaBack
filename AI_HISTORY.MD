@@ -1,21 +1,5 @@
 # AI History — MazePruebaBack
 
-## Entrada 046 — feat(back): soporte Docker para desarrollo local
-
-**Fecha:** 2026-07-14
-**Tarea o problema abordado:** El usuario pidió correr todo el proyecto (back + front) en Docker para desarrollo local, sin instalar Node/PostgreSQL en el host. Este fragmento cubre el lado backend: imagen Docker de desarrollo que aplica migraciones y siembra los niveles curados automáticamente al arrancar.
-**Herramienta de IA utilizada:** Claude Code (Sonnet 5, rol Arquitecto de Software Senior; skills superpowers:brainstorming + superpowers:writing-plans)
-**Prompt o instrucción proporcionada:** > "Necesito que configures todo el proyecto para back y front corran en docker"
-**Resultado obtenido:**
-- `Dockerfile` (nuevo): imagen de desarrollo `node:22-alpine` — `npm ci`, entrypoint dedicado. Deliberadamente sin `prisma generate` en build time: `prisma.config.ts` exige `DATABASE_URL` para cargarse y esa variable no existe en build time; el entrypoint ya lo corre en cada arranque con la `DATABASE_URL` real. No es multi-stage ni apta para producción a propósito (fuera de alcance, ver spec en `docs/superpowers/specs/2026-07-14-docker-local-dev-design.md` de la raíz del proyecto).
-- `docker-entrypoint.sh` (nuevo): en cada arranque del contenedor corre `prisma generate` → `prisma migrate deploy` → `prisma db seed` (idempotente, `upsert` por id) → `exec "$@"` (delega al `CMD`, `npm run start:dev`).
-- `.gitattributes` (nuevo): fuerza `eol=lf` en `docker-entrypoint.sh` — con `core.autocrlf=true` en Windows, un checkout con CRLF rompería `#!/bin/sh` dentro del contenedor Linux.
-- `.dockerignore` (nuevo): excluye `node_modules`, `dist`, `.git`, `.env`, `coverage`.
-- La orquestación completa (compose, Postgres, frontend) vive en `ArrowMaze/docker-compose.yml`, fuera de este repo (esa carpeta raíz no es un repositorio git) — documentada en `ArrowMaze/README-docker.md`.
-- Verificación: `docker build -t maze-back:dev -f Dockerfile .` exitoso; `sh -n docker-entrypoint.sh` sin errores de sintaxis. La verificación end-to-end (migración + seed reales + `GET /levels`) se hizo en el fragmento de integración del stack completo.
-- README.md: nueva sub-sección "Docker (recommended for local dev)" bajo "Getting Started".
-**Modificaciones realizadas por el equipo:** (completar manualmente)
-
 ## Entrada 001 — Phase 0: Inicialización rama main-sprint
 
 **Fecha:** 2026-06-17
@@ -606,4 +590,20 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - `.github/workflows/ci.yml`: nuevo step `E2E` (`npm run test:e2e`) entre `Test` y `Build`. Usa `PrismaService` mockeado (`test/create-test-app.ts`), así que corre sin Postgres real; la `DATABASE_URL` dummy del job basta y `JWT_SECRET` tiene fallback de test.
 - **Nombre del job preservado a propósito** (`lint · test · build`, no `… · e2e · …`): ese string es el nombre del check requerido en la protección de rama de `main`. Renombrarlo dejaría el check requerido como "faltante" y bloquearía todo PR hasta actualizar Settings → Branches. Se documentó la restricción en un comentario del propio workflow.
 - Verificación: `npm run test:e2e` local → 3 suites / 11 tests verdes; estructura del workflow validada (pasos `Install → Generate Prisma → Lint → Test → E2E → Build`). El efecto real (bloquear un e2e roto) se confirmará en la corrida de CI del push.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 046 — feat(back): soporte Docker para desarrollo local
+
+**Fecha:** 2026-07-14
+**Tarea o problema abordado:** El usuario pidió correr todo el proyecto (back + front) en Docker para desarrollo local, sin instalar Node/PostgreSQL en el host. Este fragmento cubre el lado backend: imagen Docker de desarrollo que aplica migraciones y siembra los niveles curados automáticamente al arrancar.
+**Herramienta de IA utilizada:** Claude Code (Sonnet 5, rol Arquitecto de Software Senior; skills superpowers:brainstorming + superpowers:writing-plans)
+**Prompt o instrucción proporcionada:** > "Necesito que configures todo el proyecto para back y front corran en docker"
+**Resultado obtenido:**
+- `Dockerfile` (nuevo): imagen de desarrollo `node:22-alpine` — `npm ci`, entrypoint dedicado. Deliberadamente sin `prisma generate` en build time: `prisma.config.ts` exige `DATABASE_URL` para cargarse y esa variable no existe en build time; el entrypoint ya lo corre en cada arranque con la `DATABASE_URL` real. No es multi-stage ni apta para producción a propósito (fuera de alcance, ver spec en `docs/superpowers/specs/2026-07-14-docker-local-dev-design.md` de la raíz del proyecto).
+- `docker-entrypoint.sh` (nuevo): en cada arranque del contenedor corre `prisma generate` → `prisma migrate deploy` → `prisma db seed` (idempotente, `upsert` por id) → `exec "$@"` (delega al `CMD`, `npm run start:dev`).
+- `.gitattributes` (nuevo): fuerza `eol=lf` en `docker-entrypoint.sh` — con `core.autocrlf=true` en Windows, un checkout con CRLF rompería `#!/bin/sh` dentro del contenedor Linux.
+- `.dockerignore` (nuevo): excluye `node_modules`, `dist`, `.git`, `.env`, `coverage`.
+- La orquestación completa (compose, Postgres, frontend) vive en `ArrowMaze/docker-compose.yml`, fuera de este repo (esa carpeta raíz no es un repositorio git) — documentada en `ArrowMaze/README-docker.md`.
+- Verificación: `docker build -t maze-back:dev -f Dockerfile .` exitoso; `sh -n docker-entrypoint.sh` sin errores de sintaxis. La verificación end-to-end (migración + seed reales + `GET /levels`) se hizo en el fragmento de integración del stack completo.
+- README.md: nueva sub-sección "Docker (recommended for local dev)" bajo "Getting Started".
 **Modificaciones realizadas por el equipo:** (completar manualmente)
