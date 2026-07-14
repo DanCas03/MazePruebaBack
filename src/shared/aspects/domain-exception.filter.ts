@@ -9,6 +9,7 @@ import { DomainException } from '../../domain/exceptions/domain.exception';
 import { LevelNotFoundException } from '../../domain/exceptions/level-not-found.exception';
 import { InvalidCredentialsException } from '../../domain/exceptions/invalid-credentials.exception';
 import { UserAlreadyExistsException } from '../../domain/exceptions/user-already-exists.exception';
+import { UnsolvableLevelException } from '../../domain/exceptions/unsolvable-level.exception';
 import type { DomainErrorBody } from '../contracts/domain-error-body';
 
 // AOP: filtro transversal que traduce excepciones de dominio a respuestas HTTP.
@@ -32,6 +33,7 @@ export class DomainExceptionFilter implements ExceptionFilter {
     [LevelNotFoundException, HttpStatus.NOT_FOUND],
     [InvalidCredentialsException, HttpStatus.UNAUTHORIZED],
     [UserAlreadyExistsException, HttpStatus.CONFLICT],
+    [UnsolvableLevelException, HttpStatus.UNPROCESSABLE_ENTITY],
   ]);
 
   catch(exception: DomainException, host: ArgumentsHost): void {
