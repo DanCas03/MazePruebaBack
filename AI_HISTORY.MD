@@ -395,7 +395,109 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 **Resultado obtenido:** Nuevo `src/app.module.spec.ts`: smoke test de wiring que compila el `AppModule` completo con `Test.createTestingModule` y `PrismaService` sobre-escrito (sin BD, `compile()` no invoca `onModuleInit`). Corre bajo `npm test`, cerrando el hueco de que la suite por defecto nunca bootstrapeaba Nest. Verificado por mutacion: reintroduciendo `inject: ['JwtService']` el test falla con `UnknownDependenciesException` (no es autocomplaciente); restaurado el fix, verde. Suite 43 suites / 184 tests; `npm run build` y `npx eslint` limpios. Verificacion en vivo (`node dist/src/main.js`, aparte de los tests): la app arranca con `AuthModule dependencies initialized` sin errores; `GET /levels` -> `[{"levelId":"l-007"}]`; `GET /levels/l-007` -> wire contract completo; `GET /levels/no-existe` -> 404 `LevelNotFoundException`; `POST /auth/register` y `POST /auth/login` devuelven un JWT real (prueba que el `JwtService` recableado firma tokens end-to-end); login con password erronea -> 401 `InvalidCredentialsException`. Nota lateral no corregida (fuera de scope): `npm run start:prod` apunta a `node dist/main` pero `nest build` emite `dist/src/main.js` (script preexistente roto).
 **Modificaciones realizadas por el equipo:** (completar manualmente)
 
-## Entrada 031 — back#24 — Username value object (backend de front#50)
+## Entrada 031 — back#6: LevelSolver (solubilidad + Solución canónica)
+
+**Fecha:** 2026-07-09
+**Tarea o problema abordado:** Issue #6 — servicio de dominio `LevelSolver` que valida que un `Level` arrow-path se puede vaciar y produce la Solución canónica (orden de remoción, ADR 0002).
+**Herramienta de IA utilizada:** Claude Code (plan `back6-level-solver.md` + TDD con subagente QA)
+**Prompt o instrucción proporcionada:** > "Ejecutar el plan de back#6: LevelSolver con solve()/isSolvable(), espejo de la geometría de salida del front, greedy por monotonicidad (ADR 0001 dec. 6)."
+**Resultado obtenido:** `src/domain/services/level-solver.ts` — `solve(level): ArrowId[] | null` e `isSolvable(level): boolean`, dominio puro sin dependencias; greedy determinista con reinicio de escaneo, geometría espejo de `arrow.dart` (`exitPath`) y `arrow_board.dart` (`canExit`). Spec AAA `level-solver.spec.ts` (9 casos: vacío, carril libre, cabeza al borde, bloqueo mutuo cíclico, orden-dependiente, serpiente doblada soluble/insoluble, invarianza y determinismo). Glosario: **Solvable** y **Solution** en `CONTEXT.md`.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 032 — back#10: seed de 15 niveles curados (fixtures + seed + wiring)
+
+**Fecha:** 2026-07-10
+**Tarea o problema abordado:** Issue #10 — curar 15 niveles de los 30 candidatos congelados del generador (front#1), congelarlos como fixtures arrow-path en el back y sembrarlos en Postgres con orden explícito y dificultad progresiva; cada nivel debe pasar `LevelSolver` (ADR 0001 dec. 5).
+**Herramienta de IA utilizada:** Claude Code (handoff `handoff-back10-seed-levels.md`, skill superpowers:executing-plans)
+**Prompt o instrucción proporcionada:** > "Lee el handoff y ejecuta el plan para resolver el issue #10 de github."
+**Resultado obtenido:** Selección determinista (Decisión 2): por tier, de los candidatos solubles se eligió el de menor-seed con mínimas flechas, el de menor-seed con máximas flechas y el menor-seed restante; orden = tier asc, luego nº de flechas asc. Un script throwaway (ts-node) confirmó que los 30 candidatos son solubles bajo `LevelSolver`. Elegidos: level-01..03 ← t1 s101/s102/s104 (5/5/6 flechas, 6×8); 04..06 ← t2 s201/s202/s204 (7/7/8, 7×10); 07..09 ← t3 s301/s302/s305 (9/9/11, 8×11); 10..12 ← t4 s401/s402/s405 (12/12/14, 9×13, timeLimit 120); 13..15 ← t5 s501/s502/s505 (15/15/18, 11×15, timeLimit 180). Artefactos: `prisma/levels/level-01.json`..`level-15.json` (fixture declarativo `{levelId, order, cols, rows, timeLimitSec?, arrows verbatim del candidato}`) + `prisma/levels/manifest.md` (procedencia + regla). `prisma/seed.ts`: carga fixtures → valida TODO el lote reconstruyendo cada `Level` vía `LevelBuilder` y exigiendo `isSolvable` (fail-fast, lanza antes de cualquier escritura) → upsert idempotente por id; `data` = `{cols, rows, timeLimitSec?, arrows}` (excluye levelId/order, que son columnas de tabla). Wiring: `migrations.seed` en `prisma.config.ts` (Prisma 6 lo lee de ahí — no de `package.json#prisma.seed`, que quedaría ignorado si el config lo definiera) + script `db:seed` en `package.json`. README: sección "Seeding levels". Sin migración ni columna de dificultad (dificultad = order, Decisión 4). Verificación: `npm run build` limpio; los 15 fixtures se validan solubles + rampa + límites de tiempo por la spec de la Entrada 033. Desviación vs handoff: el seed se cableó en `prisma.config.ts` en vez de `package.json` porque el repo ya usa config file (el handoff no lo contemplaba).
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 033 — test(back): spec de solubilidad y rampa de los niveles curados
+
+**Fecha:** 2026-07-10
+**Tarea o problema abordado:** back#10 (Decisión 9) — spec unitaria (sin DB) que verifica los 15 fixtures curados: que todos construyen y son solubles, la rampa de dificultad y los límites de tiempo por tier.
+**Herramienta de IA utilizada:** Claude Code (skill superpowers:executing-plans + arrowmaze-backend)
+**Prompt o instrucción proporcionada:** > "Lee el handoff y ejecuta el plan para resolver el issue #10 de github."
+**Resultado obtenido:** `src/infrastructure/database/curated-levels.spec.ts` (AAA, 24 tests): (a) los 15 fixtures se cargan desde `prisma/levels`, cada uno se reconstruye vía `LevelBuilder` y `LevelSolver.isSolvable` lo declara soluble; (b) rampa — ids `level-01..15`, `order` 1..15 único y contiguo, dims no-decrecientes por orden, nº de flechas no-decreciente dentro de cada tier (agrupado por dims); (c) límites — orders 10..12 (t4) `timeLimitSec===120`, 13..15 (t5) `===180`, 1..9 (t1–t3) `undefined`. Lee los fixtures desde `process.cwd()/prisma/levels` (jest corre desde la raíz; rootDir=src). Suite completa: 45 suites/219 tests verdes; `npm run build` limpio. La deuda de lint es preexistente (82 problemas en 23 archivos ajenos); los archivos nuevos pasan lint limpio y la spec está en el scope de `npm run lint`.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 034 — style(back): saldo de la deuda de lint (58 errores → 0)
+
+**Fecha:** 2026-07-12
+**Tarea o problema abordado:** back#4 (prerequisito) — el gate de lint del CI nacería en rojo: `eslint` sin `--fix` reportaba 58 errores en 18 archivos (82 problemas en 23 contando warnings, la deuda ya anotada en la Entrada 033). Se salda la deuda para que el check obligatorio sea verde desde el primer PR.
+**Herramienta de IA utilizada:** Claude Code
+**Prompt o instrucción proporcionada:** > "Necesito que tomes el issue 4 y lo implementes. En una rama distinta y sin hacer merge, solo pull request"
+**Resultado obtenido:** (a) 36 errores auto-arreglables corregidos con `eslint --fix` (formato prettier + `no-unnecessary-type-assertion`, 11 archivos). (b) `register.use-case.spec.ts`: los stubs `id: {} as any` / `password: {} as any` (2× `no-unsafe-assignment`) se reemplazan por un `User` real con `UserId`/`Email`/`HashedPassword` — el spec ahora ejercita los value objects genuinos. (c) Los 20 `unbound-method` restantes eran el falso positivo documentado de `expect(mock.method)` en Jest (los 20 en archivos `*.spec.ts`); se añade un override en `eslint.config.mjs` que apaga la regla base solo para `**/*.spec.ts`, sin dependencias nuevas (package-lock intacto). Mejora futura anotada en el propio override: adoptar `jest/unbound-method` de `eslint-plugin-jest` (la variante consciente de mocks que recomienda typescript-eslint) para recuperar la detección de usos realmente inseguros en tests. (d) Nuevo script `lint:check` (eslint sin `--fix`) como comando de verificación para CI y local. Verificación: `npm run lint:check` → 0 errores (19 warnings, severidad `warn` deliberada en la config); suite 45/219 verde; `npm run build` limpio.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 035 — ci(back): workflow de GitHub Actions (lint+test+build) + badge
+
+**Fecha:** 2026-07-12
+**Tarea o problema abordado:** back#4 — workflow de CI que corre lint + tests + build en cada PR y reporta estado como check; badge de build real en el README; `main` protegida con checks obligatorios (paso manual de configuración del repo, documentado en el PR).
+**Herramienta de IA utilizada:** Claude Code
+**Prompt o instrucción proporcionada:** > "Necesito que tomes el issue 4 y lo implementes. En una rama distinta y sin hacer merge, solo pull request"
+**Resultado obtenido:** `.github/workflows/ci.yml`: dispara en `pull_request` (todas las ramas) y en `push` a `main` (para que el badge refleje el estado real de main); job único `ci` ("lint · test · build") en `ubuntu-latest` con Node 22 + caché npm: `npm ci` → `npx prisma generate` → `npm run lint:check` → `npm test` → `npm run build`. Hallazgos incorporados: `prisma.config.ts` exige `DATABASE_URL` al cargarse aunque `generate` no conecte (se inyecta URL dummy a nivel de job) y sin `prisma generate` el build falla (TS2694 en `prisma/seed.ts` contra el stub de `@prisma/client`). `concurrency` cancela corridas obsoletas del mismo PR; `permissions: contents: read` (mínimo privilegio). README: los badges estáticos de tests/build se reemplazan por el badge dinámico del workflow (`?branch=main`) y la sección Contributing documenta el gate y cómo reproducirlo localmente. La protección de `main` (require PR + check `CI / lint · test · build` verde) no es automatizable desde el código del repo: queda como paso de configuración en Settings → Branches, detallado en el PR.
+## Entrada 034 — back#3: code estable legible por máquina en DomainException
+
+**Fecha:** 2026-07-12
+**Tarea o problema abordado:** back#3 (Swagger global + errores HTTP consistentes) — fragmento 1: el contrato de error uniforme `{statusCode, code, message}` necesita un identificador estable del tipo de error; `exception.name` (nombre de clase) no es un código de API sino un detalle de implementación TypeScript.
+**Herramienta de IA utilizada:** Claude Code (skill arrowmaze-backend, TDD rojo→verde)
+**Prompt o instrucción proporcionada:** > "Toma el issue 3 del back y desarrollalo. Este issue tiene que ser desarrollado en una rama propia y debes de hacer solo hasta el pull request, no el merge"
+**Resultado obtenido:** `DomainException` gana `readonly code: string`, derivado del nombre de la subclase en SCREAMING_SNAKE sin el sufijo Exception (`LevelNotFoundException` → `LEVEL_NOT_FOUND`), con override opcional por parámetro para subclases que necesiten desacoplar el código del nombre de clase. Ninguna subclase existente requiere cambios (el parámetro es opcional). `domain.exception.spec.ts` (AAA, 4 tests): derivación, sufijo, override explícito y preservación de name/message/cadena de prototipos.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 035 — back#3: contrato de error uniforme {statusCode, code, message} + 409 Conflict
+
+**Fecha:** 2026-07-12
+**Tarea o problema abordado:** back#3 — fragmento 2: `DomainExceptionFilter` emitía `{statusCode, error: <nombre de clase>, message}` (detalle de implementación filtrado al contrato) y `UserAlreadyExistsException` caía al default 400 en vez del 409 semánticamente correcto.
+**Herramienta de IA utilizada:** Claude Code (skill arrowmaze-backend, TDD rojo→verde)
+**Prompt o instrucción proporcionada:** > "Toma el issue 3 del back y desarrollalo."
+**Resultado obtenido:** El cuerpo de error pasa a `{statusCode, code, message}` con `code = DomainException.code` (Entrada 034); los clientes discriminan por `code`, nunca por `message`. Registro de estados completado: `UserAlreadyExistsException → 409 CONFLICT` (además de 404/401 existentes; el resto cae a 400, nunca 500). `@ApiResponse` de `POST /auth/register` actualizado de 400 → 409 y eliminado el comentario que documentaba el mapeo ausente. Spec del filtro reescrita al nuevo contrato + caso 409 (4 tests); nombre del test de propagación en `auth.controller.spec.ts` corregido (400→409). El front no parsea el cuerpo de error (discrimina por status HTTP vía Dio), así que el cambio de `error`→`code` no lo rompe.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 036 — back#3: OpenAPI global servido en /api vía DocumentBuilder
+
+**Fecha:** 2026-07-12
+**Tarea o problema abordado:** back#3 — fragmento 3: los controladores ya tenían decoradores Swagger (@ApiTags/@ApiOperation/@ApiResponse) pero `main.ts` nunca cableó `SwaggerModule`, así que `/api` no servía nada.
+**Herramienta de IA utilizada:** Claude Code (skill arrowmaze-backend)
+**Prompt o instrucción proporcionada:** > "Toma el issue 3 del back y desarrollalo."
+**Resultado obtenido:** `src/app.setup.ts` con `configureApp(app)`: ValidationPipe global (movido desde main.ts) + `DocumentBuilder` (título, descripción, versión, `addBearerAuth`) + `SwaggerModule.setup('api', …)` — UI en `/api`, JSON en `/api-json`. `main.ts` reducido a `create → configureApp → listen`; la extracción existe para que las e2e (fragmento 4) apliquen exactamente la misma configuración que producción (sin drift). `ErrorResponseDto` (`adapters/dtos/error-response.dto.ts`, solo anotaciones @ApiProperty) documenta el contrato `{statusCode, code, message}` y se referencia en los @ApiResponse de error que sí produce el filtro de dominio: login 401, register 409, level 404. Deliberadamente NO se referencia en los 401 de los guards JWT ni en los 400 de ValidationPipe: esos cuerpos los construye Nest con su forma estándar, no el filtro — documentar lo real, no lo asumido. README: aviso de `/api`//`/api-json` + ejemplo de error actualizado + mapeo 409. Sin tests unitarios propios: `configureApp` es glue de composición sin lógica y `ErrorResponseDto` es una clase de anotaciones; su contraparte de verificación son las e2e del fragmento 4 (forma de error real + documento OpenAPI servido).
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 037 — back#3: e2e del contrato de error y del documento OpenAPI
+
+**Fecha:** 2026-07-12
+**Tarea o problema abordado:** back#3 — fragmento 4: no existía ninguna prueba e2e (test/ solo tenía el jest-e2e.json de plantilla y el script llevaba --passWithNoTests); los criterios de aceptación piden verificar extremo a extremo la forma de error y que el JSON de Swagger se sirve.
+**Herramienta de IA utilizada:** Claude Code (skill arrowmaze-backend)
+**Prompt o instrucción proporcionada:** > "Toma el issue 3 del back y desarrollalo."
+**Resultado obtenido:** `test/create-test-app.ts`: helper que levanta el AppModule real con `overrideProvider(PrismaService)` → mock (`user.findUnique/create`, `level.findUnique/findMany`) — las e2e verifican el contrato HTTP, no la persistencia, y corren sin Postgres; aplica `configureApp` compartido con main.ts, así que pipes y OpenAPI son exactamente los de producción; `JWT_SECRET` de test si no está definido. `error-contract.e2e-spec.ts` (3 tests, AAA): 404 LEVEL_NOT_FOUND, 401 INVALID_CREDENTIALS, 409 USER_ALREADY_EXISTS — `toEqual` estricto prueba que el cuerpo es EXACTAMENTE `{statusCode, code, message}`. `openapi.e2e-spec.ts` (3 tests): `/api-json` responde OpenAPI 3 con los 7 paths de la API y el esquema `ErrorResponseDto` con las tres propiedades; `/api` sirve la UI (HTML). `--passWithNoTests` retirado del script `test:e2e` — con specs reales solo enmascararía errores de configuración. Suite e2e: 2 suites/6 tests verdes.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 038 — back#3: fixes de la revisión adversaria multi-agente
+
+**Fecha:** 2026-07-12
+**Tarea o problema abordado:** back#3 — hallazgos confirmados por la revisión adversaria (workflow de 4 dimensiones × 3 refutadores por hallazgo) antes de abrir el PR.
+**Herramienta de IA utilizada:** Claude Code (workflow multi-agente ultracode: review + verificación adversaria)
+**Prompt o instrucción proporcionada:** > "Toma el issue 3 del back y desarrollalo. [...] solo hasta el pull request, no el merge"
+**Resultado obtenido:** 3 hallazgos confirmados, 3 fixes: (1) el cuerpo del filtro y `ErrorResponseDto` duplicaban el contrato sin vínculo de compilación → `DomainErrorBody` en `shared/contracts/` que el filtro usa para tipar el body y el DTO `implements` — renombrar un campo ahora rompe el build en ambos sitios en vez de divergir en silencio; (2) el comentario de `DomainException` definía `code` en términos del "contrato HTTP público" (doc del núcleo acoplada a un adaptador) → reformulado transport-agnóstico; (3) `openapi.e2e-spec` solo comprobaba que `ErrorResponseDto` existía en `components` — una regresión que quitara el `type:` de un endpoint quedaba verde → nueva prueba que fija el `$ref` exactamente donde responde el filtro (404 level, 401 login, 409 register) y su ausencia en los 401 de guards JWT. Hallazgos no confirmados descartados con razón (subclases de excepciones mapeadas: no existen; minificación de constructor.name: backend no minificado; default 400 sin e2e: cubierto por spec unitaria). Verificación: 46 suites/224 unitarios + 7 e2e verdes, build y lint limpios.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 039 — back#19: servir la Solución del nivel (GET /levels/:id/solution)
+
+**Fecha:** 2026-07-13
+**Tarea o problema abordado:** back#19 — exponer vía HTTP la Solución que certifica `LevelSolver` (ADR 0002): el orden de `ArrowId` que vacía un `Level` arrow-path. Incluye dos extensiones técnicas: validación sintáctica del parámetro de ruta `:id` (400 antes de tocar el repositorio) y logging enriquecido de auditoría en el camino 422.
+**Herramienta de IA utilizada:** Claude Code (opus, rol Senior Backend Dev)
+**Prompt o instrucción proporcionada:** > "Actúa como Senior Backend Dev para el Issue Back #19. [...] Validación de Ruta: implementa un Pipe/Validador para el :id. Logging Enriquecido para 422: al lanzar UnsolvableLevelException, adjunta un objeto de contexto con levelId y metadatos del mapa. Ejecuta la codificación, tests de Jest y actualiza el issue."
+**Resultado obtenido:**
+- Endpoint `GET /levels/:id/solution` → `{ levelId, solution: string[] }` (ids en orden de vaciado). `GetSolutionUseCase` framework-free (puertos + `LevelSolver` por DIP): 404 `LevelNotFoundException` si el nivel no existe, **422 `UnsolvableLevelException`** si no admite Solución.
+- **Validación de ruta:** `LevelIdValidationPipe` (`adapters/pipes/`) rechaza un `:id` sintácticamente corrupto con **400 antes de golpear el repositorio**. El proyecto NO usa UUID/MongoId: `LevelId` es un slug minúsculas (`level-01`) → se valida `^[a-z0-9]+(?:-[a-z0-9]+)*$` (≤64). Lanza `InvalidLevelIdException` (excepción de dominio) a propósito, para servir el MISMO cuerpo uniforme `{ statusCode, code, message }` del resto de la API en vez del body por defecto de Nest. Aplicado a `:id` en `getById` y `getSolution`.
+- **Logging enriquecido 422:** en el camino insoluble se registra a nivel `error` no solo el mensaje sino un objeto de auditoría serializado `{ levelId, cols, rows, arrowCount, arrowIds }`; el mismo contexto se adjunta a la excepción. El cuerpo servido al cliente nunca lo filtra (verificado por test).
+- `UnsolvableLevelException` (código auto-derivado `UNSOLVABLE_LEVEL`) mapeada a **422** en `DomainExceptionFilter`; `LevelSolver` provisto por DI en `LevelModule` (`useFactory`, servicio de dominio puro).
+- Verificación: **48 suites/250 unitarios + 3 suites/11 e2e** verdes (nuevo e2e cubre 200/400/404/422 por el AppModule real); `lint:check` sin errores y `nest build` limpio.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 040 — back#24 — Username value object (backend de front#50)
 
 **Fecha:** 2026-07-13
 **Tarea o problema abordado:** Fragmento 1/4 de back#24 (backend del leaderboard con username, que desbloquea front#50): crear el Value Object de dominio `Username` (VO puro, sin dependencias de framework) con su validación de invariante (3–20 caracteres, charset `^[A-Za-z0-9_]+$`) y su excepción `InvalidUsernameException`. Sigue el patrón establecido por `Email` VO (entrada 002, Task 2A.1) para mantener consistencia arquitectónica.
@@ -410,7 +512,7 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - Sin cambios en API pública HTTP (capa `domain/`, consumida más adelante en back#24 para validar/almacenar usernames); README.md no modificado.
 **Modificaciones realizadas por el equipo:** (completar manualmente)
 
-## Entrada 032 — back#24 — columna username en User (schema + backfill helper)
+## Entrada 041 — back#24 — columna username en User (schema + backfill helper)
 
 **Fecha:** 2026-07-13
 **Tarea o problema abordado:** Fragmento 2/4 de back#24: añadir `username String @unique` (requerido) al modelo `User` en `schema.prisma` y regenerar el cliente Prisma. Al hacerlo se descubrió y resolvió un conflicto de flujo: el spec/plan asumía una **migración Prisma** con backfill inline, pero este repo **no usa migraciones** — el flujo del equipo es `npx prisma db push` (no existe `prisma/migrations/` en `origin/main`; cf. entrada 030). Se descartó la carpeta de migración generada por error y se adoptó el flujo `db push`.
@@ -419,12 +521,12 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 **Resultado obtenido:**
 - `prisma/schema.prisma`: `User` gana `username String @unique` (requerido). Fuente de verdad para `db push`.
 - `prisma/backfill-username.sql`: helper SQL con la receta de aplicación bajo `db push` (BD desechable → `db push` directo; BD con datos → nullable/backfill/required en 3 pasos). El backfill usa `'player_' || substr(id,1,8)`, coherente con la invariante del VO `Username`.
-- `npx prisma generate` ejecutado (sin BD; lee `schema.prisma`): el cliente ahora incluye `username`, y de paso incorpora `Level.order`, resolviendo el error de tsc preexistente reportado en la entrada 031.
+- `npx prisma generate` ejecutado (sin BD; lee `schema.prisma`): el cliente ahora incluye `username`, y de paso incorpora `Level.order`, resolviendo el error de tsc preexistente reportado en la entrada 040.
 - **Verificación honesta — NADA se aplicó a ninguna BD** (no hay `DATABASE_URL`/Postgres esta sesión, decisión del usuario). El usuario debe aplicar el esquema con `npx prisma db push` y el backfill según `prisma/backfill-username.sql` cuando tenga BD. No se afirma que la migración/backfill se haya ejecutado ni verificado contra datos.
 - **Estado transitorio de build:** tras regenerar el cliente, el árbol de trabajo falla `tsc` en `prisma-user.repository.ts` porque `UserCreateInput` ya exige `username` pero la entidad/repo aún no lo cablean — eso se completa en el fragmento 3/4 (registro con username), que deja el build en verde. El contenido de ESTE commit es solo esquema + SQL + doc (sin TypeScript).
 **Modificaciones realizadas por el equipo:** (completar manualmente)
 
-## Entrada 033 — back#24 — Registro requiere username único (front#50)
+## Entrada 042 — back#24 — Registro requiere username único (front#50)
 
 **Fecha:** 2026-07-13
 **Tarea o problema abordado:** Fragmento 3/4 de back#24: cablear `username` de punta a punta en el registro. `User` gana `username: Username`; `IUserRepository` gana `findByUsername`; `RegisterUseCase.execute` pasa a firma `(rawEmail, rawUsername, plainPassword)` y valida unicidad de username además de email; `RegisterDto` y `AuthController.register` propagan el campo; `PrismaUserRepository` lee/escribe `username`. Nueva `UsernameAlreadyTakenException` (mismo patrón que `UserAlreadyExistsException`). Este fragmento deja `npx tsc --noEmit` en verde (estaba rojo desde el fragmento 2/4 por diseño, ya que `UserCreateInput` exigía `username` sin que el repo lo cableara).
@@ -441,11 +543,11 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - Specs actualizados: `register.use-case.spec.ts` (reescrito — firma de 3 args, caso "username libre", caso "username tomado" → `UsernameAlreadyTakenException`, mock de `findByUsername`); `prisma-user.repository.spec.ts` (`username` en records mockeados, aserción en `save`, nuevo `describe('findByUsername', ...)` con 2 tests espejando `findByEmail`); `login.use-case.spec.ts` y `auth.controller.spec.ts` (`new User(...)`/DTOs/aserciones actualizados al nuevo shape de 4 args y 3 args respectivamente).
 - TDD verificado: `npx jest src/application/use-cases/register.use-case.spec.ts` en rojo antes de crear la excepción/campo (`Cannot find module '.../username-already-taken.exception'`); verde tras implementar los pasos 3-9 del brief.
 - Verificación final: `npx jest` → 44 suites / 194 tests, todo verde. `npx tsc --noEmit` → exit 0 (sin errores), confirmando que el fragmento cierra el estado rojo heredado del fragmento 2/4.
-- **Verificación honesta — sin base de datos esta sesión.** Todos los tests son unitarios con `PrismaService` mockeado (`jest.fn()` sobre `findUnique`/`create`); no se ejecutó `prisma db push`, `prisma migrate`, ni ninguna query real contra Postgres. La unicidad de `username`/`email` a nivel de constraint de BD (`@unique` en `schema.prisma`, entrada 032) sigue sin verificarse contra datos reales; solo se verificó la lógica de aplicación (use case + repo) contra mocks.
+- **Verificación honesta — sin base de datos esta sesión.** Todos los tests son unitarios con `PrismaService` mockeado (`jest.fn()` sobre `findUnique`/`create`); no se ejecutó `prisma db push`, `prisma migrate`, ni ninguna query real contra Postgres. La unicidad de `username`/`email` a nivel de constraint de BD (`@unique` en `schema.prisma`, entrada 041) sigue sin verificarse contra datos reales; solo se verificó la lógica de aplicación (use case + repo) contra mocks.
 - README.md: fila de `/auth/register` actualizada para mencionar `username`; ejemplo de request body añadido junto a la respuesta `{ "token": "<jwt>" }`.
 **Modificaciones realizadas por el equipo:** (completar manualmente)
 
-## Entrada 034 — back#24 — front#50 — expose username on GET /leaderboard/:levelId
+## Entrada 043 — back#24 — front#50 — expose username on GET /leaderboard/:levelId
 
 **Fecha:** 2026-07-13
 **Tarea o problema abordado:** Fragmento 4/4 (final) de back#24: exponer `username` en la respuesta de `GET /leaderboard/:levelId` sin contaminar el agregado de escritura `ScoreEntry`. Se introduce un read model dedicado (`LeaderboardRow`) siguiendo un enfoque CQRS-lite: la ruta de escritura (`POST /scores` → `ScoreEntry` → `ScoreEntryResponseDto`) queda intacta; la ruta de lectura del ranking gana su propia forma con `username` resuelto.

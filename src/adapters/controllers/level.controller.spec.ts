@@ -1,5 +1,6 @@
 import { LevelController } from './level.controller';
 import { GetLevelUseCase } from '../../application/use-cases/get-level.use-case';
+import { GetSolutionUseCase } from '../../application/use-cases/get-solution.use-case';
 import { ListLevelsUseCase } from '../../application/use-cases/list-levels.use-case';
 import { Level } from '../../domain/entities/level.entity';
 import { Arrow } from '../../domain/entities/arrow.entity';
@@ -8,10 +9,12 @@ import { ArrowId } from '../../domain/value-objects/arrow-id.vo';
 import { Position } from '../../domain/value-objects/position.vo';
 import { Direction } from '../../domain/value-objects/direction.vo';
 import { LevelNotFoundException } from '../../domain/exceptions/level-not-found.exception';
+import { UnsolvableLevelException } from '../../domain/exceptions/unsolvable-level.exception';
 
 describe('LevelController', () => {
   let sut: LevelController;
   let mockGetLevelUseCase: jest.Mocked<Pick<GetLevelUseCase, 'execute'>>;
+  let mockGetSolutionUseCase: jest.Mocked<Pick<GetSolutionUseCase, 'execute'>>;
   let mockListLevelsUseCase: jest.Mocked<Pick<ListLevelsUseCase, 'execute'>>;
 
   const buildLevel = () =>
@@ -36,9 +39,11 @@ describe('LevelController', () => {
 
   beforeEach(() => {
     mockGetLevelUseCase = { execute: jest.fn() };
+    mockGetSolutionUseCase = { execute: jest.fn() };
     mockListLevelsUseCase = { execute: jest.fn() };
     sut = new LevelController(
       mockGetLevelUseCase as unknown as GetLevelUseCase,
+      mockGetSolutionUseCase as unknown as GetSolutionUseCase,
       mockListLevelsUseCase as unknown as ListLevelsUseCase,
     );
   });
@@ -105,6 +110,39 @@ describe('LevelController', () => {
 
       // Assert
       await expect(act()).rejects.toBeInstanceOf(LevelNotFoundException);
+    });
+  });
+
+  describe('getSolution', () => {
+    it('delegates to GetSolutionUseCase and maps the clearing order to plain ids', async () => {
+      // Arrange
+      mockGetSolutionUseCase.execute.mockResolvedValue([
+        new ArrowId('a2'),
+        new ArrowId('a1'),
+      ]);
+
+      // Act
+      const result = await sut.getSolution('l-007');
+
+      // Assert
+      expect(mockGetSolutionUseCase.execute).toHaveBeenCalledWith('l-007');
+      expect(result).toEqual({
+        levelId: 'l-007',
+        solution: ['a2', 'a1'],
+      });
+    });
+
+    it('propagates UnsolvableLevelException when the use case throws (surfaced as 422 by the global filter)', async () => {
+      // Arrange
+      mockGetSolutionUseCase.execute.mockRejectedValue(
+        new UnsolvableLevelException("Level 'l-007' has no solution"),
+      );
+
+      // Act
+      const act = () => sut.getSolution('l-007');
+
+      // Assert
+      await expect(act()).rejects.toBeInstanceOf(UnsolvableLevelException);
     });
   });
 });

@@ -29,7 +29,10 @@ describe('JwtStrategy', () => {
       const result = sut.validate(payload);
 
       // Assert
-      expect(result).toEqual({ userId: 'user-uuid-1', email: 'user@example.com' });
+      expect(result).toEqual({
+        userId: 'user-uuid-1',
+        email: 'user@example.com',
+      });
     });
 
     it('should map a different payload correctly', () => {
@@ -40,7 +43,10 @@ describe('JwtStrategy', () => {
       const result = sut.validate(payload);
 
       // Assert
-      expect(result).toEqual({ userId: 'another-uuid', email: 'other@test.com' });
+      expect(result).toEqual({
+        userId: 'another-uuid',
+        email: 'other@test.com',
+      });
     });
   });
 });

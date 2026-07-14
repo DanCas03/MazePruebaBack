@@ -4,11 +4,10 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)
 ![Prisma](https://img.shields.io/badge/Prisma-6-2D3748?logo=prisma&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-database-4169E1?logo=postgresql&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-163%20passing-brightgreen)
-![Build](https://img.shields.io/badge/nest%20build-passing-brightgreen)
+[![CI](https://github.com/DanCas03/MazePruebaBack/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/DanCas03/MazePruebaBack/actions/workflows/ci.yml)
 ![License](https://img.shields.io/badge/license-UNLICENSED-lightgrey)
 
-> Status badges reflect the latest local verification. Continuous integration (CI/CD) is not wired up yet; see [Contributing](#contributing).
+> The CI badge reflects the [GitHub Actions workflow](.github/workflows/ci.yml) on `main`: ESLint, the full Jest suite, and `nest build` run on every pull request; see [Contributing](#contributing).
 
 REST API for **Arrow Maze**, a casual mobile puzzle game. It handles user registration and authentication with JWT, score submission with per-level leaderboards, and cross-device progress sync; serving arrow-path puzzle levels to the Flutter client returns with back#5 (see ADR 0001). The codebase is a study in **Clean Architecture**: the business rules sit in a framework-free core, and NestJS, Prisma, and JWT live at the edges as replaceable details.
 
@@ -105,6 +104,10 @@ export class LoggingInterceptor implements NestInterceptor {
 
 ## API Endpoints
 
+Interactive OpenAPI documentation (Swagger UI) is served at **`/api`**; the raw
+OpenAPI 3 document is available at **`/api-json`**. Both are generated at
+bootstrap from the controllers' decorators via `DocumentBuilder` (`src/app.setup.ts`).
+
 | Method | Path                  | Auth | Description                          |
 |--------|-----------------------|------|--------------------------------------|
 | POST   | `/auth/register`      | No   | Register a user with a unique `email` + `username`; returns a JWT |
@@ -155,11 +158,13 @@ export class LoggingInterceptor implements NestInterceptor {
 // GET /progress (Bearer token required) → 200
 [{ "levelId": "level-07", "completed": true, "bestScore": 1200, "bestStars": 3 }]
 
-// Error shape (produced by DomainExceptionFilter)
-{ "statusCode": 401, "error": "InvalidCredentialsException", "message": "Invalid email or password" }
+// Error shape for every domain exception (produced by DomainExceptionFilter)
+// `code` is the stable machine-readable identifier — clients discriminate on
+// it, never on `message`.
+{ "statusCode": 401, "code": "INVALID_CREDENTIALS", "message": "Invalid email or password" }
 ```
 
-Domain exceptions map to status codes as follows: `LevelNotFoundException → 404`, `InvalidCredentialsException → 401`, any other `DomainException → 400`.
+Domain exceptions map to status codes as follows: `LevelNotFoundException → 404`, `InvalidCredentialsException → 401`, `UserAlreadyExistsException → 409`, any other `DomainException → 400` (never 500).
 
 ## Getting Started
 
@@ -194,10 +199,26 @@ npx prisma migrate dev      # create the schema (User, Level) in your database
 npm run start:dev           # watch mode at http://localhost:3000
 ```
 
+### Seeding levels
+
+The game ships with **15 curated, progressively harder levels** (`level-01`…`level-15`), frozen as arrow-path fixtures in [`prisma/levels/`](prisma/levels) and seeded with an explicit play order. Every level is guaranteed solvable by the domain `LevelSolver`.
+
+```bash
+npm run db:seed     # upsert the 15 curated levels into the database
+```
+
+Requires a reachable `DATABASE_URL` with the schema already migrated (`npx prisma migrate dev`). The seed is:
+
+- **Idempotent** — it upserts by level id, so re-running it never duplicates rows and preserves ids referenced by scores and progress.
+- **Fail-fast** — before writing anything it rebuilds each level and asserts board invariants and solvability, aborting the whole batch if any fixture is invalid.
+- **Automatic on reset** — configured via `migrations.seed` in `prisma.config.ts`, so `prisma migrate dev` / `prisma migrate reset` run it for you after applying migrations.
+
+See [`prisma/levels/manifest.md`](prisma/levels/manifest.md) for the provenance of each level and the deterministic selection rule.
+
 ## Running Tests
 
 ```bash
-npm test            # unit tests (Jest, AAA, mocked dependencies) — 163 tests
+npm test            # unit tests (Jest, AAA, mocked dependencies) — 219 tests
 npm run test:cov    # with coverage
 npm run test:e2e    # end-to-end (no DB-backed e2e specs yet; passes with none)
 ```
@@ -213,7 +234,7 @@ This codebase was built with AI assistance (Claude Code), and every significant 
 - **Commits** follow [Conventional Commits](https://www.conventionalcommits.org/): `<type>(<scope>): <description>` in the imperative present, one significant fragment per commit (for example, `feat(back/application): add LoginUseCase`).
 - **Branching**: feature work happens on a `feat/<name>` branch cut from `main`; this milestone lives on `feat/main-sprint`.
 - **Pull requests**: open a PR against `main`, ensure `npm test` and `npm run build` are green, and update `AI_HISTORY.MD` (and this README when public behavior changes) as part of the change.
-- **CI/CD** is not configured yet; running the test suite and build locally is the current gate.
+- **CI**: every pull request runs the [`CI` workflow](.github/workflows/ci.yml) (`npm run lint:check` + `npm test` + `npm run build` on Node 22); merging to `main` requires the `CI / lint · test · build` check to be green (branch protection is configured in Settings → Branches). Run the same three commands locally to reproduce the gate.
 
 ## License
 

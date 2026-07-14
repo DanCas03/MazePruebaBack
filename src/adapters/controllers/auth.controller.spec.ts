@@ -42,7 +42,7 @@ describe('AuthController', () => {
       expect(result).toEqual({ token: 'signed.jwt.token' });
     });
 
-    it('propagates UserAlreadyExistsException when the use case throws (surfaced as 400 by the global filter)', async () => {
+    it('propagates UserAlreadyExistsException when the use case throws (surfaced as 409 by the global filter)', async () => {
       // Arrange
       mockRegisterUseCase.execute.mockRejectedValue(
         new UserAlreadyExistsException(
