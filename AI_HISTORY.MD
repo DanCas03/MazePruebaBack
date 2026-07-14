@@ -670,6 +670,15 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 **Resultado obtenido:** CONTEXT.md ampliado con 4 términos; issues back#30–#32 triageados con Agent Briefs (más front#64–#69).
 **Modificaciones realizadas por el equipo:** (completar manualmente)
 
+## Entrada 052 — LevelSolver sobre grafo de bloqueos (back#30)
+
+**Fecha:** 2026-07-14
+**Tarea o problema abordado:** El replay greedy de `LevelSolver` reconstruía el `Set` de ocupación en cada `canExit` y reiniciaba el escaneo tras cada remoción (~O(A³)); inviable para la campaña 50×50 con ~300–400 flechas (ADR 0003). Se reimplementó sobre el Grafo de bloqueos (CONTEXT.md): mapa de ocupación celda→flecha construido una vez, arista Y→X cuando Y ocupa el carril de salida de X, y pelado tipo Kahn con min-heap por índice congelado en `level.arrows` — equivalente byte-a-byte al greedy previo (ADR 0002 dec. 5). Interface pública intacta (`solve`/`isSolvable`); el residuo no pelable queda como diagnóstico privado (`peel`), no expuesto.
+**Herramienta de IA utilizada:** Claude Code (Fable 5)
+**Prompt o instrucción proporcionada:** > "Implement GitHub issue DanCas03/MazePruebaBack#30 end-to-end: LevelSolver sobre grafo de bloqueos, Soluciones byte-idénticas (snapshot de los 15 fixtures antes del refactor), test de escala 50×50 con ≥300 flechas < 250 ms, dominio puro sin dependencias nuevas."
+**Resultado obtenido:** Snapshot congelado `src/domain/services/curated-solutions.snapshot.json` (capturado con la implementación pre-refactor y verificado byte-idéntico tras el refactor); `level-solver.ts` reescrito (grafo + `MinIndexHeap` privado del módulo); tests AAA añadidos a `level-solver.spec.ts`: equivalencia de los 15 fixtures contra el snapshot, determinismo en llamadas repetidas, residuo interno con ambas flechas de un ciclo de 2, escala 50×50/325 flechas < 250 ms. Suite completa: 49 suites / 282 tests unit + 4 suites / 13 tests e2e en verde sin tocar los tests existentes.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
 ## Entrada 053 — feat(levels): Sección e Instrucciones de pintado en el wire (back#31, ADR 0004)
 
 **Fecha:** 2026-07-14
