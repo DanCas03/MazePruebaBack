@@ -592,7 +592,21 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - Verificación: `npm run test:e2e` local → 3 suites / 11 tests verdes; estructura del workflow validada (pasos `Install → Generate Prisma → Lint → Test → E2E → Build`). El efecto real (bloquear un e2e roto) se confirmará en la corrida de CI del push.
 **Modificaciones realizadas por el equipo:** (completar manualmente)
 
-## Entrada 046 — feat(back): soporte Docker para desarrollo local
+## Entrada 046 — back#27 — mapear UsernameAlreadyTakenException a 409 (elimina la asimetría 400 vs 409)
+
+**Fecha:** 2026-07-14
+**Tarea o problema abordado:** Una revisión de completitud detectó un contrato de error inconsistente: un **email** duplicado en `POST /auth/register` devolvía **409 Conflict**, pero un **username** duplicado devolvía **400 Bad Request**. `UsernameAlreadyTakenException` no estaba en el registro `statusByException` de `DomainExceptionFilter`, así que caía al default 400, mientras que `UserAlreadyExistsException` sí mapeaba a 409. Dos conflictos de "ya tomado" equivalentes salían con códigos distintos.
+**Herramienta de IA utilizada:** Claude Code (Opus, rol Arquitecto Senior; skill arrowmaze-backend, TDD rojo→verde)
+**Prompt o instrucción proporcionada:** > "hagamos ambas cosas a y b" (a = arreglar la asimetría 400/409 del username)
+**Resultado obtenido:**
+- `src/shared/aspects/domain-exception.filter.ts`: nueva entrada `[UsernameAlreadyTakenException, HttpStatus.CONFLICT]` en el registro (más su import). Aprovecha el diseño OCP del filtro — se extiende añadiendo una fila, sin tocar el flujo de `catch`. El `code` estable derivado es `USERNAME_ALREADY_TAKEN`.
+- `src/adapters/controllers/auth.controller.ts`: la `@ApiResponse({ status: 409 })` de `register` pasa de `'Email already registered.'` a `'Email already registered, or username already taken.'` para documentar ambos conflictos.
+- `src/shared/aspects/domain-exception.filter.spec.ts`: nuevo caso AAA que mapea `UsernameAlreadyTakenException` → 409 con cuerpo `{statusCode:409, code:'USERNAME_ALREADY_TAKEN', message}`, espejo del test de `UserAlreadyExistsException`.
+- TDD: el test corrió en **rojo** antes del fix (`expect(mockStatus).toHaveBeenCalledWith(409)` recibía 400, confirmando el fallback); **verde** tras añadir la entrada al registro.
+- Verificación: `npx jest src/shared/aspects/domain-exception.filter.spec.ts` → 7/7; suite completa `npx jest` → **263 tests** verdes (+1); `npx tsc --noEmit` exit 0; `npx eslint` de los archivos tocados limpio; `npm run build` exit 0. Sin BD esta sesión: el mapeo es lógica de aplicación pura (filtro AOP), verificado unitariamente contra el `ArgumentsHost` mockeado.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 047 — feat(back): soporte Docker para desarrollo local
 
 **Fecha:** 2026-07-14
 **Tarea o problema abordado:** El usuario pidió correr todo el proyecto (back + front) en Docker para desarrollo local, sin instalar Node/PostgreSQL en el host. Este fragmento cubre el lado backend: imagen Docker de desarrollo que aplica migraciones y siembra los niveles curados automáticamente al arrancar.
@@ -606,12 +620,13 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - La orquestación completa (compose, Postgres, frontend) vive en `ArrowMaze/docker-compose.yml`, fuera de este repo (esa carpeta raíz no es un repositorio git) — documentada en `ArrowMaze/README-docker.md`.
 - Verificación: `docker build -t maze-back:dev -f Dockerfile .` exitoso; `sh -n docker-entrypoint.sh` sin errores de sintaxis. La verificación end-to-end (migración + seed reales + `GET /levels`) se hizo en el fragmento de integración del stack completo.
 - README.md: nueva sub-sección "Docker (recommended for local dev)" bajo "Getting Started".
+- Nota de numeración: esta entrada y la siguiente se escribieron originalmente como 046/047 en la rama `feat/docker-local-dev`; se renumeraron a 047/048 al integrar `main`, que ya había tomado el número 046 (fix del 409 de username).
 **Modificaciones realizadas por el equipo:** (completar manualmente)
 
-## Entrada 047 — fix(back): agregar la migración inicial de Prisma faltante
+## Entrada 048 — fix(back): agregar la migración inicial de Prisma faltante
 
 **Fecha:** 2026-07-14
-**Tarea o problema abordado:** La verificación end-to-end del stack Docker (entrada 046) reveló que `prisma/migrations/` nunca existió en este repo — nadie había commiteado la migración inicial. `docker-entrypoint.sh` corre `prisma migrate deploy` (correcto para un entorno no interactivo), pero sin ninguna migración que aplicar, la tabla `Level` nunca se creaba en una base de datos nueva y el seed fallaba con `P2021: The table 'public.Level' does not exist`. No es un bug del Dockerfile: cualquier base de datos Postgres fresca (CI, despliegue, o este contenedor) tendría el mismo problema, porque el proyecto venía dependiendo de que cada developer ya tuviera el schema aplicado localmente (vía `prisma db push` o un `migrate dev` nunca commiteado).
+**Tarea o problema abordado:** La verificación end-to-end del stack Docker (entrada 047) reveló que `prisma/migrations/` nunca existió en este repo — nadie había commiteado la migración inicial. `docker-entrypoint.sh` corre `prisma migrate deploy` (correcto para un entorno no interactivo), pero sin ninguna migración que aplicar, la tabla `Level` nunca se creaba en una base de datos nueva y el seed fallaba con `P2021: The table 'public.Level' does not exist`. No es un bug del Dockerfile: cualquier base de datos Postgres fresca (CI, despliegue, o este contenedor) tendría el mismo problema, porque el proyecto venía dependiendo de que cada developer ya tuviera el schema aplicado localmente (vía `prisma db push` o un `migrate dev` nunca commiteado).
 **Herramienta de IA utilizada:** Claude Code (Sonnet 5, rol Arquitecto de Software Senior)
 **Prompt o instrucción proporcionada:** > "Generar y commitear la migración inicial" (elegido por el usuario entre dos opciones tras encontrar el bloqueo durante la verificación end-to-end del plan de Docker)
 **Resultado obtenido:**

@@ -9,6 +9,7 @@ import { DomainException } from '../../domain/exceptions/domain.exception';
 import { LevelNotFoundException } from '../../domain/exceptions/level-not-found.exception';
 import { InvalidCredentialsException } from '../../domain/exceptions/invalid-credentials.exception';
 import { UserAlreadyExistsException } from '../../domain/exceptions/user-already-exists.exception';
+import { UsernameAlreadyTakenException } from '../../domain/exceptions/username-already-taken.exception';
 import { UnsolvableLevelException } from '../../domain/exceptions/unsolvable-level.exception';
 import type { DomainErrorBody } from '../contracts/domain-error-body';
 
@@ -33,6 +34,7 @@ export class DomainExceptionFilter implements ExceptionFilter {
     [LevelNotFoundException, HttpStatus.NOT_FOUND],
     [InvalidCredentialsException, HttpStatus.UNAUTHORIZED],
     [UserAlreadyExistsException, HttpStatus.CONFLICT],
+    [UsernameAlreadyTakenException, HttpStatus.CONFLICT],
     [UnsolvableLevelException, HttpStatus.UNPROCESSABLE_ENTITY],
   ]);
 
