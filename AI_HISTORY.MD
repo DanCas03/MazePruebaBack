@@ -579,3 +579,15 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - Verificación: `npm run test:e2e` → 3 suites / 11 tests verdes (antes 1 failed). Sin regresión en el resto: `npx tsc --noEmit` exit 0, `npx jest` (unit) 49 suites / 262 tests verdes, `eslint` del archivo tocado limpio.
 - **Hueco de CI señalado (no corregido en este fragmento):** `test:e2e` no está en `.github/workflows/ci.yml`, por lo que un e2e roto no bloquea el merge. El e2e usa `PrismaService` mockeado (no necesita Postgres), así que añadirlo al pipeline es viable y cerraría el hueco que permitió que esta regresión pasara verde. Queda como recomendación para un fragmento aparte.
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 045 — ci(back): añadir e2e al gate de CI (cierra el hueco de la entrada 044)
+
+**Fecha:** 2026-07-13
+**Tarea o problema abordado:** La entrada 044 identificó la causa raíz de que una regresión e2e pasara el gate en verde: `.github/workflows/ci.yml` solo corría `npm test` (Jest unitario, `rootDir: src`), mientras que la suite e2e (`test:e2e`, config `test/jest-e2e.json`) quedaba fuera del pipeline. Añadir el e2e al workflow para que un e2e roto bloquee el merge.
+**Herramienta de IA utilizada:** Claude Code (Opus, rol Arquitecto Senior)
+**Prompt o instrucción proporcionada:** > "haz ambos" (añadir test:e2e al CI y responder a la reviewer)
+**Resultado obtenido:**
+- `.github/workflows/ci.yml`: nuevo step `E2E` (`npm run test:e2e`) entre `Test` y `Build`. Usa `PrismaService` mockeado (`test/create-test-app.ts`), así que corre sin Postgres real; la `DATABASE_URL` dummy del job basta y `JWT_SECRET` tiene fallback de test.
+- **Nombre del job preservado a propósito** (`lint · test · build`, no `… · e2e · …`): ese string es el nombre del check requerido en la protección de rama de `main`. Renombrarlo dejaría el check requerido como "faltante" y bloquearía todo PR hasta actualizar Settings → Branches. Se documentó la restricción en un comentario del propio workflow.
+- Verificación: `npm run test:e2e` local → 3 suites / 11 tests verdes; estructura del workflow validada (pasos `Install → Generate Prisma → Lint → Test → E2E → Build`). El efecto real (bloquear un e2e roto) se confirmará en la corrida de CI del push.
+**Modificaciones realizadas por el equipo:** (completar manualmente)

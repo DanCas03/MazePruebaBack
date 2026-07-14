@@ -18,6 +18,10 @@ permissions:
 
 jobs:
   ci:
+    # Nombre estable a propósito: es el nombre del check requerido en la
+    # protección de main. NO renombrar sin actualizar Settings → Branches,
+    # o el PR quedaría bloqueado por un check "faltante". El e2e va incluido
+    # como step propio abajo.
     name: lint · test · build
     runs-on: ubuntu-latest
     env:
@@ -44,6 +48,13 @@ jobs:
 
       - name: Test
         run: npm test
+
+      # back#24: el e2e (test:e2e, config aparte de la suite unitaria) vive
+      # fuera del rootDir de `npm test`. Sin este paso, un e2e roto pasaba el
+      # gate en verde (regresión del PR #25). Usa PrismaService mockeado —
+      # no necesita Postgres real.
+      - name: E2E
+        run: npm run test:e2e
 
       - name: Build
         run: npm run build
