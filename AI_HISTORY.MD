@@ -607,3 +607,15 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - Verificación: `docker build -t maze-back:dev -f Dockerfile .` exitoso; `sh -n docker-entrypoint.sh` sin errores de sintaxis. La verificación end-to-end (migración + seed reales + `GET /levels`) se hizo en el fragmento de integración del stack completo.
 - README.md: nueva sub-sección "Docker (recommended for local dev)" bajo "Getting Started".
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 047 — fix(back): agregar la migración inicial de Prisma faltante
+
+**Fecha:** 2026-07-14
+**Tarea o problema abordado:** La verificación end-to-end del stack Docker (entrada 046) reveló que `prisma/migrations/` nunca existió en este repo — nadie había commiteado la migración inicial. `docker-entrypoint.sh` corre `prisma migrate deploy` (correcto para un entorno no interactivo), pero sin ninguna migración que aplicar, la tabla `Level` nunca se creaba en una base de datos nueva y el seed fallaba con `P2021: The table 'public.Level' does not exist`. No es un bug del Dockerfile: cualquier base de datos Postgres fresca (CI, despliegue, o este contenedor) tendría el mismo problema, porque el proyecto venía dependiendo de que cada developer ya tuviera el schema aplicado localmente (vía `prisma db push` o un `migrate dev` nunca commiteado).
+**Herramienta de IA utilizada:** Claude Code (Sonnet 5, rol Arquitecto de Software Senior)
+**Prompt o instrucción proporcionada:** > "Generar y commitear la migración inicial" (elegido por el usuario entre dos opciones tras encontrar el bloqueo durante la verificación end-to-end del plan de Docker)
+**Resultado obtenido:**
+- `prisma/migrations/20260714134255_init/migration.sql` (nuevo): generado con `prisma migrate dev --name init --skip-seed` corrido dentro del contenedor `back` (`docker compose run --rm --entrypoint "" back sh -c "npx prisma migrate dev --name init --skip-seed"`, contra la base `db` de Docker, ya vacía) — captura el schema completo actual (`Level`, `User`, `ScoreEntry`, `Progress` con sus índices y unique constraints) como el estado base.
+- `prisma/migrations/migration_lock.toml` (nuevo): generado junto con la migración, fija el provider (`postgresql`).
+- Verificación: tras generar la migración, se relanzó el stack completo (`docker compose up -d`); `docker compose logs back` mostró `Applying database migrations` → `20260714134255_init` aplicada → seed de los 15 niveles curados exitoso; `GET /levels` devolvió los 15 `levelId` esperados. Detalle completo en la entrada de integración del stack completo.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
