@@ -4,6 +4,7 @@ import type { ArgumentsHost } from '@nestjs/common';
 import { LevelNotFoundException } from '../../domain/exceptions/level-not-found.exception';
 import { InvalidCredentialsException } from '../../domain/exceptions/invalid-credentials.exception';
 import { UserAlreadyExistsException } from '../../domain/exceptions/user-already-exists.exception';
+import { UnsolvableLevelException } from '../../domain/exceptions/unsolvable-level.exception';
 import { DomainException } from '../../domain/exceptions/domain.exception';
 
 class UnmappedDomainException extends DomainException {}
@@ -72,6 +73,49 @@ describe('DomainExceptionFilter', () => {
       statusCode: HttpStatus.CONFLICT,
       code: 'USER_ALREADY_EXISTS',
       message: 'Email already registered',
+    });
+  });
+
+  it('maps UnsolvableLevelException to HTTP 422 Unprocessable Entity', () => {
+    // Arrange
+    const exception = new UnsolvableLevelException(
+      "Level 'level-99' has no solution",
+    );
+
+    // Act
+    sut.catch(exception, mockHost);
+
+    // Assert
+    expect(mockStatus).toHaveBeenCalledWith(HttpStatus.UNPROCESSABLE_ENTITY);
+    expect(mockJson).toHaveBeenCalledWith({
+      statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+      code: 'UNSOLVABLE_LEVEL',
+      message: "Level 'level-99' has no solution",
+    });
+  });
+
+  it('never leaks the audit context to the client body', () => {
+    // Arrange — la excepción lleva metadatos de auditoría; el cuerpo servido
+    // debe seguir siendo exactamente { statusCode, code, message }.
+    const exception = new UnsolvableLevelException(
+      "Level 'level-99' has no solution",
+      {
+        levelId: 'level-99',
+        cols: 4,
+        rows: 1,
+        arrowCount: 2,
+        arrowIds: ['a', 'b'],
+      },
+    );
+
+    // Act
+    sut.catch(exception, mockHost);
+
+    // Assert
+    expect(mockJson).toHaveBeenCalledWith({
+      statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+      code: 'UNSOLVABLE_LEVEL',
+      message: "Level 'level-99' has no solution",
     });
   });
 

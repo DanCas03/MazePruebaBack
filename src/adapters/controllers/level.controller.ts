@@ -1,13 +1,16 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { GetLevelUseCase } from '../../application/use-cases/get-level.use-case';
+import { GetSolutionUseCase } from '../../application/use-cases/get-solution.use-case';
 import { ListLevelsUseCase } from '../../application/use-cases/list-levels.use-case';
 import {
   LevelMapper,
   LevelResponseDto,
   LevelSummaryDto,
+  SolutionResponseDto,
 } from '../mappers/level.mapper';
 import { ErrorResponseDto } from '../dtos/error-response.dto';
+import { LevelIdValidationPipe } from '../pipes/level-id-validation.pipe';
 
 // Adapter: expone Level (back#5) vía HTTP. El controlador solo traduce
 // HTTP <-> use cases (DIP); no conoce ILevelRepository ni Prisma.
@@ -16,6 +19,7 @@ import { ErrorResponseDto } from '../dtos/error-response.dto';
 export class LevelController {
   constructor(
     private readonly getLevelUseCase: GetLevelUseCase,
+    private readonly getSolutionUseCase: GetSolutionUseCase,
     private readonly listLevelsUseCase: ListLevelsUseCase,
   ) {}
 
@@ -31,12 +35,49 @@ export class LevelController {
   @ApiOperation({ summary: 'Get a level by id (arrow-path wire contract)' })
   @ApiResponse({ status: 200, description: 'Full arrow-path level.' })
   @ApiResponse({
+    status: 400,
+    description: 'Malformed level id.',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
     status: 404,
     description: 'Level not found.',
     type: ErrorResponseDto,
   })
-  async getById(@Param('id') id: string): Promise<LevelResponseDto> {
+  async getById(
+    @Param('id', LevelIdValidationPipe) id: string,
+  ): Promise<LevelResponseDto> {
     const level = await this.getLevelUseCase.execute(id);
     return LevelMapper.toDto(level);
+  }
+
+  @Get(':id/solution')
+  @ApiOperation({
+    summary: 'Get the clearing Solution for a level (order of arrow ids)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Solution: arrow ids in clearing order.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Malformed level id.',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Level not found.',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 422,
+    description: 'Level exists but has no solution.',
+    type: ErrorResponseDto,
+  })
+  async getSolution(
+    @Param('id', LevelIdValidationPipe) id: string,
+  ): Promise<SolutionResponseDto> {
+    const solution = await this.getSolutionUseCase.execute(id);
+    return LevelMapper.toSolutionDto(id, solution);
   }
 }
