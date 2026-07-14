@@ -7,6 +7,12 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 // (pipes + OpenAPI), de modo que lo que las e2e verifican es lo que
 // producción sirve — sin riesgo de drift entre ambas.
 export function configureApp(app: INestApplication): void {
+  // CORS abierto: el front web (Docker, navegador en localhost:8080) llama a
+  // la API desde otro origen y sin estas cabeceras el navegador bloquea toda
+  // petición. El origen '*' no habilita CSRF aquí: el JWT viaja por header
+  // Authorization (nunca cookies), que un tercero no puede forjar cross-site.
+  app.enableCors();
+
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
   );

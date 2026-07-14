@@ -208,7 +208,7 @@ cd ..
 docker compose up --build
 ```
 
-The backend container applies migrations and seeds the curated levels automatically on every start.
+The backend container applies migrations and seeds the curated levels automatically on every start. The API serves CORS headers so the dockerized web front (running in the host's browser on another port, i.e. cross-origin) can call it.
 
 ### Seeding levels
 
@@ -231,7 +231,7 @@ See [`prisma/levels/manifest.md`](prisma/levels/manifest.md) for the provenance 
 ```bash
 npm test            # unit tests (Jest, AAA, mocked dependencies) — 219 tests
 npm run test:cov    # with coverage
-npm run test:e2e    # end-to-end (no DB-backed e2e specs yet; passes with none)
+npm run test:e2e    # end-to-end HTTP contract against mocked Prisma (error body, OpenAPI, solution, CORS)
 ```
 
 Unit tests isolate the unit under test by mocking its ports, so the suite runs without a real database.

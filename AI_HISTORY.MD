@@ -634,3 +634,16 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - `prisma/migrations/migration_lock.toml` (nuevo): generado junto con la migración, fija el provider (`postgresql`).
 - Verificación: tras generar la migración, se relanzó el stack completo (`docker compose up -d`); `docker compose logs back` mostró `Applying database migrations` → `20260714134255_init` aplicada → seed de los 15 niveles curados exitoso; `GET /levels` devolvió los 15 `levelId` esperados. Detalle completo en la entrada de integración del stack completo.
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 049 — fix(api): habilitar CORS para clientes de navegador (front web dockerizado)
+
+**Fecha:** 2026-07-14
+**Tarea o problema abordado:** La revisión pre-merge del PR #29 detectó que la API no emitía ninguna cabecera CORS (ningún `enableCors` en `src/`). El front web dockerizado (entrada 047 + front PR #62) corre en el navegador del host en `localhost:8080` y llama a la API en `localhost:3000` — cross-origin: el navegador bloqueaba toda petición (login, niveles, leaderboard) aunque `curl` funcionara, por lo que la verificación en vivo original no lo detectó (solo usó curl + page-load).
+**Herramienta de IA utilizada:** Claude Code (Fable 5, rol Arquitecto de Software Senior; skill arrowmaze-code-reviewer)
+**Prompt o instrucción proporcionada:** > "Modifica todo lo que creas que merece ser modificado y resuelve los pr" (tras el informe de revisión que reportó el hallazgo)
+**Resultado obtenido:**
+- `src/app.setup.ts`: `app.enableCors()` en `configureApp` (compartido main.ts ↔ e2e, así el fix aplica a ambas superficies). Origen `*` justificado inline: el JWT viaja por header `Authorization`, nunca cookies, así que el origen abierto no habilita CSRF.
+- `test/cors.e2e-spec.ts` (nuevo): 2 casos AAA sobre la infra e2e existente (Prisma mockeado) — `GET /levels` con `Origin` cross-origin devuelve `Access-Control-Allow-Origin: *`, y el preflight `OPTIONS` responde 204 permitiendo el método solicitado.
+- README.md: la sección Docker menciona que la API sirve CORS para el front web; corregida además la línea de `npm run test:e2e` que aún decía "no DB-backed e2e specs yet" (hay 4 specs e2e desde back#3).
+- Verificación: `npm run test:e2e` → 4 suites / 13 tests verdes (antes 3/11); `npx eslint` de los 2 archivos tocados limpio; `npx tsc --noEmit` exit 0.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
