@@ -1,0 +1,27 @@
+{
+  "levelId": "t-smoke",
+  "section": "themed",
+  "cols": 6,
+  "rows": 6,
+  "palette": { "cara": "#FBBF24", "ojo": "#1E293B" },
+  "arrows": [
+    {
+      "id": "a1",
+      "headDir": "up",
+      "cells": [[1, 1], [1, 2]],
+      "paintRole": "ojo"
+    },
+    {
+      "id": "a2",
+      "headDir": "up",
+      "cells": [[1, 4], [1, 3]],
+      "paintRole": "ojo"
+    },
+    {
+      "id": "a3",
+      "headDir": "down",
+      "cells": [[4, 1], [4, 2], [4, 3], [4, 4]],
+      "paintRole": "cara"
+    }
+  ]
+}

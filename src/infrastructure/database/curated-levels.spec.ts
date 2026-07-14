@@ -3,6 +3,7 @@ import * as path from 'path';
 import { LevelBuilder } from '../../domain/entities/level.builder';
 import { LevelSolver } from '../../domain/services/level-solver';
 import { LevelId } from '../../domain/value-objects/level-id.vo';
+import { validateLevelPaint } from './level-paint.validator';
 import type { ArrowPrimitives } from '../../domain/entities/arrow.factory';
 
 // Contrato de los fixtures curados (back#10, ADR 0001 dec. 5): los 15 niveles
@@ -17,6 +18,18 @@ interface LevelFixture {
   rows: number;
   timeLimitSec?: number;
   arrows: ArrowPrimitives[];
+}
+
+// Fixture temático (back#31, ADR 0004): sin order, con section y con
+// Instrucciones de pintado opcionales servidas como datos opacos.
+interface ThemedLevelFixture {
+  levelId: string;
+  section: string;
+  cols: number;
+  rows: number;
+  timeLimitSec?: number;
+  palette?: Record<string, string>;
+  arrows: (ArrowPrimitives & { paintRole?: string })[];
 }
 
 // Los fixtures viven en prisma/levels, fuera de rootDir=src. Jest corre desde
@@ -36,7 +49,20 @@ function loadFixtures(): LevelFixture[] {
     .sort((a, b) => a.order - b.order);
 }
 
-function buildLevel(fixture: LevelFixture) {
+function loadThemedFixtures(): ThemedLevelFixture[] {
+  return fs
+    .readdirSync(LEVELS_DIR)
+    .filter((file) => /^t-[a-z0-9-]+\.json$/.test(file))
+    .map(
+      (file) =>
+        JSON.parse(
+          fs.readFileSync(path.join(LEVELS_DIR, file), 'utf8'),
+        ) as ThemedLevelFixture,
+    )
+    .sort((a, b) => a.levelId.localeCompare(b.levelId));
+}
+
+function buildLevel(fixture: LevelFixture | ThemedLevelFixture) {
   const builder = new LevelBuilder(new LevelId(fixture.levelId))
     .withDimensions(fixture.cols, fixture.rows)
     .withTimeLimit(fixture.timeLimitSec);
@@ -149,6 +175,45 @@ describe('curated levels (back#10 seed fixtures)', () => {
       // Assert
       expect(early).toHaveLength(9);
       early.forEach((fixture) => expect(fixture.timeLimitSec).toBeUndefined());
+    });
+  });
+
+  // Sección temática (back#31, ADR 0004): mismos guardrails de tablero y
+  // solubilidad que la campaña, más el chequeo barato de pintado del seed.
+  describe('themed fixtures', () => {
+    const themed = loadThemedFixtures();
+
+    it('should ship the t-smoke placeholder as a themed fixture without play order', () => {
+      // Act
+      const smoke = themed.find((f) => f.levelId === 't-smoke');
+      // Assert
+      expect(smoke).toBeDefined();
+      expect(smoke?.section).toBe('themed');
+      expect(smoke).not.toHaveProperty('order');
+    });
+
+    it.each(themed.map((fixture) => [fixture.levelId, fixture] as const))(
+      'should build %s, prove it solvable and pass the paint consistency check',
+      (_levelId, fixture) => {
+        // Arrange
+        const level = buildLevel(fixture);
+        // Act
+        const solvable = solver.isSolvable(level);
+        const paintCheck = () => validateLevelPaint(fixture);
+        // Assert
+        expect(solvable).toBe(true);
+        expect(paintCheck).not.toThrow();
+      },
+    );
+
+    it('should keep every campaign fixture free of paint metadata', () => {
+      // Act + Assert — la campaña no cambia de semántica (retro-compat).
+      fixtures.forEach((fixture) => {
+        expect(fixture).not.toHaveProperty('palette');
+        fixture.arrows.forEach((arrow) => {
+          expect(arrow).not.toHaveProperty('paintRole');
+        });
+      });
     });
   });
 });
