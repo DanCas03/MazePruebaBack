@@ -567,3 +567,15 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - **Verificación honesta — sin base de datos esta sesión.** Todos los tests son unitarios con `PrismaService` mockeado (`jest.fn()` sobre `scoreEntry.findMany`/`user.findMany`); no se ejecutó `prisma db push`, `prisma migrate`, ni ninguna query real contra Postgres. El join `scoreEntry` → `User` y el fallback `player_<8 chars>` solo se verificaron contra mocks, no contra datos reales.
 - README.md: fila de `GET /leaderboard/:levelId` y el ejemplo de respuesta actualizados para reflejar el nuevo campo `username` por fila.
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 044 — back#24 — fix de revisión: e2e del contrato de error roto por username requerido
+
+**Fecha:** 2026-07-13
+**Tarea o problema abordado:** Revisión del PR #25 (ClaudiaLopezp) detectó una regresión enmascarada: tras la fusión con `main`, `test/error-contract.e2e-spec.ts` seguía posteando a `POST /auth/register` con `{ email, password }` sin `username`. Como el nuevo `RegisterDto.username` es requerido y `app.setup.ts` aplica `ValidationPipe({ whitelist, forbidNonWhitelisted })`, la petición devolvía 400 (Bad Request) antes de llegar al caso de uso, pero el test esperaba 409 (email ya registrado) — `E2E: 1 failed, 10 passed`. El CI no lo cachaba porque el workflow corre `test` (Jest unit, `rootDir: src`) y el e2e vive en `test:e2e` (config aparte), fuera del pipeline: el e2e roto pasaba el check verde.
+**Herramienta de IA utilizada:** Claude Code (Opus, rol Arquitecto Senior; skill superpowers:receiving-code-review)
+**Prompt o instrucción proporcionada:** > "hay una nueva revision del pr#25, se encontro un conflicto, revisalo y arreglalo por favor"
+**Resultado obtenido:**
+- `test/error-contract.e2e-spec.ts` (test 409): se añade `username: 'taken_user'` al body del `POST /auth/register` (pasa el `ValidationPipe`) y también al `mockResolvedValue` del usuario existente. Este segundo cambio no es solo cosmético: `PrismaUserRepository.findByEmail` reconstruye el `User` vía `toDomain` → `new Username(record.username)`, así que sin `username` en el record el VO se construiría con un valor ausente. Con ambos, el caso de uso alcanza el check de email y lanza `UserAlreadyExistsException` → 409.
+- Verificación: `npm run test:e2e` → 3 suites / 11 tests verdes (antes 1 failed). Sin regresión en el resto: `npx tsc --noEmit` exit 0, `npx jest` (unit) 49 suites / 262 tests verdes, `eslint` del archivo tocado limpio.
+- **Hueco de CI señalado (no corregido en este fragmento):** `test:e2e` no está en `.github/workflows/ci.yml`, por lo que un e2e roto no bloquea el merge. El e2e usa `PrismaService` mockeado (no necesita Postgres), así que añadirlo al pipeline es viable y cerraría el hueco que permitió que esta regresión pasara verde. Queda como recomendación para un fragmento aparte.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
