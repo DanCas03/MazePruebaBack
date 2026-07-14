@@ -199,6 +199,12 @@ npx prisma migrate dev      # create the schema (User, Level) in your database
 npm run start:dev           # watch mode at http://localhost:3000
 ```
 
+> **Existing database created with `prisma db push`?** It has no `_prisma_migrations` table, so `migrate dev`/`migrate deploy` will try to re-create tables that already exist. Baseline it once and migrations work normally from there on:
+>
+> ```bash
+> npx prisma migrate resolve --applied 20260714134255_init
+> ```
+
 ### Docker (recommended for local dev)
 
 No Node.js or PostgreSQL install required — see `../README-docker.md` at the project root for the full stack (backend + frontend + database):
@@ -229,7 +235,7 @@ See [`prisma/levels/manifest.md`](prisma/levels/manifest.md) for the provenance 
 ## Running Tests
 
 ```bash
-npm test            # unit tests (Jest, AAA, mocked dependencies) — 219 tests
+npm test            # unit tests (Jest, AAA, mocked dependencies) — 263 tests
 npm run test:cov    # with coverage
 npm run test:e2e    # end-to-end HTTP contract against mocked Prisma (error body, OpenAPI, solution, CORS)
 ```

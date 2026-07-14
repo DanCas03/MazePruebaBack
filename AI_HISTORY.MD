@@ -647,3 +647,16 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - README.md: la sección Docker menciona que la API sirve CORS para el front web; corregida además la línea de `npm run test:e2e` que aún decía "no DB-backed e2e specs yet" (hay 4 specs e2e desde back#3).
 - Verificación: `npm run test:e2e` → 4 suites / 13 tests verdes (antes 3/11); `npx eslint` de los 2 archivos tocados limpio; `npx tsc --noEmit` exit 0.
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 050 — chore(prisma): declarar dotenv explícito y documentar el baselining de migraciones
+
+**Fecha:** 2026-07-14
+**Tarea o problema abordado:** Dos hallazgos menores de la misma revisión pre-merge del PR #29, ambos alrededor del wiring de Prisma: (1) `prisma.config.ts` importa `dotenv/config` pero `package.json` no declaraba `dotenv` — dependencia fantasma que resolvía solo por hoisting de `@nestjs/config`/`prisma` (funciona reproduciblemente con `npm ci`, pero se rompería si esos paquetes dejaran de traerla); (2) con la migración inicial ya commiteada (entrada 048), cualquier base de datos local pre-existente creada con `prisma db push` no tiene tabla `_prisma_migrations`, y `migrate dev`/`migrate deploy` contra ella intentará recrear tablas que ya existen.
+**Herramienta de IA utilizada:** Claude Code (Fable 5, rol Arquitecto de Software Senior; skill arrowmaze-code-reviewer)
+**Prompt o instrucción proporcionada:** > "Modifica todo lo que creas que merece ser modificado y resuelve los pr"
+**Resultado obtenido:**
+- `package.json` + `package-lock.json`: `dotenv@^17.4.2` como devDependency explícita (misma major que ya traía `@nestjs/config`).
+- README.md (§ Install and run): nota de baselining único para bases `db push` pre-existentes — `npx prisma migrate resolve --applied 20260714134255_init`. De paso, § Running Tests actualiza el conteo de unit tests (219 → 263, estaba desactualizado desde back#24).
+- No se tocó `prisma/seed.ts`: la revisión anotó como SUGGESTION que un futuro reordenamiento de niveles curados (intercambiar `order` entre ids existentes) podría chocar con el unique `Level_order_key` a mitad del loop de upserts; se deja documentado y no se implementa porque un `$transaction` no lo resolvería (Postgres valida uniques por sentencia, no al commit, salvo constraints DEFERRABLE) y el fix real (update en dos fases) es YAGNI con los 15 niveles estables.
+- Verificación: `npm test` y `npm run build` verdes tras el `npm install` (ver corrida en el commit).
+**Modificaciones realizadas por el equipo:** (completar manualmente)
