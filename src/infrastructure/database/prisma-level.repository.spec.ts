@@ -96,6 +96,63 @@ describe('PrismaLevelRepository', () => {
       // Assert
       expect(result?.timeLimitSec).toBeUndefined();
     });
+
+    it('should default to campaign section without paint when the record predates back#31 (retro-compat)', async () => {
+      // Arrange — record sin columna section ni palette, como los datos viejos.
+      mockPrisma.level.findUnique.mockResolvedValue(wireContractRecord());
+
+      // Act
+      const result = await sut.findById(new LevelId('l-007'));
+
+      // Assert
+      expect(result?.section).toBe('campaign');
+      expect(result?.paint).toBeUndefined();
+    });
+
+    it('should rebuild a themed Level lifting palette and per-arrow paintRole into the paint carrier (ADR 0004)', async () => {
+      // Arrange — temático: order null, section themed, palette + paintRole.
+      const themedRecord = {
+        id: 't-smiley',
+        order: null,
+        section: 'themed',
+        data: {
+          cols: 20,
+          rows: 20,
+          palette: { cara: '#FBBF24', ojo: '#1E293B' },
+          arrows: [
+            {
+              id: 'a1',
+              headDir: 'up',
+              cells: [
+                [3, 4],
+                [3, 5],
+              ],
+              paintRole: 'cara',
+            },
+            {
+              id: 'a2',
+              headDir: 'right',
+              cells: [
+                [5, 0],
+                [5, 1],
+              ],
+            },
+          ],
+        },
+      };
+      mockPrisma.level.findUnique.mockResolvedValue(themedRecord);
+
+      // Act
+      const result = await sut.findById(new LevelId('t-smiley'));
+
+      // Assert
+      expect(result?.section).toBe('themed');
+      expect(result?.paint).toEqual({
+        palette: { cara: '#FBBF24', ojo: '#1E293B' },
+        roles: { a1: 'cara' },
+      });
+      expect(result?.arrows).toHaveLength(2);
+    });
   });
 
   describe('findAllOrdered', () => {
@@ -144,7 +201,7 @@ describe('PrismaLevelRepository', () => {
 
       // Assert
       expect(mockPrisma.level.findMany).toHaveBeenCalledWith({
-        orderBy: { order: 'asc' },
+        orderBy: [{ order: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }],
       });
       expect(result).toHaveLength(2);
       expect(result[0]).toBeInstanceOf(Level);

@@ -1,4 +1,4 @@
-import { Level } from './level.entity';
+import { Level, LevelPaint, LevelSection } from './level.entity';
 import { Arrow } from './arrow.entity';
 import { ArrowFactory, ArrowPrimitives } from './arrow.factory';
 import { LevelId } from '../value-objects/level-id.vo';
@@ -14,6 +14,8 @@ export class LevelBuilder {
   private cols?: number;
   private rows?: number;
   private timeLimitSec?: number;
+  private section: LevelSection = 'campaign';
+  private paint?: LevelPaint;
   private readonly arrows: Arrow[] = [];
 
   constructor(private readonly id: LevelId) {}
@@ -29,6 +31,21 @@ export class LevelBuilder {
     return this;
   }
 
+  // ADR 0004 (back#31): solo 'themed' literal cambia de sección; cualquier
+  // otro valor (o ausencia) es campaña — retro-compat con datos viejos que
+  // no traen la columna.
+  withSection(section?: string): this {
+    this.section = section === 'themed' ? 'themed' : 'campaign';
+    return this;
+  }
+
+  // Portador opaco de Instrucciones de pintado: passthrough sin validación
+  // (la verificación de forma es responsabilidad del seed, no del dominio).
+  withPaint(paint?: LevelPaint): this {
+    this.paint = paint;
+    return this;
+  }
+
   addArrow(raw: ArrowPrimitives): this {
     this.arrows.push(ArrowFactory.create(raw));
     return this;
@@ -41,6 +58,8 @@ export class LevelBuilder {
       this.rows as number,
       this.arrows,
       this.timeLimitSec,
+      this.section,
+      this.paint,
     );
   }
 }

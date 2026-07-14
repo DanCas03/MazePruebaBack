@@ -148,4 +148,48 @@ describe('LevelBuilder', () => {
       );
     });
   });
+
+  // ADR 0004 (back#31): sección + Instrucciones de pintado como datos opacos.
+  describe('withSection / withPaint', () => {
+    const minimalBuilder = () =>
+      new LevelBuilder(new LevelId('t-smoke'))
+        .withDimensions(COLS, ROWS)
+        .addArrow(bentArrowA1);
+
+    it('should default section to campaign and leave paint undefined when neither is set', () => {
+      // Arrange
+      const sut = minimalBuilder();
+      // Act
+      const level = sut.build();
+      // Assert
+      expect(level.section).toBe('campaign');
+      expect(level.paint).toBeUndefined();
+    });
+
+    it('should build a themed Level carrying the paint metadata untouched', () => {
+      // Arrange
+      const paint = {
+        palette: { cara: '#FBBF24', ojo: '#1E293B' },
+        roles: { a1: 'cara' },
+      };
+      const sut = minimalBuilder().withSection('themed').withPaint(paint);
+      // Act
+      const level = sut.build();
+      // Assert
+      expect(level.section).toBe('themed');
+      expect(level.paint).toEqual(paint);
+    });
+
+    it('should fall back to campaign when section is absent or unknown (retro-compat)', () => {
+      // Arrange
+      const withUndefined = minimalBuilder().withSection(undefined);
+      const withUnknown = minimalBuilder().withSection('bonus');
+      // Act
+      const levelFromUndefined = withUndefined.build();
+      const levelFromUnknown = withUnknown.build();
+      // Assert
+      expect(levelFromUndefined.section).toBe('campaign');
+      expect(levelFromUnknown.section).toBe('campaign');
+    });
+  });
 });

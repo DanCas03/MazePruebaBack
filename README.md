@@ -112,14 +112,15 @@ bootstrap from the controllers' decorators via `DocumentBuilder` (`src/app.setup
 |--------|-----------------------|------|--------------------------------------|
 | POST   | `/auth/register`      | No   | Register a user with a unique `email` + `username`; returns a JWT |
 | POST   | `/auth/login`         | No   | Authenticate a user; returns a JWT   |
-| GET    | `/levels`             | No   | List level ids, in play order        |
-| GET    | `/levels/:id`         | No   | Get a level as arrow-path JSON       |
+| GET    | `/levels`             | No   | List the level catalog with each level's `section`: campaign in play order, then themed by id |
+| GET    | `/levels/:id`         | No   | Get a level as arrow-path JSON; themed levels carry opaque paint instructions (`palette` + per-arrow `paintRole`) |
+| GET    | `/levels/:id/solution` | No  | Clearing Solution for a level: arrow ids in removal order (422 if unsolvable) |
 | POST   | `/scores`             | Yes  | Submit a score for a completed level |
 | GET    | `/leaderboard/:levelId` | No | Top scores for a level, with each row's `username` resolved (desc, default limit 10, max 100) |
 | POST   | `/progress`           | Yes  | Sync completed levels + best scores (merges, never degrades) |
 | GET    | `/progress`           | Yes  | Get the authenticated user's progress |
 
-> The `order` on a `Level` record is an explicit, curatable sequence (not insertion order) — the curated 15-level seed (back#10) controls it directly.
+> The `order` on a `Level` record is an explicit, curatable sequence (not insertion order) — the curated 15-level seed (back#10) controls it directly. Since back#31 (ADR 0004) `order` is nullable and a `section` column splits the catalog: **campaign** levels keep the contiguous play order, **themed** levels (figure boards) have no play order and are listed after the campaign, sorted by id. Paint metadata is opaque to the backend: it never affects mechanics, solvability, or the Solution.
 
 ```jsonc
 // POST /auth/register → 201
@@ -128,8 +129,8 @@ bootstrap from the controllers' decorators via `DocumentBuilder` (`src/app.setup
 // POST /auth/login → 200
 { "token": "<jwt>" }
 
-// GET /levels → 200
-[{ "levelId": "l-007" }, { "levelId": "l-008" }]
+// GET /levels → 200 (campaign in play order, then themed by id)
+[{ "levelId": "l-007", "section": "campaign" }, { "levelId": "t-smoke", "section": "themed" }]
 
 // GET /levels/:id → 200 (arrow-path wire contract, CONTEXT-MAP.md)
 {
@@ -142,7 +143,23 @@ bootstrap from the controllers' decorators via `DocumentBuilder` (`src/app.setup
     { "id": "a2", "headDir": "right", "cells": [[2, 0], [2, 1]] }
   ]
 }
+// GET /levels/:id → 200 for a THEMED level (ADR 0004): same contract plus
+// opaque paint instructions — a root palette (role → #RRGGBB) and an
+// optional paintRole per arrow. They do not affect mechanics or solvability.
+{
+  "levelId": "t-smoke",
+  "cols": 6,
+  "rows": 6,
+  "palette": { "cara": "#FBBF24", "ojo": "#1E293B" },
+  "arrows": [
+    { "id": "a1", "headDir": "up", "cells": [[1, 1], [1, 2]], "paintRole": "ojo" }
+  ]
+}
 // GET /levels/:id → 404 when the id does not exist
+
+// GET /levels/:id/solution → 200 (arrow ids in clearing order; works for
+// campaign and themed alike) — 422 UNSOLVABLE_LEVEL if no solution exists
+{ "levelId": "t-smoke", "solution": ["a1", "a2", "a3"] }
 
 // POST /scores (Bearer token required) → 201
 // body: { "levelId": "level-07", "score": 1200, "stars": 3, "moves": 12, "timeSeconds": 45 }
@@ -218,16 +235,16 @@ The backend container applies migrations and seeds the curated levels automatica
 
 ### Seeding levels
 
-The game ships with **15 curated, progressively harder levels** (`level-01`…`level-15`), frozen as arrow-path fixtures in [`prisma/levels/`](prisma/levels) and seeded with an explicit play order. Every level is guaranteed solvable by the domain `LevelSolver`.
+The game ships with **15 curated, progressively harder campaign levels** (`level-01`…`level-15`), frozen as arrow-path fixtures in [`prisma/levels/`](prisma/levels) and seeded with an explicit play order, plus the **themed** fixtures (`t-*.json`, ADR 0004) seeded without play order and carrying opaque paint instructions (currently `t-smoke`, a hand-made placeholder). Every level — campaign or themed — is guaranteed solvable by the domain `LevelSolver`.
 
 ```bash
-npm run db:seed     # upsert the 15 curated levels into the database
+npm run db:seed     # upsert the curated + themed levels into the database
 ```
 
 Requires a reachable `DATABASE_URL` with the schema already migrated (`npx prisma migrate dev`). The seed is:
 
 - **Idempotent** — it upserts by level id, so re-running it never duplicates rows and preserves ids referenced by scores and progress.
-- **Fail-fast** — before writing anything it rebuilds each level and asserts board invariants and solvability, aborting the whole batch if any fixture is invalid.
+- **Fail-fast** — before writing anything it rebuilds each level and asserts board invariants and solvability, aborting the whole batch if any fixture is invalid. Themed fixtures additionally pass a cheap paint-consistency check (every `paintRole` exists in the `palette`, colors are `#RRGGBB`) — the only validation the backend applies to the otherwise opaque paint metadata.
 - **Automatic on reset** — configured via `migrations.seed` in `prisma.config.ts`, so `prisma migrate dev` / `prisma migrate reset` run it for you after applying migrations.
 
 See [`prisma/levels/manifest.md`](prisma/levels/manifest.md) for the provenance of each level and the deterministic selection rule.

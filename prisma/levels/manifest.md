@@ -26,3 +26,14 @@ same 15 bytes. Do NOT edit by hand.
 | level-13 | 13 | cand-t5-s501 | 11x15 | 15 | 180 |
 | level-14 | 14 | cand-t5-s502 | 11x15 | 15 | 180 |
 | level-15 | 15 | cand-t5-s505 | 11x15 | 18 | 180 |
+
+## Themed section (back#31, ADR 0004)
+
+Themed levels (`t-*.json`) live in the `themed` catalog section: no play
+order (`order = null`), optional paint instructions (`palette` at the root,
+`paintRole` per arrow) served as opaque data. Same solvability guardrail as
+campaign levels.
+
+| level | source | dims (cols x rows) | arrows | roles |
+|---|---|---|---|---|
+| t-smoke | hand-made placeholder — replace when real figures land (front#68) | 6x6 | 3 | cara, ojo |

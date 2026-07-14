@@ -5,6 +5,9 @@ export interface ArrowDto {
   id: string;
   headDir: string;
   cells: number[][];
+  // Rol de pintado (ADR 0004): solo en flechas de niveles temáticos con
+  // Instrucciones de pintado; dato opaco para la mecánica.
+  paintRole?: string;
 }
 
 // Solución de un Level (back#19): el orden de ArrowId que vacía el tablero.
@@ -21,10 +24,15 @@ export interface LevelResponseDto {
   rows: number;
   timeLimitSec?: number;
   arrows: ArrowDto[];
+  // Paleta de roles de color (ADR 0004): rol -> hex #RRGGBB. Solo presente
+  // en niveles temáticos; el back la sirve como dato opaco (passthrough).
+  palette?: Record<string, string>;
 }
 
 export interface LevelSummaryDto {
   levelId: string;
+  // Sección del catálogo (ADR 0004): 'campaign' | 'themed'.
+  section: string;
 }
 
 export class LevelMapper {
@@ -38,12 +46,19 @@ export class LevelMapper {
         id: arrow.id.value,
         headDir: arrow.headDir,
         cells: arrow.cells.map((cell) => [cell.row, cell.col]),
+        // Passthrough opaco: el rol viene del portador paint del Level.
+        ...(level.paint?.roles[arrow.id.value] !== undefined
+          ? { paintRole: level.paint.roles[arrow.id.value] }
+          : {}),
       })),
+      ...(level.paint !== undefined
+        ? { palette: { ...level.paint.palette } }
+        : {}),
     };
   }
 
   static toSummaryDto(level: Level): LevelSummaryDto {
-    return { levelId: level.id.value };
+    return { levelId: level.id.value, section: level.section };
   }
 
   static toSolutionDto(

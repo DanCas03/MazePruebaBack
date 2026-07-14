@@ -24,16 +24,37 @@ export class LevelController {
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'List level ids in play order' })
-  @ApiResponse({ status: 200, description: 'Level ids, in play order.' })
+  @ApiOperation({
+    summary: 'List the level catalog (campaign in play order, then themed)',
+    description:
+      'Each item carries its catalog section: "campaign" (ordered by play ' +
+      'order) or "themed" (figure levels, ordered by levelId). ADR 0004.',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Level summaries: campaign levels in play order followed by themed ' +
+      'levels. Every item includes levelId and section.',
+  })
   async list(): Promise<LevelSummaryDto[]> {
     const levels = await this.listLevelsUseCase.execute();
     return levels.map((level) => LevelMapper.toSummaryDto(level));
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a level by id (arrow-path wire contract)' })
-  @ApiResponse({ status: 200, description: 'Full arrow-path level.' })
+  @ApiOperation({
+    summary: 'Get a level by id (arrow-path wire contract)',
+    description:
+      'Themed levels additionally carry opaque paint instructions: a root ' +
+      '"palette" (role -> #RRGGBB hex) and an optional "paintRole" per ' +
+      'arrow. They do not affect mechanics or solvability. ADR 0004.',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Full arrow-path level. Themed levels include palette and per-arrow ' +
+      'paintRole (opaque paint metadata).',
+  })
   @ApiResponse({
     status: 400,
     description: 'Malformed level id.',

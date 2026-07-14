@@ -12,7 +12,12 @@ model Level {
   data      Json
   // Posición explícita en la secuencia de juego (back#5): el seed curado
   // (back#10) necesita control de orden, no solo el de inserción.
-  order     Int      @unique
+  // Nullable desde back#31 (ADR 0004): solo la campaña tiene orden de juego;
+  // los niveles temáticos van sin orden (order = null).
+  order     Int?     @unique
+  // Sección del catálogo (ADR 0004): "campaign" | "themed". Default para
+  // retro-compatibilidad: todo nivel existente es de campaña.
+  section   String   @default("campaign")
   createdAt DateTime @default(now())
 }
 
