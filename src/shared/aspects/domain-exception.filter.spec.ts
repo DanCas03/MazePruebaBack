@@ -4,6 +4,7 @@ import type { ArgumentsHost } from '@nestjs/common';
 import { LevelNotFoundException } from '../../domain/exceptions/level-not-found.exception';
 import { InvalidCredentialsException } from '../../domain/exceptions/invalid-credentials.exception';
 import { UserAlreadyExistsException } from '../../domain/exceptions/user-already-exists.exception';
+import { UsernameAlreadyTakenException } from '../../domain/exceptions/username-already-taken.exception';
 import { UnsolvableLevelException } from '../../domain/exceptions/unsolvable-level.exception';
 import { DomainException } from '../../domain/exceptions/domain.exception';
 
@@ -73,6 +74,25 @@ describe('DomainExceptionFilter', () => {
       statusCode: HttpStatus.CONFLICT,
       code: 'USER_ALREADY_EXISTS',
       message: 'Email already registered',
+    });
+  });
+
+  it('maps UsernameAlreadyTakenException to HTTP 409 Conflict', () => {
+    // Arrange — un username duplicado es un conflicto equivalente al del email,
+    // así que debe salir 409 y no caer al default 400.
+    const exception = new UsernameAlreadyTakenException(
+      "Username 'player_01' already taken",
+    );
+
+    // Act
+    sut.catch(exception, mockHost);
+
+    // Assert
+    expect(mockStatus).toHaveBeenCalledWith(HttpStatus.CONFLICT);
+    expect(mockJson).toHaveBeenCalledWith({
+      statusCode: HttpStatus.CONFLICT,
+      code: 'USERNAME_ALREADY_TAKEN',
+      message: "Username 'player_01' already taken",
     });
   });
 

@@ -591,3 +591,17 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - **Nombre del job preservado a propósito** (`lint · test · build`, no `… · e2e · …`): ese string es el nombre del check requerido en la protección de rama de `main`. Renombrarlo dejaría el check requerido como "faltante" y bloquearía todo PR hasta actualizar Settings → Branches. Se documentó la restricción en un comentario del propio workflow.
 - Verificación: `npm run test:e2e` local → 3 suites / 11 tests verdes; estructura del workflow validada (pasos `Install → Generate Prisma → Lint → Test → E2E → Build`). El efecto real (bloquear un e2e roto) se confirmará en la corrida de CI del push.
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 046 — back#27 — mapear UsernameAlreadyTakenException a 409 (elimina la asimetría 400 vs 409)
+
+**Fecha:** 2026-07-14
+**Tarea o problema abordado:** Una revisión de completitud detectó un contrato de error inconsistente: un **email** duplicado en `POST /auth/register` devolvía **409 Conflict**, pero un **username** duplicado devolvía **400 Bad Request**. `UsernameAlreadyTakenException` no estaba en el registro `statusByException` de `DomainExceptionFilter`, así que caía al default 400, mientras que `UserAlreadyExistsException` sí mapeaba a 409. Dos conflictos de "ya tomado" equivalentes salían con códigos distintos.
+**Herramienta de IA utilizada:** Claude Code (Opus, rol Arquitecto Senior; skill arrowmaze-backend, TDD rojo→verde)
+**Prompt o instrucción proporcionada:** > "hagamos ambas cosas a y b" (a = arreglar la asimetría 400/409 del username)
+**Resultado obtenido:**
+- `src/shared/aspects/domain-exception.filter.ts`: nueva entrada `[UsernameAlreadyTakenException, HttpStatus.CONFLICT]` en el registro (más su import). Aprovecha el diseño OCP del filtro — se extiende añadiendo una fila, sin tocar el flujo de `catch`. El `code` estable derivado es `USERNAME_ALREADY_TAKEN`.
+- `src/adapters/controllers/auth.controller.ts`: la `@ApiResponse({ status: 409 })` de `register` pasa de `'Email already registered.'` a `'Email already registered, or username already taken.'` para documentar ambos conflictos.
+- `src/shared/aspects/domain-exception.filter.spec.ts`: nuevo caso AAA que mapea `UsernameAlreadyTakenException` → 409 con cuerpo `{statusCode:409, code:'USERNAME_ALREADY_TAKEN', message}`, espejo del test de `UserAlreadyExistsException`.
+- TDD: el test corrió en **rojo** antes del fix (`expect(mockStatus).toHaveBeenCalledWith(409)` recibía 400, confirmando el fallback); **verde** tras añadir la entrada al registro.
+- Verificación: `npx jest src/shared/aspects/domain-exception.filter.spec.ts` → 7/7; suite completa `npx jest` → **263 tests** verdes (+1); `npx tsc --noEmit` exit 0; `npx eslint` de los archivos tocados limpio; `npm run build` exit 0. Sin BD esta sesión: el mapeo es lógica de aplicación pura (filtro AOP), verificado unitariamente contra el `ArgumentsHost` mockeado.
+**Modificaciones realizadas por el equipo:** (completar manualmente)

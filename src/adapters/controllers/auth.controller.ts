@@ -22,7 +22,7 @@ export class AuthController {
   @ApiResponse({ status: 201, description: 'Account created; returns a JWT.' })
   @ApiResponse({
     status: 409,
-    description: 'Email already registered.',
+    description: 'Email already registered, or username already taken.',
     type: ErrorResponseDto,
   })
   async register(@Body() dto: RegisterDto): Promise<{ token: string }> {
