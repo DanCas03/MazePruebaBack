@@ -605,3 +605,58 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - TDD: el test corrió en **rojo** antes del fix (`expect(mockStatus).toHaveBeenCalledWith(409)` recibía 400, confirmando el fallback); **verde** tras añadir la entrada al registro.
 - Verificación: `npx jest src/shared/aspects/domain-exception.filter.spec.ts` → 7/7; suite completa `npx jest` → **263 tests** verdes (+1); `npx tsc --noEmit` exit 0; `npx eslint` de los archivos tocados limpio; `npm run build` exit 0. Sin BD esta sesión: el mapeo es lógica de aplicación pura (filtro AOP), verificado unitariamente contra el `ArgumentsHost` mockeado.
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 047 — feat(back): soporte Docker para desarrollo local
+
+**Fecha:** 2026-07-14
+**Tarea o problema abordado:** El usuario pidió correr todo el proyecto (back + front) en Docker para desarrollo local, sin instalar Node/PostgreSQL en el host. Este fragmento cubre el lado backend: imagen Docker de desarrollo que aplica migraciones y siembra los niveles curados automáticamente al arrancar.
+**Herramienta de IA utilizada:** Claude Code (Sonnet 5, rol Arquitecto de Software Senior; skills superpowers:brainstorming + superpowers:writing-plans)
+**Prompt o instrucción proporcionada:** > "Necesito que configures todo el proyecto para back y front corran en docker"
+**Resultado obtenido:**
+- `Dockerfile` (nuevo): imagen de desarrollo `node:22-alpine` — `npm ci`, entrypoint dedicado. Deliberadamente sin `prisma generate` en build time: `prisma.config.ts` exige `DATABASE_URL` para cargarse y esa variable no existe en build time; el entrypoint ya lo corre en cada arranque con la `DATABASE_URL` real. No es multi-stage ni apta para producción a propósito (fuera de alcance, ver spec en `docs/superpowers/specs/2026-07-14-docker-local-dev-design.md` de la raíz del proyecto).
+- `docker-entrypoint.sh` (nuevo): en cada arranque del contenedor corre `prisma generate` → `prisma migrate deploy` → `prisma db seed` (idempotente, `upsert` por id) → `exec "$@"` (delega al `CMD`, `npm run start:dev`).
+- `.gitattributes` (nuevo): fuerza `eol=lf` en `docker-entrypoint.sh` — con `core.autocrlf=true` en Windows, un checkout con CRLF rompería `#!/bin/sh` dentro del contenedor Linux.
+- `.dockerignore` (nuevo): excluye `node_modules`, `dist`, `.git`, `.env`, `coverage`.
+- La orquestación completa (compose, Postgres, frontend) vive en `ArrowMaze/docker-compose.yml`, fuera de este repo (esa carpeta raíz no es un repositorio git) — documentada en `ArrowMaze/README-docker.md`.
+- Verificación: `docker build -t maze-back:dev -f Dockerfile .` exitoso; `sh -n docker-entrypoint.sh` sin errores de sintaxis. La verificación end-to-end (migración + seed reales + `GET /levels`) se hizo en el fragmento de integración del stack completo.
+- README.md: nueva sub-sección "Docker (recommended for local dev)" bajo "Getting Started".
+- Nota de numeración: esta entrada y la siguiente se escribieron originalmente como 046/047 en la rama `feat/docker-local-dev`; se renumeraron a 047/048 al integrar `main`, que ya había tomado el número 046 (fix del 409 de username).
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 048 — fix(back): agregar la migración inicial de Prisma faltante
+
+**Fecha:** 2026-07-14
+**Tarea o problema abordado:** La verificación end-to-end del stack Docker (entrada 047) reveló que `prisma/migrations/` nunca existió en este repo — nadie había commiteado la migración inicial. `docker-entrypoint.sh` corre `prisma migrate deploy` (correcto para un entorno no interactivo), pero sin ninguna migración que aplicar, la tabla `Level` nunca se creaba en una base de datos nueva y el seed fallaba con `P2021: The table 'public.Level' does not exist`. No es un bug del Dockerfile: cualquier base de datos Postgres fresca (CI, despliegue, o este contenedor) tendría el mismo problema, porque el proyecto venía dependiendo de que cada developer ya tuviera el schema aplicado localmente (vía `prisma db push` o un `migrate dev` nunca commiteado).
+**Herramienta de IA utilizada:** Claude Code (Sonnet 5, rol Arquitecto de Software Senior)
+**Prompt o instrucción proporcionada:** > "Generar y commitear la migración inicial" (elegido por el usuario entre dos opciones tras encontrar el bloqueo durante la verificación end-to-end del plan de Docker)
+**Resultado obtenido:**
+- `prisma/migrations/20260714134255_init/migration.sql` (nuevo): generado con `prisma migrate dev --name init --skip-seed` corrido dentro del contenedor `back` (`docker compose run --rm --entrypoint "" back sh -c "npx prisma migrate dev --name init --skip-seed"`, contra la base `db` de Docker, ya vacía) — captura el schema completo actual (`Level`, `User`, `ScoreEntry`, `Progress` con sus índices y unique constraints) como el estado base.
+- `prisma/migrations/migration_lock.toml` (nuevo): generado junto con la migración, fija el provider (`postgresql`).
+- Verificación: tras generar la migración, se relanzó el stack completo (`docker compose up -d`); `docker compose logs back` mostró `Applying database migrations` → `20260714134255_init` aplicada → seed de los 15 niveles curados exitoso; `GET /levels` devolvió los 15 `levelId` esperados. Detalle completo en la entrada de integración del stack completo.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 049 — fix(api): habilitar CORS para clientes de navegador (front web dockerizado)
+
+**Fecha:** 2026-07-14
+**Tarea o problema abordado:** La revisión pre-merge del PR #29 detectó que la API no emitía ninguna cabecera CORS (ningún `enableCors` en `src/`). El front web dockerizado (entrada 047 + front PR #62) corre en el navegador del host en `localhost:8080` y llama a la API en `localhost:3000` — cross-origin: el navegador bloqueaba toda petición (login, niveles, leaderboard) aunque `curl` funcionara, por lo que la verificación en vivo original no lo detectó (solo usó curl + page-load).
+**Herramienta de IA utilizada:** Claude Code (Fable 5, rol Arquitecto de Software Senior; skill arrowmaze-code-reviewer)
+**Prompt o instrucción proporcionada:** > "Modifica todo lo que creas que merece ser modificado y resuelve los pr" (tras el informe de revisión que reportó el hallazgo)
+**Resultado obtenido:**
+- `src/app.setup.ts`: `app.enableCors()` en `configureApp` (compartido main.ts ↔ e2e, así el fix aplica a ambas superficies). Origen `*` justificado inline: el JWT viaja por header `Authorization`, nunca cookies, así que el origen abierto no habilita CSRF.
+- `test/cors.e2e-spec.ts` (nuevo): 2 casos AAA sobre la infra e2e existente (Prisma mockeado) — `GET /levels` con `Origin` cross-origin devuelve `Access-Control-Allow-Origin: *`, y el preflight `OPTIONS` responde 204 permitiendo el método solicitado.
+- README.md: la sección Docker menciona que la API sirve CORS para el front web; corregida además la línea de `npm run test:e2e` que aún decía "no DB-backed e2e specs yet" (hay 4 specs e2e desde back#3).
+- Verificación: `npm run test:e2e` → 4 suites / 13 tests verdes (antes 3/11); `npx eslint` de los 2 archivos tocados limpio; `npx tsc --noEmit` exit 0.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 050 — chore(prisma): declarar dotenv explícito y documentar el baselining de migraciones
+
+**Fecha:** 2026-07-14
+**Tarea o problema abordado:** Dos hallazgos menores de la misma revisión pre-merge del PR #29, ambos alrededor del wiring de Prisma: (1) `prisma.config.ts` importa `dotenv/config` pero `package.json` no declaraba `dotenv` — dependencia fantasma que resolvía solo por hoisting de `@nestjs/config`/`prisma` (funciona reproduciblemente con `npm ci`, pero se rompería si esos paquetes dejaran de traerla); (2) con la migración inicial ya commiteada (entrada 048), cualquier base de datos local pre-existente creada con `prisma db push` no tiene tabla `_prisma_migrations`, y `migrate dev`/`migrate deploy` contra ella intentará recrear tablas que ya existen.
+**Herramienta de IA utilizada:** Claude Code (Fable 5, rol Arquitecto de Software Senior; skill arrowmaze-code-reviewer)
+**Prompt o instrucción proporcionada:** > "Modifica todo lo que creas que merece ser modificado y resuelve los pr"
+**Resultado obtenido:**
+- `package.json` + `package-lock.json`: `dotenv@^17.4.2` como devDependency explícita (misma major que ya traía `@nestjs/config`).
+- README.md (§ Install and run): nota de baselining único para bases `db push` pre-existentes — `npx prisma migrate resolve --applied 20260714134255_init`. De paso, § Running Tests actualiza el conteo de unit tests (219 → 263, estaba desactualizado desde back#24).
+- No se tocó `prisma/seed.ts`: la revisión anotó como SUGGESTION que un futuro reordenamiento de niveles curados (intercambiar `order` entre ids existentes) podría chocar con el unique `Level_order_key` a mitad del loop de upserts; se deja documentado y no se implementa porque un `$transaction` no lo resolvería (Postgres valida uniques por sentencia, no al commit, salvo constraints DEFERRABLE) y el fix real (update en dos fases) es YAGNI con los 15 niveles estables.
+- Verificación: `npm test` y `npm run build` verdes tras el `npm install` (ver corrida en el commit).
+**Modificaciones realizadas por el equipo:** (completar manualmente)

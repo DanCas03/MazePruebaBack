@@ -199,6 +199,23 @@ npx prisma migrate dev      # create the schema (User, Level) in your database
 npm run start:dev           # watch mode at http://localhost:3000
 ```
 
+> **Existing database created with `prisma db push`?** It has no `_prisma_migrations` table, so `migrate dev`/`migrate deploy` will try to re-create tables that already exist. Baseline it once and migrations work normally from there on:
+>
+> ```bash
+> npx prisma migrate resolve --applied 20260714134255_init
+> ```
+
+### Docker (recommended for local dev)
+
+No Node.js or PostgreSQL install required — see `../README-docker.md` at the project root for the full stack (backend + frontend + database):
+
+```bash
+cd ..
+docker compose up --build
+```
+
+The backend container applies migrations and seeds the curated levels automatically on every start. The API serves CORS headers so the dockerized web front (running in the host's browser on another port, i.e. cross-origin) can call it.
+
 ### Seeding levels
 
 The game ships with **15 curated, progressively harder levels** (`level-01`…`level-15`), frozen as arrow-path fixtures in [`prisma/levels/`](prisma/levels) and seeded with an explicit play order. Every level is guaranteed solvable by the domain `LevelSolver`.
@@ -218,9 +235,9 @@ See [`prisma/levels/manifest.md`](prisma/levels/manifest.md) for the provenance 
 ## Running Tests
 
 ```bash
-npm test            # unit tests (Jest, AAA, mocked dependencies) — 219 tests
+npm test            # unit tests (Jest, AAA, mocked dependencies) — 263 tests
 npm run test:cov    # with coverage
-npm run test:e2e    # end-to-end (no DB-backed e2e specs yet; passes with none)
+npm run test:e2e    # end-to-end HTTP contract against mocked Prisma (error body, OpenAPI, solution, CORS)
 ```
 
 Unit tests isolate the unit under test by mocking its ports, so the suite runs without a real database.
