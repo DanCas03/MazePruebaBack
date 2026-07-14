@@ -199,6 +199,17 @@ npx prisma migrate dev      # create the schema (User, Level) in your database
 npm run start:dev           # watch mode at http://localhost:3000
 ```
 
+### Docker (recommended for local dev)
+
+No Node.js or PostgreSQL install required — see `../README-docker.md` at the project root for the full stack (backend + frontend + database):
+
+```bash
+cd ..
+docker compose up --build
+```
+
+The backend container applies migrations and seeds the curated levels automatically on every start.
+
 ### Seeding levels
 
 The game ships with **15 curated, progressively harder levels** (`level-01`…`level-15`), frozen as arrow-path fixtures in [`prisma/levels/`](prisma/levels) and seeded with an explicit play order. Every level is guaranteed solvable by the domain `LevelSolver`.
