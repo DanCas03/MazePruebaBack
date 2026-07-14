@@ -355,6 +355,74 @@ describe('LevelSolver', () => {
     });
   });
 
+  // back#30: el residuo no pelable es diagnóstico INTERNO del solver — se
+  // alcanza por acceso indexado al método privado, sin ampliar la interface
+  // pública (decisión del brief: no exponer diagnósticos todavía).
+  describe('blocking graph internals (back#30)', () => {
+    it('should keep both mutually blocking arrows in the internal non-peelable residue', () => {
+      // Arrange — mismo ciclo de 2 flechas del caso "cyclic-block".
+      const level = new LevelBuilder(new LevelId('l-residue-cycle'))
+        .withDimensions(4, 1)
+        .addArrow({
+          id: 'a',
+          headDir: 'right',
+          cells: [
+            [0, 0],
+            [0, 1],
+          ],
+        })
+        .addArrow({
+          id: 'b',
+          headDir: 'left',
+          cells: [
+            [0, 3],
+            [0, 2],
+          ],
+        })
+        .build();
+      // Act
+      const { order, residue } = solver['peel'](level);
+      // Assert
+      expect(order).toEqual([]);
+      expect(residue.map((id) => id.value).sort()).toEqual(['a', 'b']);
+    });
+  });
+
+  // back#30 AC de escala: el grafo de bloqueos debe sostener la campaña
+  // re-producida de ADR 0003 (50x50, ~300-400 flechas) sin degradar el seed
+  // ni GET /levels/:id/solution.
+  describe('scale (back#30)', () => {
+    it('should solve a synthetic 50x50 level with 325 arrows in under 250 ms', () => {
+      // Arrange — 13 filas x 25 flechas horizontales de 2 celdas apuntando
+      // a la derecha: cada flecha está bloqueada por todas las de su
+      // derecha, así que el pelado procede de derecha a izquierda por fila.
+      const builder = new LevelBuilder(
+        new LevelId('l-scale-50x50'),
+      ).withDimensions(50, 50);
+      for (let row = 0; row < 13; row++) {
+        for (let col = 0; col < 50; col += 2) {
+          builder.addArrow({
+            id: `s-${row}-${col}`,
+            headDir: 'right',
+            cells: [
+              [row, col],
+              [row, col + 1],
+            ],
+          });
+        }
+      }
+      const level = builder.build();
+      // Act
+      const startMs = performance.now();
+      const result = solver.solve(level);
+      const elapsedMs = performance.now() - startMs;
+      // Assert
+      expect(level.arrows.length).toBe(325);
+      expect(idsOf(result)).toHaveLength(325);
+      expect(elapsedMs).toBeLessThan(250);
+    });
+  });
+
   describe('reproducibility', () => {
     it('should return identical arrays across repeated calls on the same order-dependent level', () => {
       // Arrange

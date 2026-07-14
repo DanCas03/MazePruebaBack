@@ -6,37 +6,28 @@ import { Position } from '../value-objects/position.vo';
 
 // Servicio de dominio puro (ADR 0002): decide si un Level arrow-path es
 // soluble y produce la Solución canónica (el orden de remoción que vacía el
-// tablero). Replay greedy sin backtracking: correcto y completo porque quitar
-// flechas solo libera celdas (monotonicidad, ADR 0001 dec. 6) — una flecha
-// que puede salir ahora podrá salir siempre. La geometría de salida espeja
-// EXACTO la mecánica canónica del front:
+// tablero). back#30: implementado sobre el Grafo de bloqueos (CONTEXT.md) —
+// nodo = Arrow, arista Y→X cuando Y ocupa el carril de salida de X — pelado
+// con un min-heap por índice congelado en level.arrows. Correcto y completo
+// porque quitar flechas solo libera celdas (monotonicidad, ADR 0001 dec. 6):
+// una flecha con in-degree 0 lo conserva hasta ser pelada. Pelar siempre el
+// elegible de índice congelado más bajo reproduce byte-idéntico el replay
+// greedy previo (que escaneaba level.arrows desde 0 y reiniciaba tras cada
+// remoción) — ADR 0002 dec. 5. La geometría de salida espeja EXACTO la
+// mecánica canónica del front:
 //   exitPath -> MazePruebaFront/lib/domain/arrows/entities/arrow.dart
 //   canExit  -> MazePruebaFront/lib/domain/arrows/entities/arrow_board.dart
-// Arrow/Level siguen siendo solo datos: toda la mecánica es privada de este
-// servicio. Sin estado ni dependencias; instanciable para proveerlo por DI
-// cuando back#19 lo exponga.
+// Arrow/Level siguen siendo solo datos: toda la mecánica (grafo incluido) es
+// privada de este servicio. Sin estado entre llamadas ni dependencias;
+// instanciable para proveerlo por DI cuando back#19 lo exponga.
 export class LevelSolver {
   // Un orden de remoción válido que vacía el tablero (la Solución), o null
-  // si el nivel es insoluble. Determinista para un Level dado: greedy sobre
-  // el orden congelado de level.arrows, reiniciando el escaneo tras cada
-  // remoción. Nivel vacío => [] (soluble por vacuidad). Asume las
-  // invariantes de Level (in-bounds, sin solape, ids únicos); no revalida.
+  // si el nivel es insoluble. Determinista para un Level dado. Nivel vacío
+  // => [] (soluble por vacuidad). Asume las invariantes de Level (in-bounds,
+  // sin solape, ids únicos); no revalida.
   solve(level: Level): ArrowId[] | null {
-    const remaining = [...level.arrows];
-    const order: ArrowId[] = [];
-    let removedSomething = true;
-    while (removedSomething) {
-      removedSomething = false;
-      for (let i = 0; i < remaining.length; i++) {
-        if (this.canExit(remaining[i], remaining, level.cols, level.rows)) {
-          order.push(remaining[i].id);
-          remaining.splice(i, 1);
-          removedSomething = true;
-          break;
-        }
-      }
-    }
-    return remaining.length === 0 ? order : null;
+    const { order, residue } = this.peel(level);
+    return residue.length === 0 ? order : null;
   }
 
   // AC de back#6: true solo si existe un orden que vacía el tablero. Es la
@@ -45,26 +36,73 @@ export class LevelSolver {
     return this.solve(level) !== null;
   }
 
-  // Espejo de ArrowBoard.canExit + _occupiedExcluding: toda celda del carril
-  // de salida libre de las celdas de las OTRAS flechas restantes.
-  private canExit(
-    arrow: Arrow,
-    remaining: readonly Arrow[],
-    cols: number,
-    rows: number,
-  ): boolean {
-    const occupied = new Set<string>();
-    for (const other of remaining) {
-      if (other.id.equals(arrow.id)) {
-        continue;
-      }
-      for (const cell of other.cells) {
-        occupied.add(`${cell.row},${cell.col}`);
+  // Construye el Grafo de bloqueos y lo pela. `order` es el prefijo pelado;
+  // `residue` es el núcleo no pelable (los ciclos que hacen insoluble el
+  // nivel) — diagnóstico interno, NO expuesto en la interface (decisión de
+  // back#30). Coste O(A·L + A·(cols+rows) + E + V·log V) frente al ~O(A³)
+  // del replay greedy previo.
+  private peel(level: Level): { order: ArrowId[]; residue: ArrowId[] } {
+    const arrows = level.arrows;
+    const count = arrows.length;
+
+    // Mapa de ocupación celda → índice de flecha, construido una sola vez.
+    const occupant = new Map<string, number>();
+    for (let i = 0; i < count; i++) {
+      for (const cell of arrows[i].cells) {
+        occupant.set(`${cell.row},${cell.col}`, i);
       }
     }
-    return this.exitPath(arrow, cols, rows).every(
-      (cell) => !occupied.has(`${cell.row},${cell.col}`),
-    );
+
+    // Aristas Y→X (Y bloquea a X) + in-degree por nodo. Una cabeza pegada
+    // al borde tiene carril vacío ⇒ in-degree 0 siempre (mecánica serpiente:
+    // el cuerpo se retrae por su propio camino). Las celdas del carril
+    // ocupadas por la propia flecha no bloquean, espejo del canExit previo.
+    const blocks: number[][] = Array.from({ length: count }, () => []);
+    const blockersCount = new Array<number>(count).fill(0);
+    for (let x = 0; x < count; x++) {
+      const seenBlockers = new Set<number>();
+      for (const cell of this.exitPath(arrows[x], level.cols, level.rows)) {
+        const y = occupant.get(`${cell.row},${cell.col}`);
+        if (y !== undefined && y !== x && !seenBlockers.has(y)) {
+          seenBlockers.add(y);
+          blocks[y].push(x);
+          blockersCount[x]++;
+        }
+      }
+    }
+
+    // Conjunto "listo" (in-degree 0) como min-heap por índice congelado:
+    // extraer el mínimo = la primera flecha del escaneo greedy previo.
+    const ready = new MinIndexHeap(count);
+    for (let i = 0; i < count; i++) {
+      if (blockersCount[i] === 0) {
+        ready.push(i);
+      }
+    }
+
+    const order: ArrowId[] = [];
+    const peeled = new Array<boolean>(count).fill(false);
+    while (!ready.isEmpty()) {
+      const y = ready.pop();
+      peeled[y] = true;
+      order.push(arrows[y].id);
+      // Pelar Y libera sus celdas: decrementa el in-degree de cada X al que
+      // bloqueaba; los que llegan a 0 entran al conjunto listo.
+      for (const x of blocks[y]) {
+        blockersCount[x]--;
+        if (blockersCount[x] === 0) {
+          ready.push(x);
+        }
+      }
+    }
+
+    const residue: ArrowId[] = [];
+    for (let i = 0; i < count; i++) {
+      if (!peeled[i]) {
+        residue.push(arrows[i].id);
+      }
+    }
+    return { order, residue };
   }
 
   // Espejo de Arrow.exitPath: carril recto desde head+1 hasta el borde en
@@ -96,5 +134,58 @@ export class LevelSolver {
         break;
     }
     return path;
+  }
+}
+
+// Min-heap binario de índices (helper privado del módulo, no exportado):
+// da el "extraer elegible de índice congelado más bajo" en O(log n) sin
+// dependencias nuevas. Capacidad fija = nº de flechas: cada índice entra al
+// heap a lo sumo una vez (cuando su in-degree llega a 0).
+class MinIndexHeap {
+  private readonly heap: number[];
+  private size = 0;
+
+  constructor(capacity: number) {
+    this.heap = new Array<number>(capacity);
+  }
+
+  isEmpty(): boolean {
+    return this.size === 0;
+  }
+
+  push(value: number): void {
+    let i = this.size++;
+    this.heap[i] = value;
+    while (i > 0) {
+      const parent = (i - 1) >> 1;
+      if (this.heap[parent] <= this.heap[i]) {
+        break;
+      }
+      [this.heap[parent], this.heap[i]] = [this.heap[i], this.heap[parent]];
+      i = parent;
+    }
+  }
+
+  pop(): number {
+    const top = this.heap[0];
+    this.size--;
+    this.heap[0] = this.heap[this.size];
+    let i = 0;
+    for (;;) {
+      const left = 2 * i + 1;
+      const right = left + 1;
+      let smallest = i;
+      if (left < this.size && this.heap[left] < this.heap[smallest]) {
+        smallest = left;
+      }
+      if (right < this.size && this.heap[right] < this.heap[smallest]) {
+        smallest = right;
+      }
+      if (smallest === i) {
+        return top;
+      }
+      [this.heap[smallest], this.heap[i]] = [this.heap[i], this.heap[smallest]];
+      i = smallest;
+    }
   }
 }
