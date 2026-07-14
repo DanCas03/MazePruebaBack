@@ -26,7 +26,11 @@ export class AuthController {
     type: ErrorResponseDto,
   })
   async register(@Body() dto: RegisterDto): Promise<{ token: string }> {
-    const token = await this.registerUseCase.execute(dto.email, dto.password);
+    const token = await this.registerUseCase.execute(
+      dto.email,
+      dto.username,
+      dto.password,
+    );
     return { token };
   }
 

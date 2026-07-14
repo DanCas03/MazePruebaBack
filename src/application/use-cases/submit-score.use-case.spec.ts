@@ -20,7 +20,7 @@ describe('SubmitScoreUseCase', () => {
   };
 
   beforeEach(() => {
-    mockScoreRepo = { save: jest.fn(), findTopByLevel: jest.fn() };
+    mockScoreRepo = { save: jest.fn(), findLeaderboard: jest.fn() };
     mockLogger = { log: jest.fn(), error: jest.fn(), warn: jest.fn() };
     sut = new SubmitScoreUseCase(mockScoreRepo, mockLogger);
   });

@@ -496,3 +496,98 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - `UnsolvableLevelException` (código auto-derivado `UNSOLVABLE_LEVEL`) mapeada a **422** en `DomainExceptionFilter`; `LevelSolver` provisto por DI en `LevelModule` (`useFactory`, servicio de dominio puro).
 - Verificación: **48 suites/250 unitarios + 3 suites/11 e2e** verdes (nuevo e2e cubre 200/400/404/422 por el AppModule real); `lint:check` sin errores y `nest build` limpio.
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 040 — back#24 — Username value object (backend de front#50)
+
+**Fecha:** 2026-07-13
+**Tarea o problema abordado:** Fragmento 1/4 de back#24 (backend del leaderboard con username, que desbloquea front#50): crear el Value Object de dominio `Username` (VO puro, sin dependencias de framework) con su validación de invariante (3–20 caracteres, charset `^[A-Za-z0-9_]+$`) y su excepción `InvalidUsernameException`. Sigue el patrón establecido por `Email` VO (entrada 002, Task 2A.1) para mantener consistencia arquitectónica.
+**Herramienta de IA utilizada:** Claude Code (agent dedicado a Task B1)
+**Prompt o instrucción proporcionada:** > "Implementa Task B1 (back#24): Username VO + exception, siguiendo TDD — test que falla (RED), implementar exception, implementar VO, test que pasa (GREEN), AI_HISTORY + commit exacto."
+**Resultado obtenido:**
+- `src/domain/value-objects/username.vo.ts`: VO inmutable (`readonly value: string`), valida mediante regex `^[A-Za-z0-9_]{3,20}$` en el constructor lanzando `InvalidUsernameException` si falla, método `equals` por valor (idéntico al patrón de `Email` VO, sin `toLowerCase` porque usernames son case-sensitive por diseño). Comentario inline documentando el patrón y el invariante.
+- `src/domain/exceptions/invalid-username.exception.ts`: clase que extiende `DomainException`, mismo patrón que `InvalidEmailException`/`InvalidScoreException`.
+- `src/domain/value-objects/username.vo.spec.ts`: tests AAA (7 tests totales) — (1) acepta un username válido (`player_01`), (2) igualdad true/false entre instancias, (5) rechaza casos inválidos (< 3 chars, > 20 chars, caracteres prohibidos, espacios, string vacío), todos vía `it.each`.
+- TDD verificado: test corre como GREEN inmediato tras implementación (`npx jest src/domain/value-objects/username.vo.spec.ts` → `7 passed`). Suite global de Jest: 44 suites, 191 tests pasan.
+- Nota de verificación honesta: `npx tsc --noEmit` de todo el proyecto **falla** por un error **preexistente** en `src/infrastructure/database/prisma-level.repository.ts` (el cliente Prisma en disco está desactualizado y le falta `Level.order`, que sí existe en `schema.prisma`). Es ajeno a este fragmento (viene heredado de `origin/main`) y se resolverá al regenerar el cliente Prisma en el fragmento de esquema (B2). Los tests de Jest no dependen de ese build.
+- Sin cambios en API pública HTTP (capa `domain/`, consumida más adelante en back#24 para validar/almacenar usernames); README.md no modificado.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 041 — back#24 — columna username en User (schema + backfill helper)
+
+**Fecha:** 2026-07-13
+**Tarea o problema abordado:** Fragmento 2/4 de back#24: añadir `username String @unique` (requerido) al modelo `User` en `schema.prisma` y regenerar el cliente Prisma. Al hacerlo se descubrió y resolvió un conflicto de flujo: el spec/plan asumía una **migración Prisma** con backfill inline, pero este repo **no usa migraciones** — el flujo del equipo es `npx prisma db push` (no existe `prisma/migrations/` en `origin/main`; cf. entrada 030). Se descartó la carpeta de migración generada por error y se adoptó el flujo `db push`.
+**Herramienta de IA utilizada:** Claude Code (agent dedicado a Task B2 + orquestador)
+**Prompt o instrucción proporcionada:** > "Task B2 (back#24): schema + backfill de username, SIN aplicar (no hay BD esta sesión); alinear al flujo real del repo."
+**Resultado obtenido:**
+- `prisma/schema.prisma`: `User` gana `username String @unique` (requerido). Fuente de verdad para `db push`.
+- `prisma/backfill-username.sql`: helper SQL con la receta de aplicación bajo `db push` (BD desechable → `db push` directo; BD con datos → nullable/backfill/required en 3 pasos). El backfill usa `'player_' || substr(id,1,8)`, coherente con la invariante del VO `Username`.
+- `npx prisma generate` ejecutado (sin BD; lee `schema.prisma`): el cliente ahora incluye `username`, y de paso incorpora `Level.order`, resolviendo el error de tsc preexistente reportado en la entrada 040.
+- **Verificación honesta — NADA se aplicó a ninguna BD** (no hay `DATABASE_URL`/Postgres esta sesión, decisión del usuario). El usuario debe aplicar el esquema con `npx prisma db push` y el backfill según `prisma/backfill-username.sql` cuando tenga BD. No se afirma que la migración/backfill se haya ejecutado ni verificado contra datos.
+- **Estado transitorio de build:** tras regenerar el cliente, el árbol de trabajo falla `tsc` en `prisma-user.repository.ts` porque `UserCreateInput` ya exige `username` pero la entidad/repo aún no lo cablean — eso se completa en el fragmento 3/4 (registro con username), que deja el build en verde. El contenido de ESTE commit es solo esquema + SQL + doc (sin TypeScript).
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 042 — back#24 — Registro requiere username único (front#50)
+
+**Fecha:** 2026-07-13
+**Tarea o problema abordado:** Fragmento 3/4 de back#24: cablear `username` de punta a punta en el registro. `User` gana `username: Username`; `IUserRepository` gana `findByUsername`; `RegisterUseCase.execute` pasa a firma `(rawEmail, rawUsername, plainPassword)` y valida unicidad de username además de email; `RegisterDto` y `AuthController.register` propagan el campo; `PrismaUserRepository` lee/escribe `username`. Nueva `UsernameAlreadyTakenException` (mismo patrón que `UserAlreadyExistsException`). Este fragmento deja `npx tsc --noEmit` en verde (estaba rojo desde el fragmento 2/4 por diseño, ya que `UserCreateInput` exigía `username` sin que el repo lo cableara).
+**Herramienta de IA utilizada:** Claude Code (agent dedicado a Task B3)
+**Prompt o instrucción proporcionada:** > "Implementa Task B3 (back#24): registro requiere username único, siguiendo TDD — spec que falla (RED) por firma/API inexistente, implementar entidad/puerto/caso de uso/repo/DTO/controller, specs que pasan (GREEN), tsc verde, AI_HISTORY + README + commit."
+**Resultado obtenido:**
+- `src/domain/entities/user.entity.ts`: constructor gana tercer parámetro `username: Username` (orden `id, email, username, password`).
+- `src/domain/exceptions/username-already-taken.exception.ts`: nueva, extiende `DomainException`, mismo patrón que `UserAlreadyExistsException`.
+- `src/application/ports/i-user.repository.ts`: nuevo método `findByUsername(username: Username): Promise<User | null>`.
+- `src/application/use-cases/register.use-case.ts`: `execute(rawEmail, rawUsername, plainPassword)` — valida email libre, luego username libre (`UsernameAlreadyTakenException` si no), antes de hashear password y guardar.
+- `src/infrastructure/database/prisma-user.repository.ts`: `findByUsername` vía `prisma.user.findUnique({ where: { username } })`; `save` persiste `username`; `toDomain` privado estático reconstruye el nuevo shape de `User`.
+- `src/adapters/dtos/register.dto.ts`: campo `username` con `@IsString() @MinLength(3) @MaxLength(20) @Matches(/^[A-Za-z0-9_]+$/)`, espejando el invariante del VO `Username` en la capa HTTP (fail-fast antes de llegar al dominio).
+- `src/adapters/controllers/auth.controller.ts`: `register` pasa `dto.username` al use case.
+- Specs actualizados: `register.use-case.spec.ts` (reescrito — firma de 3 args, caso "username libre", caso "username tomado" → `UsernameAlreadyTakenException`, mock de `findByUsername`); `prisma-user.repository.spec.ts` (`username` en records mockeados, aserción en `save`, nuevo `describe('findByUsername', ...)` con 2 tests espejando `findByEmail`); `login.use-case.spec.ts` y `auth.controller.spec.ts` (`new User(...)`/DTOs/aserciones actualizados al nuevo shape de 4 args y 3 args respectivamente).
+- TDD verificado: `npx jest src/application/use-cases/register.use-case.spec.ts` en rojo antes de crear la excepción/campo (`Cannot find module '.../username-already-taken.exception'`); verde tras implementar los pasos 3-9 del brief.
+- Verificación final: `npx jest` → 44 suites / 194 tests, todo verde. `npx tsc --noEmit` → exit 0 (sin errores), confirmando que el fragmento cierra el estado rojo heredado del fragmento 2/4.
+- **Verificación honesta — sin base de datos esta sesión.** Todos los tests son unitarios con `PrismaService` mockeado (`jest.fn()` sobre `findUnique`/`create`); no se ejecutó `prisma db push`, `prisma migrate`, ni ninguna query real contra Postgres. La unicidad de `username`/`email` a nivel de constraint de BD (`@unique` en `schema.prisma`, entrada 041) sigue sin verificarse contra datos reales; solo se verificó la lógica de aplicación (use case + repo) contra mocks.
+- README.md: fila de `/auth/register` actualizada para mencionar `username`; ejemplo de request body añadido junto a la respuesta `{ "token": "<jwt>" }`.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 043 — back#24 — front#50 — expose username on GET /leaderboard/:levelId
+
+**Fecha:** 2026-07-13
+**Tarea o problema abordado:** Fragmento 4/4 (final) de back#24: exponer `username` en la respuesta de `GET /leaderboard/:levelId` sin contaminar el agregado de escritura `ScoreEntry`. Se introduce un read model dedicado (`LeaderboardRow`) siguiendo un enfoque CQRS-lite: la ruta de escritura (`POST /scores` → `ScoreEntry` → `ScoreEntryResponseDto`) queda intacta; la ruta de lectura del ranking gana su propia forma con `username` resuelto.
+**Herramienta de IA utilizada:** Claude Code (agent dedicado a Task B4)
+**Prompt o instrucción proporcionada:** > "Implementa Task B4 (back#24, cierra front#50): expone username en el leaderboard vía LeaderboardRow read model, siguiendo TDD — spec del use case reescrito primero (RED), luego use case/repo/mapper/controller (GREEN), actualizar los 3 specs restantes que mockean IScoreRepository, tsc + jest en verde, AI_HISTORY + README + commit exacto."
+**Resultado obtenido:**
+- `src/application/read-models/leaderboard-row.ts` (nuevo): interfaz `LeaderboardRow { id, userId, username, levelId, score, stars, moves, timeSeconds, createdAt }`, comentario inline documentando el patrón CQRS-lite frente al agregado `ScoreEntry`.
+- `src/application/ports/i-score.repository.ts`: `findTopByLevel(levelId, limit): Promise<ScoreEntry[]>` reemplazado por `findLeaderboard(levelId, limit): Promise<LeaderboardRow[]>`; `save` sin cambios.
+- `src/infrastructure/database/prisma-score.repository.ts`: `findLeaderboard` hace join en dos pasos — (1) top-N `scoreEntry.findMany` por nivel; (2) `user.findMany` por los `userId` distintos del resultado, proyectando solo `id`/`username`; arma las filas con fallback defensivo `player_<primeros 8 chars del userId>` si un score apunta a un usuario inexistente. Se eliminan `ScoreEntryRecord`/`toDomain` (ya sin uso, `save` no los necesitaba).
+- `src/application/use-cases/get-leaderboard.use-case.ts`: `execute` ahora devuelve `Promise<LeaderboardRow[]>` y llama a `scoreRepo.findLeaderboard`; `DEFAULT_LIMIT`/`MAX_LIMIT`/`clampLimit` sin cambios.
+- `src/adapters/mappers/score.mapper.ts`: nuevo `LeaderboardEntryResponseDto extends ScoreEntryResponseDto { username: string }` + `ScoreMapper.leaderboardRowToDto`. `ScoreEntryResponseDto` y `ScoreMapper.toDto(ScoreEntry)` **sin cambios** (ISP: el DTO de escritura no gana `username`).
+- `src/adapters/controllers/score.controller.ts`: `getLeaderboard` devuelve `Promise<LeaderboardEntryResponseDto[]>`, mapea con `ScoreMapper.leaderboardRowToDto`. `submitScore` intacto.
+- Specs actualizados: `get-leaderboard.use-case.spec.ts` (reescrito con mock `findLeaderboard`, filas con `username`); `submit-score.use-case.spec.ts` (mock del puerto corregido a `findLeaderboard`, sin cambio de comportamiento); `prisma-score.repository.spec.ts` (`describe('findLeaderboard', ...)` reemplaza `findTopByLevel`, con caso de join exitoso y caso de fallback `player_<8 chars>` cuando el `userId` no tiene usuario asociado); `score.mapper.spec.ts` (nuevo caso `leaderboardRowToDto`, el test de `toDto` queda igual); `score.controller.spec.ts` (`getLeaderboard` mockeado con `LeaderboardRow[]`, aserción incluye `username`).
+- TDD verificado: `npx jest src/application/use-cases/get-leaderboard.use-case.spec.ts` en rojo tras reescribir el spec (`TypeError: this.scoreRepo.findTopByLevel is not a function`, 4 tests fallando) porque el use case todavía llamaba al método viejo del puerto; verde tras implementar los pasos 5-8 del brief (use case + repo + mapper + controller).
+- Verificación final: `npx jest` → 44 suites / 196 tests, todo verde. `npx tsc --noEmit` → exit 0.
+- Lint acotado (`npx eslint <archivos tocados>`, nunca `npm run lint`): un error de formato de `prettier/prettier` en `score.controller.ts` corregido en el propio archivo. Los errores `@typescript-eslint/unbound-method` sobre `expect(mockScoreRepo.X).toHaveBeenCalledWith(...)` en los specs de use case son preexistentes (confirmado corriendo eslint sobre las versiones de `HEAD` vía `git stash`/`git stash pop`) y no fueron introducidos por este fragmento.
+- **Verificación honesta — sin base de datos esta sesión.** Todos los tests son unitarios con `PrismaService` mockeado (`jest.fn()` sobre `scoreEntry.findMany`/`user.findMany`); no se ejecutó `prisma db push`, `prisma migrate`, ni ninguna query real contra Postgres. El join `scoreEntry` → `User` y el fallback `player_<8 chars>` solo se verificaron contra mocks, no contra datos reales.
+- README.md: fila de `GET /leaderboard/:levelId` y el ejemplo de respuesta actualizados para reflejar el nuevo campo `username` por fila.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 044 — back#24 — fix de revisión: e2e del contrato de error roto por username requerido
+
+**Fecha:** 2026-07-13
+**Tarea o problema abordado:** Revisión del PR #25 (ClaudiaLopezp) detectó una regresión enmascarada: tras la fusión con `main`, `test/error-contract.e2e-spec.ts` seguía posteando a `POST /auth/register` con `{ email, password }` sin `username`. Como el nuevo `RegisterDto.username` es requerido y `app.setup.ts` aplica `ValidationPipe({ whitelist, forbidNonWhitelisted })`, la petición devolvía 400 (Bad Request) antes de llegar al caso de uso, pero el test esperaba 409 (email ya registrado) — `E2E: 1 failed, 10 passed`. El CI no lo cachaba porque el workflow corre `test` (Jest unit, `rootDir: src`) y el e2e vive en `test:e2e` (config aparte), fuera del pipeline: el e2e roto pasaba el check verde.
+**Herramienta de IA utilizada:** Claude Code (Opus, rol Arquitecto Senior; skill superpowers:receiving-code-review)
+**Prompt o instrucción proporcionada:** > "hay una nueva revision del pr#25, se encontro un conflicto, revisalo y arreglalo por favor"
+**Resultado obtenido:**
+- `test/error-contract.e2e-spec.ts` (test 409): se añade `username: 'taken_user'` al body del `POST /auth/register` (pasa el `ValidationPipe`) y también al `mockResolvedValue` del usuario existente. Este segundo cambio no es solo cosmético: `PrismaUserRepository.findByEmail` reconstruye el `User` vía `toDomain` → `new Username(record.username)`, así que sin `username` en el record el VO se construiría con un valor ausente. Con ambos, el caso de uso alcanza el check de email y lanza `UserAlreadyExistsException` → 409.
+- Verificación: `npm run test:e2e` → 3 suites / 11 tests verdes (antes 1 failed). Sin regresión en el resto: `npx tsc --noEmit` exit 0, `npx jest` (unit) 49 suites / 262 tests verdes, `eslint` del archivo tocado limpio.
+- **Hueco de CI señalado (no corregido en este fragmento):** `test:e2e` no está en `.github/workflows/ci.yml`, por lo que un e2e roto no bloquea el merge. El e2e usa `PrismaService` mockeado (no necesita Postgres), así que añadirlo al pipeline es viable y cerraría el hueco que permitió que esta regresión pasara verde. Queda como recomendación para un fragmento aparte.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 045 — ci(back): añadir e2e al gate de CI (cierra el hueco de la entrada 044)
+
+**Fecha:** 2026-07-13
+**Tarea o problema abordado:** La entrada 044 identificó la causa raíz de que una regresión e2e pasara el gate en verde: `.github/workflows/ci.yml` solo corría `npm test` (Jest unitario, `rootDir: src`), mientras que la suite e2e (`test:e2e`, config `test/jest-e2e.json`) quedaba fuera del pipeline. Añadir el e2e al workflow para que un e2e roto bloquee el merge.
+**Herramienta de IA utilizada:** Claude Code (Opus, rol Arquitecto Senior)
+**Prompt o instrucción proporcionada:** > "haz ambos" (añadir test:e2e al CI y responder a la reviewer)
+**Resultado obtenido:**
+- `.github/workflows/ci.yml`: nuevo step `E2E` (`npm run test:e2e`) entre `Test` y `Build`. Usa `PrismaService` mockeado (`test/create-test-app.ts`), así que corre sin Postgres real; la `DATABASE_URL` dummy del job basta y `JWT_SECRET` tiene fallback de test.
+- **Nombre del job preservado a propósito** (`lint · test · build`, no `… · e2e · …`): ese string es el nombre del check requerido en la protección de rama de `main`. Renombrarlo dejaría el check requerido como "faltante" y bloquearía todo PR hasta actualizar Settings → Branches. Se documentó la restricción en un comentario del propio workflow.
+- Verificación: `npm run test:e2e` local → 3 suites / 11 tests verdes; estructura del workflow validada (pasos `Install → Generate Prisma → Lint → Test → E2E → Build`). El efecto real (bloquear un e2e roto) se confirmará en la corrida de CI del push.
+**Modificaciones realizadas por el equipo:** (completar manualmente)

@@ -1,30 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 import type { IScoreRepository } from '../../application/ports/i-score.repository';
+import type { LeaderboardRow } from '../../application/read-models/leaderboard-row';
 import { ScoreEntry } from '../../domain/entities/score-entry.entity';
-import { ScoreEntryId } from '../../domain/value-objects/score-entry-id.vo';
-import { UserId } from '../../domain/value-objects/user-id.vo';
 import { LevelId } from '../../domain/value-objects/level-id.vo';
-import { Score } from '../../domain/value-objects/score.vo';
-import { Stars } from '../../domain/value-objects/stars.vo';
-import { MoveCount } from '../../domain/value-objects/move-count.vo';
-import { ElapsedTime } from '../../domain/value-objects/elapsed-time.vo';
 
-// Forma del record de persistencia (columnas de la tabla ScoreEntry). Se declara
-// localmente para no filtrar tipos generados de Prisma hacia el dominio.
-interface ScoreEntryRecord {
-  id: string;
-  userId: string;
-  levelId: string;
-  score: number;
-  stars: number;
-  moves: number;
-  timeSeconds: number;
-  createdAt: Date;
-}
-
-// Adapter: implementa IScoreRepository con Prisma. Mapea entre el record de
-// persistencia y la entidad de dominio ScoreEntry (reconstruyendo sus VOs).
+// Adapter: implementa IScoreRepository con Prisma.
 @Injectable()
 export class PrismaScoreRepository implements IScoreRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -44,27 +25,38 @@ export class PrismaScoreRepository implements IScoreRepository {
     });
   }
 
-  async findTopByLevel(levelId: LevelId, limit: number): Promise<ScoreEntry[]> {
-    // Ranking: mayor score primero; empate resuelto por el más antiguo (quien lo
-    // logró antes queda arriba). El índice (levelId, score) soporta esta consulta.
-    const records = await this.prisma.scoreEntry.findMany({
+  // Lectura del ranking: (1) top-N por nivel (score desc, createdAt asc como
+  // desempate — el índice (levelId, score) soporta la consulta); (2) resuelve
+  // los userId distintos contra User para adjuntar el username; (3) arma las
+  // filas de lectura. Fallback defensivo si un score apunta a un usuario que ya
+  // no existe.
+  async findLeaderboard(
+    levelId: LevelId,
+    limit: number,
+  ): Promise<LeaderboardRow[]> {
+    const scores = await this.prisma.scoreEntry.findMany({
       where: { levelId: levelId.value },
       orderBy: [{ score: 'desc' }, { createdAt: 'asc' }],
       take: limit,
     });
-    return records.map((record) => PrismaScoreRepository.toDomain(record));
-  }
 
-  private static toDomain(record: ScoreEntryRecord): ScoreEntry {
-    return new ScoreEntry(
-      new ScoreEntryId(record.id),
-      new UserId(record.userId),
-      new LevelId(record.levelId),
-      new Score(record.score),
-      new Stars(record.stars),
-      new MoveCount(record.moves),
-      new ElapsedTime(record.timeSeconds),
-      record.createdAt,
-    );
+    const userIds = [...new Set(scores.map((s) => s.userId))];
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, username: true },
+    });
+    const usernameById = new Map(users.map((u) => [u.id, u.username]));
+
+    return scores.map((s) => ({
+      id: s.id,
+      userId: s.userId,
+      username: usernameById.get(s.userId) ?? `player_${s.userId.slice(0, 8)}`,
+      levelId: s.levelId,
+      score: s.score,
+      stars: s.stars,
+      moves: s.moves,
+      timeSeconds: s.timeSeconds,
+      createdAt: s.createdAt,
+    }));
   }
 }

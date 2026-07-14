@@ -20,9 +20,13 @@ describe('AuthController', () => {
   });
 
   describe('register', () => {
-    it('delegates to RegisterUseCase with email and password, and returns { token }', async () => {
+    it('delegates to RegisterUseCase with email, username, and password, and returns { token }', async () => {
       // Arrange
-      const dto = { email: 'user@example.com', password: 'secret123' };
+      const dto = {
+        email: 'user@example.com',
+        username: 'player_01',
+        password: 'secret123',
+      };
       mockRegisterUseCase.execute.mockResolvedValue('signed.jwt.token');
 
       // Act
@@ -32,6 +36,7 @@ describe('AuthController', () => {
       expect(mockRegisterUseCase.execute).toHaveBeenCalledTimes(1);
       expect(mockRegisterUseCase.execute).toHaveBeenCalledWith(
         'user@example.com',
+        'player_01',
         'secret123',
       );
       expect(result).toEqual({ token: 'signed.jwt.token' });
@@ -49,6 +54,7 @@ describe('AuthController', () => {
       const act = () =>
         sut.register({
           email: 'user@example.com',
+          username: 'player_01',
           password: 'secret123',
         });
 

@@ -11,10 +11,16 @@ import { ElapsedTime } from '../../domain/value-objects/elapsed-time.vo';
 
 describe('PrismaScoreRepository', () => {
   let sut: PrismaScoreRepository;
-  let mockPrisma: { scoreEntry: { create: jest.Mock; findMany: jest.Mock } };
+  let mockPrisma: {
+    scoreEntry: { create: jest.Mock; findMany: jest.Mock };
+    user: { findMany: jest.Mock };
+  };
 
   beforeEach(() => {
-    mockPrisma = { scoreEntry: { create: jest.fn(), findMany: jest.fn() } };
+    mockPrisma = {
+      scoreEntry: { create: jest.fn(), findMany: jest.fn() },
+      user: { findMany: jest.fn() },
+    };
     sut = new PrismaScoreRepository(mockPrisma as unknown as PrismaService);
   });
 
@@ -50,12 +56,13 @@ describe('PrismaScoreRepository', () => {
     });
   });
 
-  describe('findTopByLevel', () => {
+  describe('findLeaderboard', () => {
     it('should query filtered by level, ordered by score desc, capped by limit', async () => {
       // Arrange
       mockPrisma.scoreEntry.findMany.mockResolvedValue([]);
+      mockPrisma.user.findMany.mockResolvedValue([]);
       // Act
-      await sut.findTopByLevel(new LevelId('level-1'), 5);
+      await sut.findLeaderboard(new LevelId('level-1'), 5);
       // Assert
       expect(mockPrisma.scoreEntry.findMany).toHaveBeenCalledWith({
         where: { levelId: 'level-1' },
@@ -64,7 +71,7 @@ describe('PrismaScoreRepository', () => {
       });
     });
 
-    it('should rebuild ScoreEntry domain entities from the persistence records', async () => {
+    it('should resolve the username for each score by joining against User', async () => {
       // Arrange
       const createdAt = new Date('2026-07-08T00:00:00Z');
       mockPrisma.scoreEntry.findMany.mockResolvedValue([
@@ -79,15 +86,51 @@ describe('PrismaScoreRepository', () => {
           createdAt,
         },
       ]);
+      mockPrisma.user.findMany.mockResolvedValue([
+        { id: 'user-1', username: 'ana' },
+      ]);
       // Act
-      const result = await sut.findTopByLevel(new LevelId('level-1'), 10);
+      const result = await sut.findLeaderboard(new LevelId('level-1'), 10);
       // Assert
-      expect(result).toHaveLength(1);
-      expect(result[0]).toBeInstanceOf(ScoreEntry);
-      expect(result[0].score.value).toBe(1500);
-      expect(result[0].stars.value).toBe(3);
-      expect(result[0].time.seconds).toBe(45);
-      expect(result[0].createdAt).toBe(createdAt);
+      expect(mockPrisma.user.findMany).toHaveBeenCalledWith({
+        where: { id: { in: ['user-1'] } },
+        select: { id: true, username: true },
+      });
+      expect(result).toEqual([
+        {
+          id: 'score-1',
+          userId: 'user-1',
+          username: 'ana',
+          levelId: 'level-1',
+          score: 1500,
+          stars: 3,
+          moves: 12,
+          timeSeconds: 45,
+          createdAt,
+        },
+      ]);
+    });
+
+    it('should fall back to a synthetic username when the score has no matching user', async () => {
+      // Arrange
+      const createdAt = new Date('2026-07-08T00:00:00Z');
+      mockPrisma.scoreEntry.findMany.mockResolvedValue([
+        {
+          id: 'score-1',
+          userId: 'orphan-user-id',
+          levelId: 'level-1',
+          score: 1500,
+          stars: 3,
+          moves: 12,
+          timeSeconds: 45,
+          createdAt,
+        },
+      ]);
+      mockPrisma.user.findMany.mockResolvedValue([]);
+      // Act
+      const result = await sut.findLeaderboard(new LevelId('level-1'), 10);
+      // Assert
+      expect(result[0].username).toBe('player_orphan-u');
     });
   });
 });

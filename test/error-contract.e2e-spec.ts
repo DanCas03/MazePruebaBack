@@ -63,13 +63,18 @@ describe('Domain error contract (e2e)', () => {
     prisma.user.findUnique.mockResolvedValue({
       id: 'user-1',
       email: 'taken@arrowmaze.com',
+      username: 'taken_user',
       password: '$2b$10$e2eFakeButNonEmptyHashValue',
     });
 
     // Act
     const res = await request(httpServer(app))
       .post('/auth/register')
-      .send({ email: 'taken@arrowmaze.com', password: 'secret123' })
+      .send({
+        email: 'taken@arrowmaze.com',
+        username: 'taken_user',
+        password: 'secret123',
+      })
       .expect(409);
 
     // Assert
