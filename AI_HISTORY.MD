@@ -660,3 +660,12 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - No se tocó `prisma/seed.ts`: la revisión anotó como SUGGESTION que un futuro reordenamiento de niveles curados (intercambiar `order` entre ids existentes) podría chocar con el unique `Level_order_key` a mitad del loop de upserts; se deja documentado y no se implementa porque un `$transaction` no lo resolvería (Postgres valida uniques por sentencia, no al commit, salvo constraints DEFERRABLE) y el fix real (update en dos fases) es YAGNI con los 15 niveles estables.
 - Verificación: `npm test` y `npm run build` verdes tras el `npm install` (ver corrida en el commit).
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 051 — Glosario: Grafo de bloqueos, Sección, Nivel temático, Instrucciones de pintado
+
+**Fecha:** 2026-07-14
+**Tarea o problema abordado:** Registrar en el glosario los términos acordados en la sesión de revisión de arquitectura + grilling (candidatos C1–C5): el Grafo de bloqueos (modelo conceptual de la solubilidad: nodo = Arrow, arista Y→X cuando Y ocupa el carril de salida de X; Solución = orden de pelado determinista), la Sección del catálogo (campaña | temático), el Nivel temático y las Instrucciones de pintado (metadata visual opaca: paleta de roles + rol por flecha). Respaldado por ADR 0003 y ADR 0004 (docs/adr/ del workspace).
+**Herramienta de IA utilizada:** Claude Code (Fable 5) — skills /improve-codebase-architecture, /grill-with-docs (/grilling + /domain-modeling), /codebase-design
+**Prompt o instrucción proporcionada:** > "Quiero que veamos la resolución del tablero como grafos… el último nivel sea un tablero de 50x50… tiene que haber un apartado temático donde hayan por lo menos 3 seeds personalizadas con figuras…"
+**Resultado obtenido:** CONTEXT.md ampliado con 4 términos; issues back#30–#32 triageados con Agent Briefs (más front#64–#69).
+**Modificaciones realizadas por el equipo:** (completar manualmente)
