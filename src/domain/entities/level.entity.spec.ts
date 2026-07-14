@@ -61,6 +61,38 @@ describe('Level', () => {
       expect(sut.timeLimitSec).toBe(1);
     });
 
+    it('should default section to campaign and leave paint undefined when omitted (retro-compat, ADR 0004)', () => {
+      // Arrange
+      const arrows = [bentArrowA1(), straightArrowA2()];
+      // Act
+      const sut = new Level(new LevelId('level-001'), COLS, ROWS, arrows);
+      // Assert
+      expect(sut.section).toBe('campaign');
+      expect(sut.paint).toBeUndefined();
+    });
+
+    it('should carry section and paint as opaque data without validating their content', () => {
+      // Arrange — paint deliberadamente arbitrario: el dominio no lo interpreta.
+      const arrows = [bentArrowA1(), straightArrowA2()];
+      const paint = {
+        palette: { cara: '#FBBF24', ojo: '#1E293B' },
+        roles: { a1: 'cara', a2: 'ojo' },
+      };
+      // Act
+      const sut = new Level(
+        new LevelId('t-smoke'),
+        COLS,
+        ROWS,
+        arrows,
+        undefined,
+        'themed',
+        paint,
+      );
+      // Assert
+      expect(sut.section).toBe('themed');
+      expect(sut.paint).toEqual(paint);
+    });
+
     it('should create a degenerate level when arrows is empty — the brief does not forbid it', () => {
       // Arrange
       const arrows: Arrow[] = [];
