@@ -58,7 +58,7 @@ describe('LevelController', () => {
 
       // Assert
       expect(mockListLevelsUseCase.execute).toHaveBeenCalledWith();
-      expect(result).toEqual([{ levelId: 'l-007' }]);
+      expect(result).toEqual([{ levelId: 'l-007', section: 'campaign' }]);
     });
   });
 
