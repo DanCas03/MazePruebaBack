@@ -129,7 +129,10 @@ describe('ArrowFactory', () => {
       expect(() => ArrowFactory.create(raw)).toThrow(InvalidArrowException);
     });
 
-    it('should throw InvalidArrowException when consecutive cells are not orthogonally adjacent', () => {
+    it('should build an Arrow when consecutive cells are not orthogonally adjacent — adjacency is validated by Level (ADR 0005)', () => {
+      // La adyacencia es geometría del espacio y la valida Level vía
+      // BoardSpace, no la frontera de primitivos: la factory solo parsea la
+      // forma del wire y entrega un Arrow como dato puro.
       // Arrange
       const raw = rawOf({
         cells: [
@@ -137,8 +140,11 @@ describe('ArrowFactory', () => {
           [0, 2],
         ],
       });
-      // Act / Assert
-      expect(() => ArrowFactory.create(raw)).toThrow(InvalidArrowException);
+      // Act
+      const sut = ArrowFactory.create(raw);
+      // Assert
+      expect(sut).toBeInstanceOf(Arrow);
+      expect(sut.cells).toEqual([new Position(0, 0), new Position(0, 2)]);
     });
   });
 });

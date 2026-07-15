@@ -8,6 +8,7 @@ import { LevelId } from '../../domain/value-objects/level-id.vo';
 import { ArrowId } from '../../domain/value-objects/arrow-id.vo';
 import { Position } from '../../domain/value-objects/position.vo';
 import { Direction } from '../../domain/value-objects/direction.vo';
+import { RectSpace } from '../../domain/space/rect-space';
 import { LevelNotFoundException } from '../../domain/exceptions/level-not-found.exception';
 import { UnsolvableLevelException } from '../../domain/exceptions/unsolvable-level.exception';
 
@@ -20,8 +21,7 @@ describe('LevelController', () => {
   const buildLevel = () =>
     new Level(
       new LevelId('l-007'),
-      8,
-      11,
+      new RectSpace(8, 11),
       [
         new Arrow(
           new ArrowId('a1'),
