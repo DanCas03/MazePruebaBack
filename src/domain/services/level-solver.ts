@@ -1,8 +1,5 @@
 import { Level } from '../entities/level.entity';
-import { Arrow } from '../entities/arrow.entity';
 import { ArrowId } from '../value-objects/arrow-id.vo';
-import { Direction } from '../value-objects/direction.vo';
-import { Position } from '../value-objects/position.vo';
 
 // Servicio de dominio puro (ADR 0002): decide si un Level arrow-path es
 // soluble y produce la Solución canónica (el orden de remoción que vacía el
@@ -13,13 +10,13 @@ import { Position } from '../value-objects/position.vo';
 // una flecha con in-degree 0 lo conserva hasta ser pelada. Pelar siempre el
 // elegible de índice congelado más bajo reproduce byte-idéntico el replay
 // greedy previo (que escaneaba level.arrows desde 0 y reiniciaba tras cada
-// remoción) — ADR 0002 dec. 5. La geometría de salida espeja EXACTO la
-// mecánica canónica del front:
-//   exitPath -> MazePruebaFront/lib/domain/arrows/entities/arrow.dart
-//   canExit  -> MazePruebaFront/lib/domain/arrows/entities/arrow_board.dart
-// Arrow/Level siguen siendo solo datos: toda la mecánica (grafo incluido) es
-// privada de este servicio. Sin estado entre llamadas ni dependencias;
-// instanciable para proveerlo por DI cuando back#19 lo exponga.
+// remoción) — ADR 0002 dec. 5. La geometría de salida vive en BoardSpace
+// (ADR 0005): el solver consulta level.space.exitLane(head, headDir) — el
+// carril cercano→frontera que espeja la mecánica canónica del front
+// (arrow.dart / arrow_board.dart) — y no interpreta Direction ni hace
+// aritmética de celdas. Arrow/Level siguen siendo solo datos: toda la
+// mecánica (grafo incluido) es privada de este servicio. Sin estado entre
+// llamadas ni dependencias; instanciable para proveerlo por DI (back#19).
 export class LevelSolver {
   // Un orden de remoción válido que vacía el tablero (la Solución), o null
   // si el nivel es insoluble. Determinista para un Level dado. Nivel vacío
@@ -54,14 +51,17 @@ export class LevelSolver {
     }
 
     // Aristas Y→X (Y bloquea a X) + in-degree por nodo. Una cabeza pegada
-    // al borde tiene carril vacío ⇒ in-degree 0 siempre (mecánica serpiente:
-    // el cuerpo se retrae por su propio camino). Las celdas del carril
-    // ocupadas por la propia flecha no bloquean, espejo del canExit previo.
+    // a la frontera tiene carril vacío ⇒ in-degree 0 siempre (mecánica
+    // serpiente: el cuerpo se retrae por su propio camino). Las celdas del
+    // carril ocupadas por la propia flecha no bloquean, espejo del canExit
+    // previo. El carril lo da el espacio del nivel (ADR 0005), así que un
+    // BoardSpace distinto cambia la geometría sin tocar este algoritmo.
     const blocks: number[][] = Array.from({ length: count }, () => []);
     const blockersCount = new Array<number>(count).fill(0);
     for (let x = 0; x < count; x++) {
+      const head = arrows[x].cells[arrows[x].cells.length - 1];
       const seenBlockers = new Set<number>();
-      for (const cell of this.exitPath(arrows[x], level.cols, level.rows)) {
+      for (const cell of level.space.exitLane(head, arrows[x].headDir)) {
         const y = occupant.get(`${cell.row},${cell.col}`);
         if (y !== undefined && y !== x && !seenBlockers.has(y)) {
           seenBlockers.add(y);
@@ -103,37 +103,6 @@ export class LevelSolver {
       }
     }
     return { order, residue };
-  }
-
-  // Espejo de Arrow.exitPath: carril recto desde head+1 hasta el borde en
-  // headDir. Vacío si la cabeza toca el borde => la flecha sale siempre
-  // (mecánica serpiente: el cuerpo se retrae por su propio camino).
-  private exitPath(arrow: Arrow, cols: number, rows: number): Position[] {
-    const head = arrow.cells[arrow.cells.length - 1];
-    const path: Position[] = [];
-    switch (arrow.headDir) {
-      case Direction.RIGHT:
-        for (let col = head.col + 1; col < cols; col++) {
-          path.push(new Position(head.row, col));
-        }
-        break;
-      case Direction.LEFT:
-        for (let col = head.col - 1; col >= 0; col--) {
-          path.push(new Position(head.row, col));
-        }
-        break;
-      case Direction.DOWN:
-        for (let row = head.row + 1; row < rows; row++) {
-          path.push(new Position(row, head.col));
-        }
-        break;
-      case Direction.UP:
-        for (let row = head.row - 1; row >= 0; row--) {
-          path.push(new Position(row, head.col));
-        }
-        break;
-    }
-    return path;
   }
 }
 
