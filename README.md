@@ -23,7 +23,7 @@ Clean Architecture with four layers. The dependency rule points inward only: `in
 
 ```
 src/
-├── domain/          Entities, Value Objects, domain exceptions — pure TypeScript, no framework
+├── domain/          Entities, Value Objects, BoardSpace geometry (space/), domain exceptions — pure TypeScript, no framework
 ├── application/     Use cases + Ports (interface + DI token per dependency)
 ├── adapters/        Controllers, DTOs, Mappers, NestJS Modules (DI wiring)
 └── infrastructure/  PrismaService, repositories, bcrypt/JWT services, logger adapter
@@ -41,6 +41,7 @@ Patterns are used where they solve a concrete problem, and each one carries an i
 |---|---|---|
 | **Factory Method** | [`arrow.factory.ts`](src/domain/entities/arrow.factory.ts) | Guards the primitives→domain boundary: raw arrow-path JSON (`{ id, headDir, cells }`) becomes a validated `Arrow` — direction parsed case-insensitively, cell shape checked — failing with domain exceptions so no invalid arrow ever enters the system. |
 | **Builder** | [`level.builder.ts`](src/domain/entities/level.builder.ts) | Assembles a `Level` from raw arrow-path JSON via a fluent step-by-step API (`withDimensions`/`withTimeLimit`/`addArrow`/`build`), delegating per-arrow parsing to `ArrowFactory` and board invariants to `Level` itself — separates the multi-step assembly process from the validated result. |
+| **Template Method** | [`board-space.ts`](src/domain/space/board-space.ts) | Concentrates board geometry behind one seam (ADR 0005): `step` is the only primitive a space defines; `areAdjacent` and `exitLane` derive from it in the abstract base, so a new geometry (holed, 3D) redefines "one step" and every consumer — `Level` validation, `LevelSolver` lanes — works unchanged. `RectSpace` holds the artifact's single direction→delta switch. |
 | **Adapter** | [`nest-logger.adapter.ts`](src/infrastructure/logger/nest-logger.adapter.ts), [`jwt-token.service.ts`](src/infrastructure/security/jwt-token.service.ts), [`bcrypt-hash.service.ts`](src/infrastructure/security/bcrypt-hash.service.ts) | Wraps concrete libraries (NestJS `Logger`, `@nestjs/jwt`, `bcryptjs`) behind application ports, so the core never imports them directly. |
 | **Strategy (Passport)** | [`jwt.strategy.ts`](src/infrastructure/security/jwt.strategy.ts) | Encapsulates the JWT validation algorithm as a swappable Passport strategy reading its secret from `ConfigService`. |
 | **Dependency Injection / Composition Root** | [`auth.module.ts`](src/adapters/auth.module.ts) | `useFactory` instantiates framework-free use cases with their ports, keeping construction out of the business code. |
@@ -70,6 +71,8 @@ private static readonly statusByException = new Map([
   [InvalidCredentialsException, HttpStatus.UNAUTHORIZED],
 ]); // add a row to extend; the catch() below stays untouched
 ```
+
+The same discipline covers board geometry: `Level` and `LevelSolver` consume the abstract [`BoardSpace`](src/domain/space/board-space.ts) — `RectSpace` is the only production space, and the test-only `HoledRectSpace` (a grid with holes, where a lane ending at a hole counts as an exit) certifies the seam: [`level-solver.certification.spec.ts`](src/domain/services/level-solver.certification.spec.ts) solves levels over holed geometry without editing a single solver line.
 
 **Liskov Substitution.** Every port implementation is substitutable for its abstraction without the client noticing: `PrismaUserRepository` stands in for `IUserRepository`, `BcryptHashService` for `IHashService`, `JwtTokenService` for `ITokenService` — and the tests swap them for mocks with no change to the use cases.
 

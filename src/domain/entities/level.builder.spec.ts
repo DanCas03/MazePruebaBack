@@ -4,6 +4,8 @@ import { LevelId } from '../value-objects/level-id.vo';
 import { InvalidArrowException } from '../exceptions/invalid-arrow.exception';
 import { InvalidDirectionException } from '../exceptions/invalid-direction.exception';
 import { InvalidLevelException } from '../exceptions/invalid-level.exception';
+import { InvalidBoardSpaceException } from '../exceptions/invalid-board-space.exception';
+import { RectSpace } from '../space/rect-space';
 
 describe('LevelBuilder', () => {
   // Fixture: nivel de ejemplo del wire contract (CONTEXT-MAP.md) — tablero 8x11.
@@ -42,6 +44,9 @@ describe('LevelBuilder', () => {
       const level = sut.build();
       // Assert
       expect(level.id.equals(id)).toBe(true);
+      // ADR 0005: el builder es el wire que construye el espacio de
+      // producción — un RectSpace concreto desde cols/rows del JSON.
+      expect(level.space).toBeInstanceOf(RectSpace);
       expect(level.cols).toBe(COLS);
       expect(level.rows).toBe(ROWS);
       expect(level.timeLimitSec).toBe(90);
@@ -86,11 +91,14 @@ describe('LevelBuilder', () => {
       expect(level.timeLimitSec).toBeUndefined();
     });
 
-    it('should throw InvalidLevelException when dimensions are never set', () => {
+    it('should throw InvalidBoardSpaceException when dimensions are never set', () => {
+      // ADR 0005: la invariante de dimensiones vive en RectSpace, así que el
+      // builder sin withDimensions lanza la excepción del espacio (antes era
+      // InvalidLevelException, cuando Level validaba cols/rows).
       // Arrange
       const sut = new LevelBuilder(new LevelId('l-007')).addArrow(bentArrowA1);
       // Act / Assert
-      expect(() => sut.build()).toThrow(InvalidLevelException);
+      expect(() => sut.build()).toThrow(InvalidBoardSpaceException);
     });
 
     it('should throw InvalidLevelException when two arrows added via separate addArrow calls share a cell', () => {

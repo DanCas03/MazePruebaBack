@@ -4,6 +4,7 @@ import { LevelId } from '../value-objects/level-id.vo';
 import { ArrowId } from '../value-objects/arrow-id.vo';
 import { Position } from '../value-objects/position.vo';
 import { Direction } from '../value-objects/direction.vo';
+import { RectSpace } from '../space/rect-space';
 import { InvalidLevelException } from '../exceptions/invalid-level.exception';
 
 describe('Level', () => {
@@ -26,15 +27,19 @@ describe('Level', () => {
     new Arrow(new ArrowId('a2'), cellsOf([2, 0], [2, 1]), Direction.RIGHT);
 
   describe('constructor', () => {
-    it('should create a level and expose id, cols, rows, arrows and timeLimitSec when two arrows fit inside the board', () => {
+    it('should create a level and expose id, space, cols, rows, arrows and timeLimitSec when two arrows fit inside the board', () => {
       // Arrange
       const id = new LevelId('level-001');
+      const space = new RectSpace(COLS, ROWS);
       const a1 = bentArrowA1();
       const a2 = straightArrowA2();
       // Act
-      const sut = new Level(id, COLS, ROWS, [a1, a2], 90);
+      const sut = new Level(id, space, [a1, a2], 90);
       // Assert
       expect(sut.id.equals(id)).toBe(true);
+      // ADR 0005: el agregado sostiene el espacio y lo expone tal cual.
+      expect(sut.space).toBe(space);
+      // cols/rows ahora derivan del bounding box del espacio: mismo valor.
       expect(sut.cols).toBe(COLS);
       expect(sut.rows).toBe(ROWS);
       expect(sut.arrows).toHaveLength(2);
@@ -47,7 +52,11 @@ describe('Level', () => {
       // Arrange
       const arrows = [bentArrowA1(), straightArrowA2()];
       // Act
-      const sut = new Level(new LevelId('level-001'), COLS, ROWS, arrows);
+      const sut = new Level(
+        new LevelId('level-001'),
+        new RectSpace(COLS, ROWS),
+        arrows,
+      );
       // Assert
       expect(sut.timeLimitSec).toBeUndefined();
     });
@@ -56,7 +65,12 @@ describe('Level', () => {
       // Arrange
       const arrows = [bentArrowA1(), straightArrowA2()];
       // Act
-      const sut = new Level(new LevelId('level-001'), COLS, ROWS, arrows, 1);
+      const sut = new Level(
+        new LevelId('level-001'),
+        new RectSpace(COLS, ROWS),
+        arrows,
+        1,
+      );
       // Assert
       expect(sut.timeLimitSec).toBe(1);
     });
@@ -65,7 +79,11 @@ describe('Level', () => {
       // Arrange
       const arrows = [bentArrowA1(), straightArrowA2()];
       // Act
-      const sut = new Level(new LevelId('level-001'), COLS, ROWS, arrows);
+      const sut = new Level(
+        new LevelId('level-001'),
+        new RectSpace(COLS, ROWS),
+        arrows,
+      );
       // Assert
       expect(sut.section).toBe('campaign');
       expect(sut.paint).toBeUndefined();
@@ -81,8 +99,7 @@ describe('Level', () => {
       // Act
       const sut = new Level(
         new LevelId('t-smoke'),
-        COLS,
-        ROWS,
+        new RectSpace(COLS, ROWS),
         arrows,
         undefined,
         'themed',
@@ -97,30 +114,14 @@ describe('Level', () => {
       // Arrange
       const arrows: Arrow[] = [];
       // Act
-      const sut = new Level(new LevelId('level-001'), COLS, ROWS, arrows, 90);
+      const sut = new Level(
+        new LevelId('level-001'),
+        new RectSpace(COLS, ROWS),
+        arrows,
+        90,
+      );
       // Assert
       expect(sut.arrows).toHaveLength(0);
-    });
-
-    it('should throw InvalidLevelException when cols is 0', () => {
-      // Arrange / Act / Assert
-      expect(() => new Level(new LevelId('level-001'), 0, ROWS, [])).toThrow(
-        InvalidLevelException,
-      );
-    });
-
-    it('should throw InvalidLevelException when rows is 0', () => {
-      // Arrange / Act / Assert
-      expect(() => new Level(new LevelId('level-001'), COLS, 0, [])).toThrow(
-        InvalidLevelException,
-      );
-    });
-
-    it('should throw InvalidLevelException when cols is not an integer', () => {
-      // Arrange / Act / Assert
-      expect(() => new Level(new LevelId('level-001'), 2.5, ROWS, [])).toThrow(
-        InvalidLevelException,
-      );
     });
 
     it('should throw InvalidLevelException when an arrow cell has row equal to rows — off the bottom edge', () => {
@@ -132,7 +133,10 @@ describe('Level', () => {
       );
       // Act / Assert
       expect(
-        () => new Level(new LevelId('level-001'), COLS, ROWS, [outOfBounds]),
+        () =>
+          new Level(new LevelId('level-001'), new RectSpace(COLS, ROWS), [
+            outOfBounds,
+          ]),
       ).toThrow(InvalidLevelException);
     });
 
@@ -145,7 +149,45 @@ describe('Level', () => {
       );
       // Act / Assert
       expect(
-        () => new Level(new LevelId('level-001'), COLS, ROWS, [outOfBounds]),
+        () =>
+          new Level(new LevelId('level-001'), new RectSpace(COLS, ROWS), [
+            outOfBounds,
+          ]),
+      ).toThrow(InvalidLevelException);
+    });
+
+    // Tests mudados desde Arrow (ADR 0005): la adyacencia del camino es
+    // geometría del espacio, no invariante del dato — ahora la valida Level
+    // vía BoardSpace.areAdjacent y lanza InvalidLevelException.
+    it('should throw InvalidLevelException when consecutive cells of an arrow are separated by a gap', () => {
+      // Arrange
+      const gapped = new Arrow(
+        new ArrowId('a1'),
+        cellsOf([0, 0], [0, 2]),
+        Direction.UP,
+      );
+      // Act / Assert
+      expect(
+        () =>
+          new Level(new LevelId('level-001'), new RectSpace(COLS, ROWS), [
+            gapped,
+          ]),
+      ).toThrow(InvalidLevelException);
+    });
+
+    it('should throw InvalidLevelException when consecutive cells of an arrow are diagonally adjacent', () => {
+      // Arrange
+      const diagonal = new Arrow(
+        new ArrowId('a1'),
+        cellsOf([0, 0], [1, 1]),
+        Direction.UP,
+      );
+      // Act / Assert
+      expect(
+        () =>
+          new Level(new LevelId('level-001'), new RectSpace(COLS, ROWS), [
+            diagonal,
+          ]),
       ).toThrow(InvalidLevelException);
     });
 
@@ -163,7 +205,11 @@ describe('Level', () => {
       );
       // Act / Assert
       expect(
-        () => new Level(new LevelId('level-001'), COLS, ROWS, [a1, a2]),
+        () =>
+          new Level(new LevelId('level-001'), new RectSpace(COLS, ROWS), [
+            a1,
+            a2,
+          ]),
       ).toThrow(InvalidLevelException);
     });
 
@@ -182,7 +228,10 @@ describe('Level', () => {
       // Act / Assert
       expect(
         () =>
-          new Level(new LevelId('level-001'), COLS, ROWS, [first, duplicate]),
+          new Level(new LevelId('level-001'), new RectSpace(COLS, ROWS), [
+            first,
+            duplicate,
+          ]),
       ).toThrow(InvalidLevelException);
     });
 
@@ -191,7 +240,13 @@ describe('Level', () => {
       const arrows = [bentArrowA1(), straightArrowA2()];
       // Act / Assert
       expect(
-        () => new Level(new LevelId('level-001'), COLS, ROWS, arrows, 0),
+        () =>
+          new Level(
+            new LevelId('level-001'),
+            new RectSpace(COLS, ROWS),
+            arrows,
+            0,
+          ),
       ).toThrow(InvalidLevelException);
     });
 
@@ -200,7 +255,13 @@ describe('Level', () => {
       const arrows = [bentArrowA1(), straightArrowA2()];
       // Act / Assert
       expect(
-        () => new Level(new LevelId('level-001'), COLS, ROWS, arrows, -30),
+        () =>
+          new Level(
+            new LevelId('level-001'),
+            new RectSpace(COLS, ROWS),
+            arrows,
+            -30,
+          ),
       ).toThrow(InvalidLevelException);
     });
 
@@ -209,7 +270,13 @@ describe('Level', () => {
       const arrows = [bentArrowA1(), straightArrowA2()];
       // Act / Assert
       expect(
-        () => new Level(new LevelId('level-001'), COLS, ROWS, arrows, 1.5),
+        () =>
+          new Level(
+            new LevelId('level-001'),
+            new RectSpace(COLS, ROWS),
+            arrows,
+            1.5,
+          ),
       ).toThrow(InvalidLevelException);
     });
   });

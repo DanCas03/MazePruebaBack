@@ -2,6 +2,7 @@ import { Level, LevelPaint, LevelSection } from './level.entity';
 import { Arrow } from './arrow.entity';
 import { ArrowFactory, ArrowPrimitives } from './arrow.factory';
 import { LevelId } from '../value-objects/level-id.vo';
+import { RectSpace } from '../space/rect-space';
 
 // Builder (GoF): separa el ensamblado incremental de un Level desde JSON
 // arrow-path crudo (Level.data) de su representación final. Re-funda el
@@ -51,11 +52,14 @@ export class LevelBuilder {
     return this;
   }
 
+  // Wire legítimamente 2D (ADR 0005): el builder es de los únicos módulos
+  // que conocen RectSpace en concreto — lo construye desde cols/rows del
+  // JSON. Las invariantes de dimensiones viven en RectSpace; las de tablero,
+  // en Level. El builder sigue sin duplicar ninguna.
   build(): Level {
     return new Level(
       this.id,
-      this.cols as number,
-      this.rows as number,
+      new RectSpace(this.cols as number, this.rows as number),
       this.arrows,
       this.timeLimitSec,
       this.section,
