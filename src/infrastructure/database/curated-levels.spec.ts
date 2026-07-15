@@ -232,13 +232,19 @@ describe('curated levels (back#10 seed fixtures)', () => {
   describe('themed fixtures', () => {
     const themed = loadThemedFixtures();
 
-    it('should ship the t-smoke placeholder as a themed fixture without play order', () => {
+    it('should ship the 3 themed figures (front#68) as themed fixtures without play order', () => {
+      // Arrange — figuras temáticas producidas por el tooling del front (ADR
+      // 0004: mínimo 3), sustituyen al placeholder t-smoke.
+      const expectedIds = ['t-bunny', 't-happy-face', 't-heart'];
       // Act
-      const smoke = themed.find((f) => f.levelId === 't-smoke');
+      const ids = themed.map((f) => f.levelId);
       // Assert
-      expect(smoke).toBeDefined();
-      expect(smoke?.section).toBe('themed');
-      expect(smoke).not.toHaveProperty('order');
+      expect(ids).toEqual(expectedIds);
+      themed.forEach((fixture) => {
+        expect(fixture.section).toBe('themed');
+        expect(fixture).not.toHaveProperty('order');
+        expect(fixture).not.toHaveProperty('timeLimitSec');
+      });
     });
 
     it.each(themed.map((fixture) => [fixture.levelId, fixture] as const))(
