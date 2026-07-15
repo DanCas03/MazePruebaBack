@@ -270,15 +270,20 @@ describe('LevelSolver', () => {
     });
   });
 
-  // Caracterización de back#30: el refactor a grafo de bloqueos debe servir
-  // Soluciones byte-idénticas a las del replay greedy previo. El snapshot
-  // curated-solutions.snapshot.json congela la Solucion determinista (ADR 0002
-  // dec. 5) del solver sobre los 15 fixtures vivos de prisma/levels. Se
-  // RE-CAPTURA solo cuando la campana se re-produce a proposito (back#32 / ADR
-  // 0003: rampa hasta 50x50); NUNCA se regenera para tapar un cambio de solver
-  // —ahi una divergencia debe romper este test—. La solubilidad de cada fixture
-  // esta garantizada aparte (curated-levels.spec.ts + validacion del seed).
-  describe('curated fixtures characterization (back#30)', () => {
+  // Golden-master de la Solución canónica del LevelSolver (concepto de back#30):
+  // fixtures y snapshot son un contrato ESTÁTICO y autocontenido junto a este
+  // spec (characterization-fixtures.json + characterization-solutions.snapshot.json),
+  // DELIBERADAMENTE independiente de prisma/levels/*.json (el catálogo vivo de
+  // campaña) — back#39 lo desacopló para que resembrar la campaña ya NO obligue
+  // a recapturar el snapshot. Estos fixtures son sintéticos (no derivan de la
+  // campaña ni del replay greedy pre-back#30): el snapshot congela DE UNA VEZ la
+  // Solución (orden de remoción) que el solver ACTUAL produce sobre ellos. Es
+  // una guarda de regresión hacia delante — NO regenerar tras cambios al solver:
+  // una divergencia DEBE romper este test. Se apoya en el determinismo del
+  // solver (ADR 0002 dec. 5), que hace la Solución canónica bien definida y
+  // estable. Se lee por __dirname (no cwd): los fixtures son datos del test,
+  // coubicados con él.
+  describe('golden-master characterization (back#30, decoupled back#39)', () => {
     interface LevelFixture {
       levelId: string;
       order: number;
@@ -288,20 +293,21 @@ describe('LevelSolver', () => {
       arrows: ArrowPrimitives[];
     }
 
-    const loadFixtures = (): LevelFixture[] =>
-      fs
-        .readdirSync(path.join(process.cwd(), 'prisma', 'levels'))
-        .filter((file) => /^level-\d+\.json$/.test(file))
-        .map(
-          (file) =>
-            JSON.parse(
-              fs.readFileSync(
-                path.join(process.cwd(), 'prisma', 'levels', file),
-                'utf8',
-              ),
-            ) as LevelFixture,
-        )
-        .sort((a, b) => a.order - b.order);
+    const fixtures = (
+      JSON.parse(
+        fs.readFileSync(
+          path.join(__dirname, 'characterization-fixtures.json'),
+          'utf8',
+        ),
+      ) as LevelFixture[]
+    ).sort((a, b) => a.order - b.order);
+
+    const snapshot = JSON.parse(
+      fs.readFileSync(
+        path.join(__dirname, 'characterization-solutions.snapshot.json'),
+        'utf8',
+      ),
+    ) as Record<string, string[]>;
 
     const buildLevel = (fixture: LevelFixture): Level => {
       const builder = new LevelBuilder(new LevelId(fixture.levelId))
@@ -311,32 +317,17 @@ describe('LevelSolver', () => {
       return builder.build();
     };
 
-    const snapshot = JSON.parse(
-      fs.readFileSync(
-        path.join(
-          process.cwd(),
-          'src',
-          'domain',
-          'services',
-          'curated-solutions.snapshot.json',
-        ),
-        'utf8',
-      ),
-    ) as Record<string, string[]>;
-
-    const fixtures = loadFixtures();
-
-    it('should cover the 15 curated fixtures in the frozen snapshot', () => {
-      // Arrange + Act — carga en loadFixtures() y lectura del snapshot
-      // Assert
-      expect(fixtures).toHaveLength(15);
+    it('should cover every static characterization fixture in the frozen snapshot', () => {
+      // Arrange + Act — lectura de fixtures y snapshot estáticos
+      // Assert — cuenta exacta (bloquea pérdida silenciosa) + paridad de ids
+      expect(fixtures).toHaveLength(4);
       expect(Object.keys(snapshot).sort()).toEqual(
         fixtures.map((fixture) => fixture.levelId).sort(),
       );
     });
 
-    it.each(loadFixtures().map((f) => [f.levelId, f] as const))(
-      'should reproduce the frozen pre-refactor Solution for %s',
+    it.each(fixtures.map((f) => [f.levelId, f] as const))(
+      'should reproduce the frozen canonical Solution for %s',
       (levelId, fixture) => {
         // Arrange
         const level = buildLevel(fixture);
