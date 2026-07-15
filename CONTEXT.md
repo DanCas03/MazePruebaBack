@@ -20,6 +20,14 @@ En el backend una flecha es **solo datos**: `id` + `cells` (camino) + `headDir`.
 comportamiento de juego (eso vive en el cliente).
 _Avoid_: ArrowCell, celda-flecha, entidad con `canBeTraversed`.
 
+**BoardSpace** (Espacio del tablero):
+La geometría de un `Level` como concepto propio: qué celdas existen, cuáles son adyacentes
+y qué carril recto lleva de una cabeza a la **frontera**. Es lo que se consulta para validar
+un `Level` y decidir su solubilidad. El espacio de los niveles servidos es rectangular
+(`cols`×`rows`); uno distinto (agujereado, 3D) cambia la geometría sin cambiar la invariante
+de solubilidad ni la Solución.
+_Avoid_: grid, matriz, dimensiones sueltas como sinónimo de geometría.
+
 **Solvable** (Soluble):
 Propiedad de un `Level`: existe un orden de remoción que vacía el tablero; la decide
 `LevelSolver.isSolvable`. Distinto de **Cleared** (front): el estado vacío ya _alcanzado_
