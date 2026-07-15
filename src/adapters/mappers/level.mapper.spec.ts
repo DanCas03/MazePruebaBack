@@ -6,6 +6,7 @@ import { LevelId } from '../../domain/value-objects/level-id.vo';
 import { ArrowId } from '../../domain/value-objects/arrow-id.vo';
 import { Position } from '../../domain/value-objects/position.vo';
 import { Direction } from '../../domain/value-objects/direction.vo';
+import { RectSpace } from '../../domain/space/rect-space';
 
 // Passthrough del wire temático (ADR 0004, back#31): el mapper copia
 // section/palette/paintRole tal cual — datos opacos, sin interpretación.
@@ -25,7 +26,12 @@ describe('LevelMapper', () => {
     );
 
   const campaignLevel = () =>
-    new Level(new LevelId('l-007'), 8, 11, [arrowA1(), arrowA2()], 90);
+    new Level(
+      new LevelId('l-007'),
+      new RectSpace(8, 11),
+      [arrowA1(), arrowA2()],
+      90,
+    );
 
   const themedPaint = (): LevelPaint => ({
     palette: { cara: '#FBBF24', ojo: '#1E293B' },
@@ -35,8 +41,7 @@ describe('LevelMapper', () => {
   const themedLevel = () =>
     new Level(
       new LevelId('t-smiley'),
-      20,
-      20,
+      new RectSpace(20, 20),
       [arrowA1(), arrowA2()],
       undefined,
       'themed',

@@ -55,22 +55,16 @@ describe('Arrow', () => {
       );
     });
 
-    it('should throw InvalidArrowException when consecutive cells are separated by a gap', () => {
+    it('should create an arrow when consecutive cells are not adjacent — Arrow is pure data (ADR 0005)', () => {
+      // La adyacencia del camino ya NO es invariante de Arrow: la geometría
+      // del camino la valida Level vía BoardSpace.areAdjacent (ADR 0005).
+      // Arrow es dato puro y acepta las celdas tal cual.
       // Arrange
       const cells = cellsOf([0, 0], [0, 2]);
-      // Act / Assert
-      expect(() => new Arrow(new ArrowId('a1'), cells, Direction.UP)).toThrow(
-        InvalidArrowException,
-      );
-    });
-
-    it('should throw InvalidArrowException when consecutive cells are diagonally adjacent', () => {
-      // Arrange
-      const cells = cellsOf([0, 0], [1, 1]);
-      // Act / Assert
-      expect(() => new Arrow(new ArrowId('a1'), cells, Direction.UP)).toThrow(
-        InvalidArrowException,
-      );
+      // Act
+      const sut = new Arrow(new ArrowId('a1'), cells, Direction.UP);
+      // Assert
+      expect(sut.cells).toEqual(cellsOf([0, 0], [0, 2]));
     });
 
     it('should not throw when headDir does not match the path geometry', () => {
