@@ -64,4 +64,11 @@ campaign levels.
 
 | level | source | dims (cols x rows) | arrows | roles |
 |---|---|---|---|---|
-| t-smoke | hand-made placeholder — replace when real figures land (front#68) | 6x6 | 3 | cara, ojo |
+| t-heart | front#68 themed tooling — mask `heart`, seed 11, coverage 91% | 16x14 | 23 | heart |
+| t-happy-face | front#68 themed tooling — mask `happy_face`, seed 31, coverage face 81% / features 100% | 16x16 | 38 | face, features |
+| t-bunny | front#68 themed tooling — mask `bunny`, seed 11, coverage fur 86% / pink 88% / eye 100% | 16x20 | 37 | fur, pink, eye |
+
+The `t-smoke` hand-made placeholder was replaced by the 3 figures above
+(front#68). Each fixture is produced by `tool/level_production/produce_themed.dart`
+in MazePruebaFront, solvable by construction and re-certified here by
+`curated-levels.spec.ts` (LevelSolver + paint consistency).

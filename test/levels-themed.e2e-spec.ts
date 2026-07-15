@@ -16,8 +16,10 @@ describe('Themed section and paint wire (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaServiceMock;
 
-  // Nivel temático tal como lo persiste el seed: order null, section themed,
-  // palette y paintRole DENTRO de data (espejo de prisma/levels/t-smoke.json).
+  // Nivel temático sintético, representativo de cómo el seed persiste un t-*:
+  // order null, section themed, palette y paintRole DENTRO de data. Fixture
+  // in-memory (Prisma mockeado) para verificar el contrato HTTP del wire
+  // temático, desacoplado del contenido real de prisma/levels/.
   const themedRecord = {
     id: 't-smoke',
     order: null,
