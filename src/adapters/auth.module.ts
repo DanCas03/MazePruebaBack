@@ -5,6 +5,7 @@ import { PassportModule } from '@nestjs/passport';
 import { DatabaseModule } from '../infrastructure/database/database.module';
 import { RegisterUseCase } from '../application/use-cases/register.use-case';
 import { LoginUseCase } from '../application/use-cases/login.use-case';
+import { GetCurrentUserUseCase } from '../application/use-cases/get-current-user.use-case';
 import { PrismaUserRepository } from '../infrastructure/database/prisma-user.repository';
 import { BcryptHashService } from '../infrastructure/security/bcrypt-hash.service';
 import { JwtTokenService } from '../infrastructure/security/jwt-token.service';
@@ -56,6 +57,13 @@ import { TOKEN_SERVICE_TOKEN } from '../application/ports/i-token.service';
       useFactory: (repo: any, hash: any, token: any) =>
         new LoginUseCase(repo, hash, token),
       inject: [USER_REPOSITORY_TOKEN, HASH_SERVICE_TOKEN, TOKEN_SERVICE_TOKEN],
+    },
+    {
+      // Command pattern: GetCurrentUserUseCase resuelve el perfil del usuario
+      // autenticado (GET /auth/me). Solo depende del repositorio de usuarios.
+      provide: GetCurrentUserUseCase,
+      useFactory: (repo: any) => new GetCurrentUserUseCase(repo),
+      inject: [USER_REPOSITORY_TOKEN],
     },
     JwtStrategy,
   ],

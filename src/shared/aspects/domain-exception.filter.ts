@@ -7,6 +7,7 @@ import {
 import type { Response } from 'express';
 import { DomainException } from '../../domain/exceptions/domain.exception';
 import { LevelNotFoundException } from '../../domain/exceptions/level-not-found.exception';
+import { UserNotFoundException } from '../../domain/exceptions/user-not-found.exception';
 import { InvalidCredentialsException } from '../../domain/exceptions/invalid-credentials.exception';
 import { UserAlreadyExistsException } from '../../domain/exceptions/user-already-exists.exception';
 import { UsernameAlreadyTakenException } from '../../domain/exceptions/username-already-taken.exception';
@@ -32,6 +33,7 @@ export class DomainExceptionFilter implements ExceptionFilter {
     HttpStatus
   >([
     [LevelNotFoundException, HttpStatus.NOT_FOUND],
+    [UserNotFoundException, HttpStatus.NOT_FOUND],
     [InvalidCredentialsException, HttpStatus.UNAUTHORIZED],
     [UserAlreadyExistsException, HttpStatus.CONFLICT],
     [UsernameAlreadyTakenException, HttpStatus.CONFLICT],

@@ -13,6 +13,13 @@ import { HashedPassword } from '../../domain/value-objects/hashed-password.vo';
 export class PrismaUserRepository implements IUserRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  async findById(id: UserId): Promise<User | null> {
+    const record = await this.prisma.user.findUnique({
+      where: { id: id.value },
+    });
+    return record ? PrismaUserRepository.toDomain(record) : null;
+  }
+
   async findByEmail(email: Email): Promise<User | null> {
     const record = await this.prisma.user.findUnique({
       where: { email: email.value },
