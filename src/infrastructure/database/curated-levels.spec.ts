@@ -133,14 +133,17 @@ describe('curated levels (back#10 seed fixtures)', () => {
     });
 
     it('should never shrink arrow count within a tier (same dimensions)', () => {
-      // Arrange — agrupar por dims: cada tier tiene un unico cols x rows.
+      // Arrange — agrupar por dims: cada banda comparte un unico cols x rows.
+      // Rampa back#32 (ADR 0003): el tier 5 abarca DOS bandas de tablero — el
+      // par regular (42x46) y el finale (50x50) — asi que agrupar por dims da
+      // 6 bandas, no 5.
       const byTier = new Map<string, LevelFixture[]>();
       fixtures.forEach((fixture) => {
         const key = `${fixture.cols}x${fixture.rows}`;
         byTier.set(key, [...(byTier.get(key) ?? []), fixture]);
       });
       // Act + Assert
-      expect(byTier.size).toBe(5);
+      expect(byTier.size).toBe(6);
       byTier.forEach((tier) => {
         const ordered = [...tier].sort((a, b) => a.order - b.order);
         for (let i = 1; i < ordered.length; i++) {
@@ -150,31 +153,77 @@ describe('curated levels (back#10 seed fixtures)', () => {
         }
       });
     });
+
+    it('should never shrink arrow count across the whole play order (cross-tier ramp)', () => {
+      // Act + Assert — la rampa back#32 sube la carga de flechas de forma
+      // GLOBAL (6->13->36->94->163->166->216), no solo dentro de cada banda de
+      // dims: fija el escalon transversal de dificultad que las bandas de
+      // conteo constante (T1..T4) no llegan a ejercer.
+      for (let i = 1; i < fixtures.length; i++) {
+        expect(fixtures[i].arrows.length).toBeGreaterThanOrEqual(
+          fixtures[i - 1].arrows.length,
+        );
+      }
+    });
   });
 
   describe('time limits', () => {
-    it('should set timeLimitSec=120 on every tier 4 level (orders 10..12)', () => {
-      // Arrange
-      const tier4 = fixtures.filter((f) => f.order >= 10 && f.order <= 12);
-      // Assert
-      expect(tier4).toHaveLength(3);
-      tier4.forEach((fixture) => expect(fixture.timeLimitSec).toBe(120));
-    });
+    // Rampa back#32 (ADR 0003): se juega sin reloj hasta que la dificultad lo
+    // justifica. Orders 1..6 (6x8 y 10x12) van sin timeLimitSec; a partir del
+    // tier medio (order 7, 18x20) todos llevan cronometro alineado a 30s.
+    const untimed = fixtures.filter((f) => f.order <= 6);
+    const timed = fixtures.filter((f) => f.order >= 7);
 
-    it('should set timeLimitSec=180 on every tier 5 level (orders 13..15)', () => {
-      // Arrange
-      const tier5 = fixtures.filter((f) => f.order >= 13 && f.order <= 15);
-      // Assert
-      expect(tier5).toHaveLength(3);
-      tier5.forEach((fixture) => expect(fixture.timeLimitSec).toBe(180));
-    });
+    it.each(untimed.map((f) => [f.levelId, f] as const))(
+      'should omit timeLimitSec on early level %s (orders 1..6)',
+      (_levelId, fixture) => {
+        // Assert
+        expect(fixture.timeLimitSec).toBeUndefined();
+      },
+    );
 
-    it('should omit timeLimitSec on tier 1..3 levels (orders 1..9)', () => {
+    it.each(timed.map((f) => [f.levelId, f] as const))(
+      'should set a positive, 30s-aligned timeLimitSec on timed level %s (orders 7..15)',
+      (_levelId, fixture) => {
+        // Arrange
+        const time = fixture.timeLimitSec;
+        // Assert — reloj definido, entero positivo y multiplo de 30s (>= 30).
+        expect(time).toBeDefined();
+        expect(Number.isInteger(time)).toBe(true);
+        expect(time as number).toBeGreaterThan(0);
+        expect(time as number).toBeGreaterThanOrEqual(30);
+        expect((time as number) % 30).toBe(0);
+      },
+    );
+
+    it('should keep timeLimitSec non-decreasing across play order when both defined', () => {
+      // Act + Assert — los relojes crecen con la rampa (150 -> 390 -> 690 -> 930):
+      // para fixtures consecutivos con reloj, el posterior nunca es menor.
+      for (let i = 1; i < fixtures.length; i++) {
+        const prev = fixtures[i - 1].timeLimitSec;
+        const curr = fixtures[i].timeLimitSec;
+        if (prev !== undefined && curr !== undefined) {
+          expect(curr).toBeGreaterThanOrEqual(prev);
+        }
+      }
+    });
+  });
+
+  // back#32 (QA brief): proxy sin DB para "npx prisma db seed" < 10 s.
+  // Reconstruye los 15 fixtures por el mismo camino que el seed (LevelBuilder)
+  // y prueba cada uno soluble con LevelSolver, midiendo el presupuesto total.
+  describe('seed time budget', () => {
+    it('should build and prove all 15 fixtures solvable well under the 10s seed budget', () => {
       // Arrange
-      const early = fixtures.filter((f) => f.order <= 9);
-      // Assert
-      expect(early).toHaveLength(9);
-      early.forEach((fixture) => expect(fixture.timeLimitSec).toBeUndefined());
+      const started = Date.now();
+      // Act — reconstruir y validar cada nivel como lo hace el seed.
+      const allSolvable = fixtures.every((fixture) =>
+        solver.isSolvable(buildLevel(fixture)),
+      );
+      const elapsedMs = Date.now() - started;
+      // Assert — cada nivel soluble y presupuesto total holgado frente a Prisma.
+      expect(allSolvable).toBe(true);
+      expect(elapsedMs).toBeLessThan(10000);
     });
   });
 

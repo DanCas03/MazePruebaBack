@@ -17,17 +17,22 @@
     {
       "id": "arrow-2",
       "headDir": "left",
-      "cells": [[3, 3], [4, 3]]
+      "cells": [[2, 3], [3, 3], [4, 3]]
     },
     {
       "id": "arrow-3",
       "headDir": "down",
-      "cells": [[3, 4], [4, 4], [5, 4]]
+      "cells": [[3, 4], [4, 4]]
     },
     {
       "id": "arrow-4",
       "headDir": "left",
-      "cells": [[7, 3], [6, 3], [5, 3]]
+      "cells": [[6, 3], [5, 3]]
+    },
+    {
+      "id": "arrow-5",
+      "headDir": "right",
+      "cells": [[3, 5], [4, 5]]
     }
   ]
 }

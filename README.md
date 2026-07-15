@@ -235,7 +235,7 @@ The backend container applies migrations and seeds the curated levels automatica
 
 ### Seeding levels
 
-The game ships with **15 curated, progressively harder campaign levels** (`level-01`…`level-15`), frozen as arrow-path fixtures in [`prisma/levels/`](prisma/levels) and seeded with an explicit play order, plus the **themed** fixtures (`t-*.json`, ADR 0004) seeded without play order and carrying opaque paint instructions (currently `t-smoke`, a hand-made placeholder). Every level — campaign or themed — is guaranteed solvable by the domain `LevelSolver`.
+The game ships with **15 curated campaign levels** (`level-01`…`level-15`) on an aggressive difficulty ramp (ADR 0003): five tiers of three that climb from a 6×8 opener to a **50×50 finale**, with board size and density rising each tier and time limits derived from the arrow load on the timed tiers (orders 7–15). They are frozen as arrow-path fixtures in [`prisma/levels/`](prisma/levels) (produced by the front's `tool/level_production` CLI and human-curated — see [`prisma/levels/manifest.md`](prisma/levels/manifest.md)) and seeded with an explicit play order, plus the **themed** fixtures (`t-*.json`, ADR 0004) seeded without play order and carrying opaque paint instructions (currently `t-smoke`, a hand-made placeholder). Every level — campaign or themed — is guaranteed solvable by the domain `LevelSolver`.
 
 ```bash
 npm run db:seed     # upsert the curated + themed levels into the database
