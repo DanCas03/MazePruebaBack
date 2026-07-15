@@ -47,6 +47,7 @@ describe('OpenAPI document (e2e)', () => {
       expect.arrayContaining([
         '/auth/register',
         '/auth/login',
+        '/auth/me',
         '/levels',
         '/levels/{id}',
         '/scores',

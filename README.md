@@ -115,6 +115,7 @@ bootstrap from the controllers' decorators via `DocumentBuilder` (`src/app.setup
 |--------|-----------------------|------|--------------------------------------|
 | POST   | `/auth/register`      | No   | Register a user with a unique `email` + `username`; returns a JWT |
 | POST   | `/auth/login`         | No   | Authenticate a user; returns a JWT   |
+| GET    | `/auth/me`            | Yes  | Return the authenticated user's basic profile (`id`, `username`, `email`) |
 | GET    | `/levels`             | No   | List the level catalog with each level's `section`: campaign in play order, then themed by id |
 | GET    | `/levels/:id`         | No   | Get a level as arrow-path JSON; themed levels carry opaque paint instructions (`palette` + per-arrow `paintRole`) |
 | GET    | `/levels/:id/solution` | No  | Clearing Solution for a level: arrow ids in removal order (422 if unsolvable) |
@@ -131,6 +132,9 @@ bootstrap from the controllers' decorators via `DocumentBuilder` (`src/app.setup
 // username: 3-20 chars, letters/digits/underscore only, unique (409-ish 400 via DomainExceptionFilter if taken)
 // POST /auth/login → 200
 { "token": "<jwt>" }
+
+// GET /auth/me → 200 (Authorization: Bearer <jwt>)
+{ "id": "user-uuid-1", "username": "player_01", "email": "player@arrowmaze.com" }
 
 // GET /levels → 200 (campaign in play order, then themed by id)
 [{ "levelId": "l-007", "section": "campaign" }, { "levelId": "t-smoke", "section": "themed" }]
