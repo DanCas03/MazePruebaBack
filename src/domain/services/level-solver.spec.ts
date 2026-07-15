@@ -272,9 +272,12 @@ describe('LevelSolver', () => {
 
   // Caracterización de back#30: el refactor a grafo de bloqueos debe servir
   // Soluciones byte-idénticas a las del replay greedy previo. El snapshot
-  // curated-solutions.snapshot.json se capturó ejecutando la implementación
-  // pre-refactor sobre los 15 fixtures de prisma/levels — NO regenerar tras
-  // cambios al solver: es el contrato congelado (ADR 0002 dec. 5).
+  // curated-solutions.snapshot.json congela la Solucion determinista (ADR 0002
+  // dec. 5) del solver sobre los 15 fixtures vivos de prisma/levels. Se
+  // RE-CAPTURA solo cuando la campana se re-produce a proposito (back#32 / ADR
+  // 0003: rampa hasta 50x50); NUNCA se regenera para tapar un cambio de solver
+  // —ahi una divergencia debe romper este test—. La solubilidad de cada fixture
+  // esta garantizada aparte (curated-levels.spec.ts + validacion del seed).
   describe('curated fixtures characterization (back#30)', () => {
     interface LevelFixture {
       levelId: string;
