@@ -53,8 +53,9 @@ describe('GET /leaderboard (e2e)', () => {
       .expect(200);
 
     // Assert — forma del body, no contenido asumido de otros jugadores.
-    expect(Array.isArray(res.body.top)).toBe(true);
-    expect(res.body.me).toBeNull();
+    const body = res.body as { top: unknown[]; me: unknown };
+    expect(Array.isArray(body.top)).toBe(true);
+    expect(body.me).toBeNull();
   });
 
   it('returns 401 when the bearer token is missing', async () => {

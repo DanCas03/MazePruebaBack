@@ -18,7 +18,11 @@ describe('PrismaScoreRepository', () => {
 
   beforeEach(() => {
     mockPrisma = {
-      scoreEntry: { create: jest.fn(), findMany: jest.fn(), groupBy: jest.fn() },
+      scoreEntry: {
+        create: jest.fn(),
+        findMany: jest.fn(),
+        groupBy: jest.fn(),
+      },
       user: { findMany: jest.fn() },
     };
     sut = new PrismaScoreRepository(mockPrisma as unknown as PrismaService);
@@ -140,7 +144,10 @@ describe('PrismaScoreRepository', () => {
       mockPrisma.scoreEntry.groupBy.mockResolvedValue([]);
       mockPrisma.user.findMany.mockResolvedValue([]);
       // Act
-      await sut.findGlobalTotals([new LevelId('level-1'), new LevelId('level-2')]);
+      await sut.findGlobalTotals([
+        new LevelId('level-1'),
+        new LevelId('level-2'),
+      ]);
       // Assert
       expect(mockPrisma.scoreEntry.groupBy).toHaveBeenCalledWith({
         by: ['userId', 'levelId'],
@@ -152,9 +159,21 @@ describe('PrismaScoreRepository', () => {
     it('should sum the best score and best stars per user across the grouped levels', async () => {
       // Arrange
       mockPrisma.scoreEntry.groupBy.mockResolvedValue([
-        { userId: 'user-1', levelId: 'level-1', _max: { score: 500, stars: 3 } },
-        { userId: 'user-1', levelId: 'level-2', _max: { score: 300, stars: 2 } },
-        { userId: 'user-2', levelId: 'level-1', _max: { score: 100, stars: 1 } },
+        {
+          userId: 'user-1',
+          levelId: 'level-1',
+          _max: { score: 500, stars: 3 },
+        },
+        {
+          userId: 'user-1',
+          levelId: 'level-2',
+          _max: { score: 300, stars: 2 },
+        },
+        {
+          userId: 'user-2',
+          levelId: 'level-1',
+          _max: { score: 100, stars: 1 },
+        },
       ]);
       mockPrisma.user.findMany.mockResolvedValue([
         { id: 'user-1', username: 'ana' },

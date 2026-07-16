@@ -63,7 +63,8 @@ export class LevelBuilder {
     // withTimeLimit, se asigna el provisional max(30, nº flechas * 6) solo
     // para satisfacer la invariante — los niveles reciben valores curados
     // más adelante.
-    const timeLimitSec = this.timeLimitSec ?? Math.max(30, this.arrows.length * 6);
+    const timeLimitSec =
+      this.timeLimitSec ?? Math.max(30, this.arrows.length * 6);
     return new Level(
       this.id,
       new RectSpace(this.cols as number, this.rows as number),

@@ -164,9 +164,21 @@ describe('ScoreController', () => {
   describe('getGlobalLeaderboard', () => {
     const buildLeaderboard = (): GlobalLeaderboard => ({
       top: [
-        { userId: 'user-1', username: 'ana', totalScore: 900, totalStars: 12, rank: 1 },
+        {
+          userId: 'user-1',
+          username: 'ana',
+          totalScore: 900,
+          totalStars: 12,
+          rank: 1,
+        },
       ],
-      me: { userId: 'user-1', username: 'ana', totalScore: 900, totalStars: 12, rank: 1 },
+      me: {
+        userId: 'user-1',
+        username: 'ana',
+        totalScore: 900,
+        totalStars: 12,
+        rank: 1,
+      },
     });
 
     it('delegates to GetGlobalLeaderboardUseCase with the requesting userId and parsed limit, returning the result as-is', async () => {

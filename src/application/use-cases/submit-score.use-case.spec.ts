@@ -84,7 +84,10 @@ describe('SubmitScoreUseCase', () => {
 
   it('should persist the canonical score and log a divergence when previewScore mismatches it', async () => {
     // Arrange
-    const command = { ...validCommand, previewScore: expectedScore.value + 999 };
+    const command = {
+      ...validCommand,
+      previewScore: expectedScore.value + 999,
+    };
     // Act
     await sut.execute(command);
     // Assert

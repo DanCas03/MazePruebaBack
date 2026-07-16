@@ -179,10 +179,34 @@ describe('Score', () => {
     });
 
     it.each([
-      { moves: 20, optimalMoves: 20, collisions: 0, timeSeconds: 0, timeLimitSec: 120 },
-      { moves: 45, optimalMoves: 10, collisions: 3, timeSeconds: 200, timeLimitSec: 90 },
-      { moves: 10, optimalMoves: 10, collisions: 2, timeSeconds: 999, timeLimitSec: 60 },
-      { moves: 5, optimalMoves: 5, collisions: 0, timeSeconds: 30, timeLimitSec: 60 },
+      {
+        moves: 20,
+        optimalMoves: 20,
+        collisions: 0,
+        timeSeconds: 0,
+        timeLimitSec: 120,
+      },
+      {
+        moves: 45,
+        optimalMoves: 10,
+        collisions: 3,
+        timeSeconds: 200,
+        timeLimitSec: 90,
+      },
+      {
+        moves: 10,
+        optimalMoves: 10,
+        collisions: 2,
+        timeSeconds: 999,
+        timeLimitSec: 60,
+      },
+      {
+        moves: 5,
+        optimalMoves: 5,
+        collisions: 0,
+        timeSeconds: 30,
+        timeLimitSec: 60,
+      },
     ])(
       'should always return an integer between 100 and 10000 for input %j',
       (input) => {

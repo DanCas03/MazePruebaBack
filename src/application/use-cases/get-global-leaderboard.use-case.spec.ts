@@ -9,18 +9,18 @@ import { LevelId } from '../../domain/value-objects/level-id.vo';
 // aun no existen. Este spec fija el contrato antes de implementar (A5).
 describe('GetGlobalLeaderboardUseCase', () => {
   let sut: GetGlobalLeaderboardUseCase;
-  let mockScoreRepo: jest.Mocked<IScoreRepository & {
-    findGlobalTotals: (
-      campaignLevelIds: LevelId[],
-    ) => Promise<
-      Array<{
-        userId: string;
-        username: string;
-        totalScore: number;
-        totalStars: number;
-      }>
-    >;
-  }>;
+  let mockScoreRepo: jest.Mocked<
+    IScoreRepository & {
+      findGlobalTotals: (campaignLevelIds: LevelId[]) => Promise<
+        Array<{
+          userId: string;
+          username: string;
+          totalScore: number;
+          totalStars: number;
+        }>
+      >;
+    }
+  >;
   let mockLevelRepo: jest.Mocked<ILevelRepository>;
   let mockLogger: jest.Mocked<ILoggerService>;
 
@@ -50,20 +50,7 @@ describe('GetGlobalLeaderboardUseCase', () => {
       save: jest.fn(),
       findLeaderboard: jest.fn(),
       findGlobalTotals: jest.fn(),
-    } as unknown as jest.Mocked<
-      IScoreRepository & {
-        findGlobalTotals: (
-          campaignLevelIds: LevelId[],
-        ) => Promise<
-          Array<{
-            userId: string;
-            username: string;
-            totalScore: number;
-            totalStars: number;
-          }>
-        >;
-      }
-    >;
+    };
     mockLevelRepo = { findById: jest.fn(), findAllOrdered: jest.fn() };
     mockLogger = { log: jest.fn(), error: jest.fn(), warn: jest.fn() };
     sut = new GetGlobalLeaderboardUseCase(
@@ -142,7 +129,9 @@ describe('GetGlobalLeaderboardUseCase', () => {
     // Assert
     expect(result.top).toHaveLength(2);
     expect(result.top.map((r) => r.userId)).toEqual(['u1', 'u2']);
-    expect(result.me).toEqual(expect.objectContaining({ userId: 'u4', rank: 4 }));
+    expect(result.me).toEqual(
+      expect.objectContaining({ userId: 'u4', rank: 4 }),
+    );
   });
 
   it('returns me as null when the requesting user has no totals', async () => {

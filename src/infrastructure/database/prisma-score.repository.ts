@@ -65,9 +65,7 @@ export class PrismaScoreRepository implements IScoreRepository {
   // semántica "best-of" que ProgressTotals del cliente). Agregado por usuario
   // en memoria: 15–50 niveles y cientos de usuarios es trivial; si algún día
   // duele, se baja a SQL crudo.
-  async findGlobalTotals(
-    campaignLevelIds: LevelId[],
-  ): Promise<
+  async findGlobalTotals(campaignLevelIds: LevelId[]): Promise<
     Array<{
       userId: string;
       username: string;
