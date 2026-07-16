@@ -57,14 +57,14 @@ describe('ScoreController', () => {
   });
 
   describe('submitScore', () => {
-    it('delegates to SubmitScoreUseCase with the userId from the request and returns the mapped DTO', async () => {
+    it('delegates to SubmitScoreUseCase with the run metrics and returns the canonical score/stars', async () => {
       // Arrange
       const dto = {
         levelId: 'level-7',
-        score: 1200,
-        stars: 3,
         moves: 12,
         timeSeconds: 45,
+        collisions: 1,
+        previewScore: 5240,
       };
       const req = buildRequest('user-1', 'user@example.com');
       mockSubmitScoreUseCase.execute.mockResolvedValue(buildEntry());
@@ -76,20 +76,14 @@ describe('ScoreController', () => {
       expect(mockSubmitScoreUseCase.execute).toHaveBeenCalledWith({
         userId: 'user-1',
         levelId: 'level-7',
-        score: 1200,
-        stars: 3,
         moves: 12,
         timeSeconds: 45,
+        collisions: 1,
+        previewScore: 5240,
       });
       expect(result).toEqual({
-        id: 'entry-1',
-        userId: 'user-1',
-        levelId: 'level-7',
         score: 1200,
         stars: 3,
-        moves: 12,
-        timeSeconds: 45,
-        createdAt: '2026-07-08T12:00:00.000Z',
       });
     });
 
@@ -97,10 +91,10 @@ describe('ScoreController', () => {
       // Arrange
       const dto = {
         levelId: 'level-7',
-        score: -1,
-        stars: 3,
         moves: 12,
         timeSeconds: 45,
+        collisions: 1,
+        previewScore: 5240,
       };
       const req = buildRequest('user-1', 'user@example.com');
       mockSubmitScoreUseCase.execute.mockRejectedValue(

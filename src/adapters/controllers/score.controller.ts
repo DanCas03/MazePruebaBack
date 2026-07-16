@@ -20,7 +20,7 @@ import { JwtAuthGuard } from '../../infrastructure/security/jwt-auth.guard';
 import { SubmitScoreDto } from '../dtos/submit-score.dto';
 import {
   ScoreMapper,
-  ScoreEntryResponseDto,
+  SubmitScoreResponseDto,
   LeaderboardEntryResponseDto,
 } from '../mappers/score.mapper';
 import type { AuthenticatedRequest } from '../http/authenticated-request.interface';
@@ -41,22 +41,26 @@ export class ScoreController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Submit a score for a completed level' })
-  @ApiResponse({ status: 201, description: 'Score validated and persisted.' })
+  @ApiResponse({
+    status: 201,
+    description: 'Canonical score derived and persisted',
+  })
   @ApiResponse({ status: 400, description: 'Invalid score payload.' })
   @ApiResponse({ status: 401, description: 'Missing or invalid bearer token.' })
+  @ApiResponse({ status: 404, description: 'Level not found' })
   async submitScore(
     @Body() dto: SubmitScoreDto,
     @Req() req: AuthenticatedRequest,
-  ): Promise<ScoreEntryResponseDto> {
+  ): Promise<SubmitScoreResponseDto> {
     const entry = await this.submitScoreUseCase.execute({
       userId: req.user.userId,
       levelId: dto.levelId,
-      score: dto.score,
-      stars: dto.stars,
       moves: dto.moves,
       timeSeconds: dto.timeSeconds,
+      collisions: dto.collisions,
+      previewScore: dto.previewScore,
     });
-    return ScoreMapper.toDto(entry);
+    return ScoreMapper.toSubmitResponse(entry);
   }
 
   @Get('leaderboard/:levelId')

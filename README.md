@@ -119,7 +119,7 @@ bootstrap from the controllers' decorators via `DocumentBuilder` (`src/app.setup
 | GET    | `/levels`             | No   | List the level catalog with each level's `section`: campaign in play order, then themed by id |
 | GET    | `/levels/:id`         | No   | Get a level as arrow-path JSON; themed levels carry opaque paint instructions (`palette` + per-arrow `paintRole`) |
 | GET    | `/levels/:id/solution` | No  | Clearing Solution for a level: arrow ids in removal order (422 if unsolvable) |
-| POST   | `/scores`             | Yes  | Submit a score for a completed level |
+| POST   | `/scores`             | Yes  | Submit a completed run's metrics; the back derives the canonical `score`/`stars` (404 if the level does not exist) |
 | GET    | `/leaderboard/:levelId` | No | Top scores for a level, with each row's `username` resolved (desc, default limit 10, max 100) |
 | POST   | `/progress`           | Yes  | Sync completed levels + best scores (merges, never degrades) |
 | GET    | `/progress`           | Yes  | Get the authenticated user's progress |
@@ -168,9 +168,15 @@ bootstrap from the controllers' decorators via `DocumentBuilder` (`src/app.setup
 // campaign and themed alike) — 422 UNSOLVABLE_LEVEL if no solution exists
 { "levelId": "t-smoke", "solution": ["a1", "a2", "a3"] }
 
-// POST /scores (Bearer token required) → 201
-// body: { "levelId": "level-07", "score": 1200, "stars": 3, "moves": 12, "timeSeconds": 45 }
-{ "id": "...", "userId": "...", "levelId": "level-07", "score": 1200, "stars": 3, "moves": 12, "timeSeconds": 45, "createdAt": "2026-07-08T12:00:00.000Z" }
+// POST /scores (Bearer token required) → 201 (ADR 0006: the back is the sole
+// scoring authority — it derives score/stars from the run metrics, it never
+// accepts a client-computed value)
+// body: { "levelId": "level-07", "moves": 12, "timeSeconds": 45, "collisions": 1, "previewScore": 5240 }
+{ "score": 1200, "stars": 3 }
+// previewScore is the client's optimistic estimate, contrast-only: a mismatch
+// against the canonical score is logged server-side, never rejected (400).
+// POST /scores → 404 when levelId does not exist; → 400 when a required
+// metric (e.g. collisions) is missing or invalid.
 
 // GET /leaderboard/:levelId?limit=10 → 200 (each row includes the player's username)
 [{ "id": "...", "userId": "...", "username": "player_01", "levelId": "level-07", "score": 1200, "stars": 3, "moves": 12, "timeSeconds": 45, "createdAt": "..." }]

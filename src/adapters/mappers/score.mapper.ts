@@ -18,18 +18,16 @@ export interface LeaderboardEntryResponseDto extends ScoreEntryResponseDto {
   username: string;
 }
 
+// Respuesta canónica de POST /scores: solo score/stars derivados server-side
+// (ADR 0006) — el resto de campos del ScoreEntry se exponen vía leaderboard.
+export interface SubmitScoreResponseDto {
+  score: number;
+  stars: number;
+}
+
 export class ScoreMapper {
-  static toDto(entry: ScoreEntry): ScoreEntryResponseDto {
-    return {
-      id: entry.id.value,
-      userId: entry.userId.value,
-      levelId: entry.levelId.value,
-      score: entry.score.value,
-      stars: entry.stars.value,
-      moves: entry.moves.value,
-      timeSeconds: entry.time.seconds,
-      createdAt: entry.createdAt.toISOString(),
-    };
+  static toSubmitResponse(entry: ScoreEntry): SubmitScoreResponseDto {
+    return { score: entry.score.value, stars: entry.stars.value };
   }
 
   static leaderboardRowToDto(row: LeaderboardRow): LeaderboardEntryResponseDto {
