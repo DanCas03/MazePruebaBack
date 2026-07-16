@@ -37,5 +37,8 @@ import { LevelSolver } from '../domain/services/level-solver';
     },
   ],
   controllers: [LevelController],
+  // ScoreModule necesita LEVEL_REPOSITORY_TOKEN para derivar el score
+  // canónico desde métricas de la partida (SubmitScoreUseCase, ADR 0006).
+  exports: [LEVEL_REPOSITORY_TOKEN],
 })
 export class LevelModule {}
