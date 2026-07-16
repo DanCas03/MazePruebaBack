@@ -16,6 +16,7 @@ import {
 } from '@nestjs/swagger';
 import { SubmitScoreUseCase } from '../../application/use-cases/submit-score.use-case';
 import { GetLeaderboardUseCase } from '../../application/use-cases/get-leaderboard.use-case';
+import { GetGlobalLeaderboardUseCase } from '../../application/use-cases/get-global-leaderboard.use-case';
 import { JwtAuthGuard } from '../../infrastructure/security/jwt-auth.guard';
 import { SubmitScoreDto } from '../dtos/submit-score.dto';
 import {
@@ -24,6 +25,7 @@ import {
   LeaderboardEntryResponseDto,
 } from '../mappers/score.mapper';
 import type { AuthenticatedRequest } from '../http/authenticated-request.interface';
+import type { GlobalLeaderboard } from '../../application/read-models/global-leaderboard';
 
 export type { AuthenticatedRequest } from '../http/authenticated-request.interface';
 
@@ -35,6 +37,7 @@ export class ScoreController {
   constructor(
     private readonly submitScoreUseCase: SubmitScoreUseCase,
     private readonly getLeaderboardUseCase: GetLeaderboardUseCase,
+    private readonly getGlobalLeaderboardUseCase: GetGlobalLeaderboardUseCase,
   ) {}
 
   @Post('scores')
@@ -61,6 +64,30 @@ export class ScoreController {
       previewScore: dto.previewScore,
     });
     return ScoreMapper.toSubmitResponse(entry);
+  }
+
+  // NOTA: esta ruta literal debe declararse ANTES de 'leaderboard/:levelId'
+  // para que Nest la resuelva primero (si no, ':levelId' capturaría 'leaderboard'
+  // como id de nivel).
+  @Get('leaderboard')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Global player ranking (campaign best-per-level totals)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Top players plus requesting user row.',
+  })
+  async getGlobalLeaderboard(
+    @Req() req: AuthenticatedRequest,
+    @Query('limit') limit?: string,
+  ): Promise<GlobalLeaderboard> {
+    const parsedLimit = limit === undefined ? undefined : Number(limit);
+    return this.getGlobalLeaderboardUseCase.execute(
+      req.user.userId,
+      parsedLimit,
+    );
   }
 
   @Get('leaderboard/:levelId')

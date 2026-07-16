@@ -9,6 +9,17 @@ export interface IScoreRepository {
   // Devuelve el top `limit` del nivel como filas de lectura (con username
   // resuelto), ordenadas por score desc. El desempate lo decide la impl.
   findLeaderboard(levelId: LevelId, limit: number): Promise<LeaderboardRow[]>;
+  // Totales por usuario (mejor score / mejores estrellas por nivel) para los
+  // niveles de campaña indicados. Sin orden ni límite: eso lo aplica el caso
+  // de uso (GetGlobalLeaderboardUseCase).
+  findGlobalTotals(campaignLevelIds: LevelId[]): Promise<
+    Array<{
+      userId: string;
+      username: string;
+      totalScore: number;
+      totalStars: number;
+    }>
+  >;
 }
 
 export const SCORE_REPOSITORY_TOKEN = 'IScoreRepository';

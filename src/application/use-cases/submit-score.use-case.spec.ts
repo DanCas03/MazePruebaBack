@@ -47,7 +47,11 @@ describe('SubmitScoreUseCase', () => {
   });
 
   beforeEach(() => {
-    mockScoreRepo = { save: jest.fn(), findLeaderboard: jest.fn() };
+    mockScoreRepo = {
+      save: jest.fn(),
+      findLeaderboard: jest.fn(),
+      findGlobalTotals: jest.fn(),
+    };
     mockLevelRepo = { findById: jest.fn(), findAllOrdered: jest.fn() };
     mockLogger = { log: jest.fn(), error: jest.fn(), warn: jest.fn() };
     mockLevelRepo.findById.mockResolvedValue(levelFixture);

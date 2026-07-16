@@ -120,6 +120,7 @@ bootstrap from the controllers' decorators via `DocumentBuilder` (`src/app.setup
 | GET    | `/levels/:id`         | No   | Get a level as arrow-path JSON; themed levels carry opaque paint instructions (`palette` + per-arrow `paintRole`) |
 | GET    | `/levels/:id/solution` | No  | Clearing Solution for a level: arrow ids in removal order (422 if unsolvable) |
 | POST   | `/scores`             | Yes  | Submit a completed run's metrics; the back derives the canonical `score`/`stars` (404 if the level does not exist) |
+| GET    | `/leaderboard`        | Yes  | Global player ranking: best-per-level campaign totals, `{top, me}` (`me` = requesting user's row or `null`) |
 | GET    | `/leaderboard/:levelId` | No | Top scores for a level, with each row's `username` resolved (desc, default limit 10, max 100) |
 | POST   | `/progress`           | Yes  | Sync completed levels + best scores (merges, never degrades) |
 | GET    | `/progress`           | Yes  | Get the authenticated user's progress |

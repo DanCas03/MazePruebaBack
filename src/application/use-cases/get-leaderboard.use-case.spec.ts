@@ -24,7 +24,11 @@ describe('GetLeaderboardUseCase', () => {
   });
 
   beforeEach(() => {
-    mockScoreRepo = { save: jest.fn(), findLeaderboard: jest.fn() };
+    mockScoreRepo = {
+      save: jest.fn(),
+      findLeaderboard: jest.fn(),
+      findGlobalTotals: jest.fn(),
+    };
     mockLogger = { log: jest.fn(), error: jest.fn(), warn: jest.fn() };
     sut = new GetLeaderboardUseCase(mockScoreRepo, mockLogger);
   });
