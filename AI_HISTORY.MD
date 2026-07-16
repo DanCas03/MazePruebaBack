@@ -862,3 +862,17 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - README (`MazePruebaBack/README.md`, sección `## API Endpoints`): fila nueva `GET /leaderboard` (Yes/JWT) — "Global player ranking: best-per-level campaign totals, `{top, me}` (`me` = requesting user's row or `null`)", antes de la fila existente de `GET /leaderboard/:levelId`.
 - Verificación: `npx tsc --noEmit` → limpio salvo el único error preexistente de baseline (`auth.controller.spec.ts` TS2554). `npm test` → 57 test suites / 405 tests, todos verdes. `npm run test:e2e` → 7 test suites / 23 tests, todos verdes (contenedor `maze-db` sano en `localhost:5432`).
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 068 — chore(db): wipe legacy additive-formula score entries (ADR 0006, back#A6)
+
+**Fecha:** 2026-07-16
+**Tarea o problema abordado:** Task A6, cierre de la Parte A del sprint de scoring autoritativo: crear la migración "borrón y cuenta nueva" que vacía `ScoreEntry` porque los scores calculados con la fórmula aditiva anterior son incomparables con los de la nueva fórmula multiplicativa (ADR 0006) — conservarlos fosilizaría el ranking global recién introducido en A5.
+**Herramienta de IA utilizada:** Claude Code (Sonnet 5) — rol `backend-architect` (skill arrowmaze-backend).
+**Prompt o instrucción proporcionada:** > "Crea la migración ADR-0006 que vacía ScoreEntry (DELETE FROM \"ScoreEntry\"), verifica que corre contra la DB real, y deja test:e2e en verde."
+**Resultado obtenido:**
+- `prisma/migrations/20260716120000_wipe_score_entries_adr_0006/migration.sql`: sentencia única `DELETE FROM "ScoreEntry";` con comentario explicando la razón (ADR 0006 — fórmula multiplicativa incomparable con la aditiva previa; los niveles se regeneran aparte, esto solo purga scores).
+- **Caveat de tooling**: la DB de dev (`maze-db`, `localhost:5432`, `arrow_maze`) fue provisionada con `prisma db push`, no con historial de migraciones — `npx prisma migrate dev --create-only` detecta "drift" (schema no vacío, migraciones no baselineadas) y exige `prisma migrate reset` (destructivo, se descartó). Por eso el directorio de migración se creó manualmente con timestamp `20260716120000` (posterior a `20260714183520_themed_section_paint`, el último existente) y se verificó la SQL directamente contra la DB viva con `npx prisma db execute --schema prisma/schema.prisma --file <migration.sql>`, sin pasar por `migrate dev/deploy`. En despliegue (Docker/CI), donde el historial de migraciones sí está baselineado, `migrate deploy` aplicará este archivo con normalidad.
+- Verificación del `DELETE`: conteo de `ScoreEntry` vía Prisma Client (`prisma.scoreEntry.count()`) antes = 0, después = 0 (la DB de dev no tenía scores legacy cargados en este momento); la sentencia se ejecutó sin error, confirmando permisos y sintaxis correctos contra la tabla real.
+- `npm run test:e2e` → 7 test suites / 23 tests, todos verdes (contenedor `maze-db` sano).
+- Sin cambios en `prisma/schema.prisma` (migración solo de datos) ni en código de aplicación. README no modificado (no hay endpoint ni contrato público nuevo).
+**Modificaciones realizadas por el equipo:** (completar manualmente)
