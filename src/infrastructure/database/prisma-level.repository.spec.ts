@@ -84,8 +84,9 @@ describe('PrismaLevelRepository', () => {
       expect(result).toBeNull();
     });
 
-    it('should rebuild a Level with undefined timeLimitSec when the stored data omits it', async () => {
-      // Arrange
+    it('should rebuild a Level with the provisional timeLimitSec when legacy stored data omits it (ADR 0006)', async () => {
+      // Arrange — record legado (pre-regeneración) sin timeLimitSec; 2
+      // flechas ⇒ provisional del builder = max(30, 2*6) = 30.
       const record = wireContractRecord();
       delete (record.data as { timeLimitSec?: number }).timeLimitSec;
       mockPrisma.level.findUnique.mockResolvedValue(record);
@@ -94,7 +95,7 @@ describe('PrismaLevelRepository', () => {
       const result = await sut.findById(new LevelId('l-007'));
 
       // Assert
-      expect(result?.timeLimitSec).toBeUndefined();
+      expect(result?.timeLimitSec).toBe(30);
     });
 
     it('should default to campaign section without paint when the record predates back#31 (retro-compat)', async () => {

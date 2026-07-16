@@ -17,4 +17,28 @@ export class Stars {
   equals(other: Stars): boolean {
     return this.value === other.value;
   }
+
+  // Umbrales de calificación (misma regla que venía aplicando el cliente;
+  // desde ADR 0006 la autoridad es este VO).
+  static readonly PERFECT_MOVE_TOLERANCE = 2;
+  static readonly TWO_STAR_MAX_COLLISIONS = 2;
+  static readonly TWO_STAR_MOVE_TOLERANCE = 6;
+
+  static rate(args: {
+    moves: number;
+    optimalMoves: number;
+    collisions: number;
+  }): Stars {
+    const extra = Math.max(args.moves - args.optimalMoves, 0);
+    if (args.collisions === 0 && extra <= Stars.PERFECT_MOVE_TOLERANCE) {
+      return new Stars(3);
+    }
+    if (
+      args.collisions <= Stars.TWO_STAR_MAX_COLLISIONS &&
+      extra <= Stars.TWO_STAR_MOVE_TOLERANCE
+    ) {
+      return new Stars(2);
+    }
+    return new Stars(1);
+  }
 }

@@ -10,10 +10,17 @@ mecánica para validar la solubilidad y certificar la Solución (`LevelSolver`, 
 ### Niveles
 
 **Level** (Nivel):
-Definición de nivel persistida como JSON _arrow-path_ (`{ cols, rows, arrows: [...], timeLimitSec? }`),
-identificada por `LevelId`, con límite de tiempo opcional para niveles avanzados. El backend es
+Definición de nivel persistida como JSON _arrow-path_ (`{ cols, rows, arrows: [...], timeLimitSec }`),
+identificada por `LevelId`. Todo `Level` tiene límite de tiempo **obligatorio** (decidido
+2026-07-16; los niveles previos se regeneran — antes era opcional). El backend es
 la fuente autoritativa; se pueden añadir/actualizar niveles sin actualizar la app.
 _Avoid_: grid de celdas, tablero de celdas, mapa.
+
+**Par** (Tiempo de referencia):
+El tiempo que define "un buen tiempo" en un `Level`, derivado de su `timeLimitSec`
+(la mitad, como regla de dominio). Es la referencia contra la que el score pondera la
+velocidad del jugador: terminar por debajo del Par premia, terminar cerca del límite castiga.
+_Avoid_: tiempo objetivo, tiempo esperado, timeLimit (ese es "cuándo pierdes", no "qué es rápido").
 
 **Arrow** (Flecha, como dato):
 En el backend una flecha es **solo datos**: `id` + `cells` (camino) + `headDir`. No tiene
@@ -86,16 +93,31 @@ _Avoid_: cookie, api-key.
 ### Puntajes y progreso
 
 **ScoreEntry**:
-Un puntaje que un `User` envía para un `Level` (score numérico + estrellas + movimientos/tiempo).
-_Avoid_: record, resultado.
+El resultado de una partida ganada que un `User` reporta para un `Level`: las **métricas del
+run** (movimientos, tiempo, choques). El **score numérico y las estrellas los deriva el
+backend** de esas métricas (decidido 2026-07-16; antes el cliente enviaba el número final).
+El cliente adjunta además su score de preview como **valor de contraste** para detectar
+divergencias entre las dos fórmulas; el canónico es siempre el del backend.
+_Avoid_: record, resultado, puntaje enviado por el cliente (como fuente de verdad).
+
+**Leaderboard general** (Ranking de jugadores):
+Ranking global de `User`s ordenado por **total de puntos** (suma del mejor score por
+`Level` de **campaña** — los temáticos no suman), mostrando también el **total de
+estrellas** (suma de las mejores estrellas, desempate). Repetir un nivel solo cambia el
+total si se supera el mejor propio. Incluye la posición propia del `User` aunque esté fuera
+del top. Distinto del **Leaderboard** por nivel, que rankea los mejores `ScoreEntry` de un
+`Level` (campaña o temático).
+_Avoid_: ranking global por suma de todas las runs, ranking de actividad.
 
 **Leaderboard** (Ranking):
 Los mejores `ScoreEntry` por `Level`.
 
 **Progress** (Progreso):
 Progreso del jugador (niveles completados + mejores scores) que el cliente sincroniza con el
-servidor.
-_Avoid_: savegame, estado.
+servidor. **Frontera de confianza** (decidido 2026-07-16): el Progress es auto-reportado y
+**nunca alimenta rankings**; los rankings solo beben de `ScoreEntry` (derivado por el
+servidor). Un progreso inflado solo distorsiona la vista del propio jugador.
+_Avoid_: savegame, estado, fuente de datos para leaderboards.
 
 ### Vocabulario retirado (no usar)
 

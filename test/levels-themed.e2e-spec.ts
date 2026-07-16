@@ -174,11 +174,15 @@ describe('Themed section and paint wire (e2e)', () => {
         .get('/levels/t-smoke')
         .expect(200);
 
-      // Assert — passthrough opaco, byte a byte lo sembrado.
+      // Assert — passthrough opaco, byte a byte lo sembrado. themedRecord no
+      // trae timeLimitSec en su data (legado pre-regeneración, ADR 0006), así
+      // que el builder aplica el provisional max(30, nº flechas * 6): 3
+      // flechas ⇒ 30.
       expect(res.body).toEqual({
         levelId: 't-smoke',
         cols: 6,
         rows: 6,
+        timeLimitSec: 30,
         palette: { cara: '#FBBF24', ojo: '#1E293B' },
         arrows: [
           {

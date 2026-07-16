@@ -10,7 +10,7 @@ import { ElapsedTime } from '../../domain/value-objects/elapsed-time.vo';
 import type { LeaderboardRow } from '../../application/read-models/leaderboard-row';
 
 describe('ScoreMapper', () => {
-  it('flattens a ScoreEntry into its plain DTO shape', () => {
+  it('maps a ScoreEntry to its canonical submit response ({score, stars})', () => {
     // Arrange
     const createdAt = new Date('2026-07-08T12:00:00.000Z');
     const entry = new ScoreEntry(
@@ -25,18 +25,12 @@ describe('ScoreMapper', () => {
     );
 
     // Act
-    const dto = ScoreMapper.toDto(entry);
+    const dto = ScoreMapper.toSubmitResponse(entry);
 
     // Assert
     expect(dto).toEqual({
-      id: 'entry-1',
-      userId: 'user-1',
-      levelId: 'level-7',
       score: 1200,
       stars: 3,
-      moves: 12,
-      timeSeconds: 45,
-      createdAt: '2026-07-08T12:00:00.000Z',
     });
   });
 

@@ -52,6 +52,7 @@ describe('LevelSolver — certificación OCP sobre BoardSpace (ADR 0005)', () =>
         new LevelId('cert-rect-cycle'),
         new RectSpace(5, 5),
         buildArrows(),
+        90,
       );
       // Act
       const solution = solver.solve(level);
@@ -73,6 +74,7 @@ describe('LevelSolver — certificación OCP sobre BoardSpace (ADR 0005)', () =>
         new LevelId('cert-holed-cycle-broken'),
         new HoledRectSpace(5, 5, [new Position(2, 2)]),
         buildArrows(),
+        90,
       );
       // Act
       const solution = solver.solve(level);
@@ -106,6 +108,7 @@ describe('LevelSolver — certificación OCP sobre BoardSpace (ADR 0005)', () =>
         new LevelId('cert-holed-truncated-lane'),
         space,
         arrows,
+        90,
       );
       // Act
       const solution = solver.solve(level);
@@ -124,6 +127,7 @@ describe('LevelSolver — certificación OCP sobre BoardSpace (ADR 0005)', () =>
         new LevelId('cert-holed-empty'),
         new HoledRectSpace(5, 5, [new Position(2, 2)]),
         [],
+        90,
       );
       // Act
       const solution = solver.solve(level);

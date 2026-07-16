@@ -9,14 +9,20 @@ import { configureApp } from '../src/app.setup';
 // OpenAPI), no la persistencia — Postgres queda fuera para que corran en
 // cualquier máquina/CI sin base de datos.
 export interface PrismaServiceMock {
-  user: { findUnique: jest.Mock; create: jest.Mock };
+  user: { findUnique: jest.Mock; findMany: jest.Mock; create: jest.Mock };
   level: { findUnique: jest.Mock; findMany: jest.Mock };
+  scoreEntry: { create: jest.Mock; findMany: jest.Mock; groupBy: jest.Mock };
 }
 
 export function createPrismaServiceMock(): PrismaServiceMock {
   return {
-    user: { findUnique: jest.fn(), create: jest.fn() },
+    user: { findUnique: jest.fn(), findMany: jest.fn(), create: jest.fn() },
     level: { findUnique: jest.fn(), findMany: jest.fn() },
+    scoreEntry: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      groupBy: jest.fn(),
+    },
   };
 }
 

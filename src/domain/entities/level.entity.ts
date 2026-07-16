@@ -19,7 +19,8 @@ export interface LevelPaint {
 
 // Definición de nivel arrow-path (ADR 0001, wire contract en CONTEXT-MAP.md):
 // el backend guarda y sirve el nivel como DATOS; la mecánica corre en el
-// cliente. timeLimitSec opcional: límite de tiempo para niveles avanzados.
+// cliente. timeLimitSec obligatorio (ADR 0006, back scoring): límite de
+// tiempo autoritativo para el cálculo de puntaje en el back.
 // Decisión back#31: section/paint viajan EN la entidad (y no tuplados en el
 // repositorio) para que el mapper reciba un solo objeto; siguen siendo datos
 // opacos sin comportamiento ni invariantes de dominio.
@@ -39,14 +40,11 @@ export class Level {
     readonly id: LevelId,
     readonly space: BoardSpace,
     arrows: Arrow[],
-    readonly timeLimitSec?: number,
+    readonly timeLimitSec: number,
     readonly section: LevelSection = 'campaign',
     readonly paint?: LevelPaint,
   ) {
-    if (
-      timeLimitSec !== undefined &&
-      (!Number.isInteger(timeLimitSec) || timeLimitSec < 1)
-    ) {
+    if (!Number.isInteger(timeLimitSec) || timeLimitSec < 1) {
       throw new InvalidLevelException(
         `Level(${id.value}): timeLimitSec must be an integer >= 1 (got ${timeLimitSec})`,
       );

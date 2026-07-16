@@ -16,14 +16,16 @@ import {
 } from '@nestjs/swagger';
 import { SubmitScoreUseCase } from '../../application/use-cases/submit-score.use-case';
 import { GetLeaderboardUseCase } from '../../application/use-cases/get-leaderboard.use-case';
+import { GetGlobalLeaderboardUseCase } from '../../application/use-cases/get-global-leaderboard.use-case';
 import { JwtAuthGuard } from '../../infrastructure/security/jwt-auth.guard';
 import { SubmitScoreDto } from '../dtos/submit-score.dto';
 import {
   ScoreMapper,
-  ScoreEntryResponseDto,
+  SubmitScoreResponseDto,
   LeaderboardEntryResponseDto,
 } from '../mappers/score.mapper';
 import type { AuthenticatedRequest } from '../http/authenticated-request.interface';
+import type { GlobalLeaderboard } from '../../application/read-models/global-leaderboard';
 
 export type { AuthenticatedRequest } from '../http/authenticated-request.interface';
 
@@ -35,28 +37,57 @@ export class ScoreController {
   constructor(
     private readonly submitScoreUseCase: SubmitScoreUseCase,
     private readonly getLeaderboardUseCase: GetLeaderboardUseCase,
+    private readonly getGlobalLeaderboardUseCase: GetGlobalLeaderboardUseCase,
   ) {}
 
   @Post('scores')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Submit a score for a completed level' })
-  @ApiResponse({ status: 201, description: 'Score validated and persisted.' })
+  @ApiResponse({
+    status: 201,
+    description: 'Canonical score derived and persisted',
+  })
   @ApiResponse({ status: 400, description: 'Invalid score payload.' })
   @ApiResponse({ status: 401, description: 'Missing or invalid bearer token.' })
+  @ApiResponse({ status: 404, description: 'Level not found' })
   async submitScore(
     @Body() dto: SubmitScoreDto,
     @Req() req: AuthenticatedRequest,
-  ): Promise<ScoreEntryResponseDto> {
+  ): Promise<SubmitScoreResponseDto> {
     const entry = await this.submitScoreUseCase.execute({
       userId: req.user.userId,
       levelId: dto.levelId,
-      score: dto.score,
-      stars: dto.stars,
       moves: dto.moves,
       timeSeconds: dto.timeSeconds,
+      collisions: dto.collisions,
+      previewScore: dto.previewScore,
     });
-    return ScoreMapper.toDto(entry);
+    return ScoreMapper.toSubmitResponse(entry);
+  }
+
+  // NOTA: esta ruta literal debe declararse ANTES de 'leaderboard/:levelId'
+  // para que Nest la resuelva primero (si no, ':levelId' capturaría 'leaderboard'
+  // como id de nivel).
+  @Get('leaderboard')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Global player ranking (campaign best-per-level totals)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Top players plus requesting user row.',
+  })
+  async getGlobalLeaderboard(
+    @Req() req: AuthenticatedRequest,
+    @Query('limit') limit?: string,
+  ): Promise<GlobalLeaderboard> {
+    const parsedLimit = limit === undefined ? undefined : Number(limit);
+    return this.getGlobalLeaderboardUseCase.execute(
+      req.user.userId,
+      parsedLimit,
+    );
   }
 
   @Get('leaderboard/:levelId')

@@ -59,4 +59,47 @@ export class PrismaScoreRepository implements IScoreRepository {
       createdAt: s.createdAt,
     }));
   }
+
+  // Mejor score y mejores estrellas por (usuario, nivel): _max por separado —
+  // las estrellas top pueden venir de otra run que el score top (misma
+  // semántica "best-of" que ProgressTotals del cliente). Agregado por usuario
+  // en memoria: 15–50 niveles y cientos de usuarios es trivial; si algún día
+  // duele, se baja a SQL crudo.
+  async findGlobalTotals(campaignLevelIds: LevelId[]): Promise<
+    Array<{
+      userId: string;
+      username: string;
+      totalScore: number;
+      totalStars: number;
+    }>
+  > {
+    const best = await this.prisma.scoreEntry.groupBy({
+      by: ['userId', 'levelId'],
+      where: { levelId: { in: campaignLevelIds.map((id) => id.value) } },
+      _max: { score: true, stars: true },
+    });
+
+    const totals = new Map<
+      string,
+      { totalScore: number; totalStars: number }
+    >();
+    for (const row of best) {
+      const t = totals.get(row.userId) ?? { totalScore: 0, totalStars: 0 };
+      t.totalScore += row._max.score ?? 0;
+      t.totalStars += row._max.stars ?? 0;
+      totals.set(row.userId, t);
+    }
+
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: [...totals.keys()] } },
+      select: { id: true, username: true },
+    });
+    const usernameById = new Map(users.map((u) => [u.id, u.username]));
+
+    return [...totals].map(([userId, t]) => ({
+      userId,
+      username: usernameById.get(userId) ?? `player_${userId.slice(0, 8)}`,
+      ...t,
+    }));
+  }
 }

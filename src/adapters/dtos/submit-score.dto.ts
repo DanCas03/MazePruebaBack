@@ -1,4 +1,4 @@
-import { IsInt, IsString, Max, Min } from 'class-validator';
+import { IsInt, IsString, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class SubmitScoreDto {
@@ -8,17 +8,6 @@ export class SubmitScoreDto {
   })
   @IsString()
   levelId!: string;
-
-  @ApiProperty({ example: 1200, description: 'Score computed by the client' })
-  @IsInt()
-  @Min(0)
-  score!: number;
-
-  @ApiProperty({ example: 3, minimum: 1, maximum: 3 })
-  @IsInt()
-  @Min(1)
-  @Max(3)
-  stars!: number;
 
   @ApiProperty({
     example: 12,
@@ -32,4 +21,21 @@ export class SubmitScoreDto {
   @IsInt()
   @Min(0)
   timeSeconds!: number;
+
+  @ApiProperty({
+    example: 1,
+    description: 'Collision (strike) count of the run',
+  })
+  @IsInt()
+  @Min(0)
+  collisions!: number;
+
+  @ApiProperty({
+    example: 5240,
+    description:
+      'Client-side preview score, contrast value only (ADR 0006): mismatches are logged, never rejected',
+  })
+  @IsInt()
+  @Min(0)
+  previewScore!: number;
 }

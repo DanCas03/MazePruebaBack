@@ -66,8 +66,8 @@ describe('LevelBuilder', () => {
       ]);
     });
 
-    it('should build a Level with undefined timeLimitSec when withTimeLimit is never called', () => {
-      // Arrange
+    it('should build a Level with the provisional timeLimitSec (max(30, arrows*6)) when withTimeLimit is never called (ADR 0006)', () => {
+      // Arrange — 2 flechas ⇒ provisional = max(30, 2*6) = 30.
       const sut = new LevelBuilder(new LevelId('l-007'))
         .withDimensions(COLS, ROWS)
         .addArrow(bentArrowA1)
@@ -75,11 +75,11 @@ describe('LevelBuilder', () => {
       // Act
       const level = sut.build();
       // Assert
-      expect(level.timeLimitSec).toBeUndefined();
+      expect(level.timeLimitSec).toBe(30);
     });
 
-    it('should build a Level with undefined timeLimitSec when withTimeLimit is called with undefined', () => {
-      // Arrange
+    it('should build a Level with the provisional timeLimitSec when withTimeLimit is called with undefined (ADR 0006)', () => {
+      // Arrange — 2 flechas ⇒ provisional = max(30, 2*6) = 30.
       const sut = new LevelBuilder(new LevelId('l-007'))
         .withDimensions(COLS, ROWS)
         .withTimeLimit(undefined)
@@ -88,7 +88,7 @@ describe('LevelBuilder', () => {
       // Act
       const level = sut.build();
       // Assert
-      expect(level.timeLimitSec).toBeUndefined();
+      expect(level.timeLimitSec).toBe(30);
     });
 
     it('should throw InvalidBoardSpaceException when dimensions are never set', () => {

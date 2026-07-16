@@ -43,7 +43,7 @@ describe('LevelMapper', () => {
       new LevelId('t-smiley'),
       new RectSpace(20, 20),
       [arrowA1(), arrowA2()],
-      undefined,
+      90,
       'themed',
       themedPaint(),
     );

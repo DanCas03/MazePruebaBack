@@ -57,11 +57,19 @@ export class LevelBuilder {
   // JSON. Las invariantes de dimensiones viven en RectSpace; las de tablero,
   // en Level. El builder sigue sin duplicar ninguna.
   build(): Level {
+    // timeLimitSec ahora es obligatorio en Level (ADR 0006, back#A2). Cuando
+    // el llamador (seed de fixtures sin límite curado, o el mapper Prisma al
+    // reconstruir datos legados pre-regeneración) no lo fijó vía
+    // withTimeLimit, se asigna el provisional max(30, nº flechas * 6) solo
+    // para satisfacer la invariante — los niveles reciben valores curados
+    // más adelante.
+    const timeLimitSec =
+      this.timeLimitSec ?? Math.max(30, this.arrows.length * 6);
     return new Level(
       this.id,
       new RectSpace(this.cols as number, this.rows as number),
       this.arrows,
-      this.timeLimitSec,
+      timeLimitSec,
       this.section,
       this.paint,
     );
