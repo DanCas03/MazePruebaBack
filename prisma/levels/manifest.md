@@ -64,8 +64,8 @@ campaign levels.
 
 | level | source | dims (cols x rows) | arrows | roles |
 |---|---|---|---|---|
-| t-heart | front#68 themed tooling — mask `heart`, seed 11, coverage 91% | 16x14 | 23 | heart |
-| t-happy-face | front#68 themed tooling — mask `happy_face`, seed 31, coverage face 81% / features 100% | 16x16 | 38 | face, features |
+| t-heart | front#68 tooling, regenerated at higher mask resolution (back#47) — mask `heart`, seed 74, coverage 82% | 24x16 | 51 | heart |
+| t-happy-face | front#68 tooling, regenerated at higher mask resolution (back#47) — mask `happy_face`, seed 94, coverage face 72% / features 86% | 24x22 | 72 | face, features |
 | t-bunny | front#68 themed tooling — mask `bunny`, seed 11, coverage fur 86% / pink 88% / eye 100% | 16x20 | 37 | fur, pink, eye |
 
 The `t-smoke` hand-made placeholder was replaced by the 3 figures above

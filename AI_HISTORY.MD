@@ -876,3 +876,19 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - `npm run test:e2e` → 7 test suites / 23 tests, todos verdes (contenedor `maze-db` sano).
 - Sin cambios en `prisma/schema.prisma` (migración solo de datos) ni en código de aplicación. README no modificado (no hay endpoint ni contrato público nuevo).
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 069 — feat(db): regenerate heart + happy-face themed seeds at higher mask resolution (back#47)
+
+**Fecha:** 2026-07-16
+**Tarea o problema abordado:** back#47 — reemplazar los fixtures temáticos `t-heart` y `t-happy-face` por su versión regenerada a mayor resolución de máscara (figuras más nítidas, mismas regiones de color), dejando `t-bunny` intacto byte-a-byte, y re-sembrar. Las máscaras fuente viven en el front (MazePruebaFront#112); este lado es el swap de fixtures + manifiesto + reseed.
+**Herramienta de IA utilizada:** Claude Code (Opus 4.8) — rol `backend-architect` (skill arrowmaze-backend).
+**Prompt o instrucción proporcionada:** > "Resuelve el issue#47 que está en el repositorio del backend."
+**Resultado obtenido:**
+- `prisma/levels/t-heart.json`: 16×14/23 flechas → **24×16/51 flechas**, región `heart`. Derivado del JSON temático del front (`themed-heart.json`, seed 74) izando `levelId=t-heart`, `section=themed` y `palette` antes de `arrows` (misma forma de fixture que el resto del catálogo).
+- `prisma/levels/t-happy-face.json`: 16×16/38 → **24×22/72 flechas**, regiones `face`+`features` (seed 94). Misma transformación.
+- `prisma/levels/t-bunny.json`: **sin cambios** (verificado con `git diff` vacío).
+- `prisma/levels/manifest.md`: tabla de la sección temática actualizada (dims, seed, cobertura, flechas) solo para heart y happy-face; fila del bunny intacta.
+- **Certificación sin BD**: `npx jest src/infrastructure/database/curated-levels.spec.ts` → 44/44 verde. Ese spec carga los fixtures de disco y corre el MISMO guardrail que el seeder (`LevelBuilder` reconstruye invariantes de tablero + `LevelSolver.isSolvable` + `validateLevelPaint`), así que la solubilidad y la validez de pintado quedan verificadas y el `prisma db seed` tendrá éxito. `test/levels-themed.e2e-spec.ts` (mock) → 5/5 verde.
+- **Reseed pendiente**: `npm run db:seed` (prisma db seed) requiere una BD Postgres viva (Docker). No hay contenedor `maze-db` corriendo en este entorno, así que el reseed real lo ejecuta el equipo en Docker; los fixtures ya están certificados como sembrables.
+- README no modificado (sin endpoint ni contrato público nuevo; la sección temática ya existía por back#31/ADR 0004).
+**Modificaciones realizadas por el equipo:** (completar manualmente)
