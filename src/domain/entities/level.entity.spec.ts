@@ -48,17 +48,19 @@ describe('Level', () => {
       expect(sut.timeLimitSec).toBe(90);
     });
 
-    it('should create a level with undefined timeLimitSec when the time limit is omitted', () => {
+    it('should throw InvalidLevelException when timeLimitSec is omitted (undefined) — mandatory since ADR 0006', () => {
       // Arrange
       const arrows = [bentArrowA1(), straightArrowA2()];
-      // Act
-      const sut = new Level(
-        new LevelId('level-001'),
-        new RectSpace(COLS, ROWS),
-        arrows,
-      );
-      // Assert
-      expect(sut.timeLimitSec).toBeUndefined();
+      // Act / Assert
+      expect(
+        () =>
+          new Level(
+            new LevelId('level-001'),
+            new RectSpace(COLS, ROWS),
+            arrows,
+            undefined as unknown as number,
+          ),
+      ).toThrow(InvalidLevelException);
     });
 
     it('should create a level when timeLimitSec is 1 — minimum positive integer', () => {
@@ -83,6 +85,7 @@ describe('Level', () => {
         new LevelId('level-001'),
         new RectSpace(COLS, ROWS),
         arrows,
+        90,
       );
       // Assert
       expect(sut.section).toBe('campaign');
@@ -101,7 +104,7 @@ describe('Level', () => {
         new LevelId('t-smoke'),
         new RectSpace(COLS, ROWS),
         arrows,
-        undefined,
+        90,
         'themed',
         paint,
       );
@@ -134,9 +137,12 @@ describe('Level', () => {
       // Act / Assert
       expect(
         () =>
-          new Level(new LevelId('level-001'), new RectSpace(COLS, ROWS), [
-            outOfBounds,
-          ]),
+          new Level(
+            new LevelId('level-001'),
+            new RectSpace(COLS, ROWS),
+            [outOfBounds],
+            90,
+          ),
       ).toThrow(InvalidLevelException);
     });
 
@@ -150,9 +156,12 @@ describe('Level', () => {
       // Act / Assert
       expect(
         () =>
-          new Level(new LevelId('level-001'), new RectSpace(COLS, ROWS), [
-            outOfBounds,
-          ]),
+          new Level(
+            new LevelId('level-001'),
+            new RectSpace(COLS, ROWS),
+            [outOfBounds],
+            90,
+          ),
       ).toThrow(InvalidLevelException);
     });
 
@@ -169,9 +178,12 @@ describe('Level', () => {
       // Act / Assert
       expect(
         () =>
-          new Level(new LevelId('level-001'), new RectSpace(COLS, ROWS), [
-            gapped,
-          ]),
+          new Level(
+            new LevelId('level-001'),
+            new RectSpace(COLS, ROWS),
+            [gapped],
+            90,
+          ),
       ).toThrow(InvalidLevelException);
     });
 
@@ -185,9 +197,12 @@ describe('Level', () => {
       // Act / Assert
       expect(
         () =>
-          new Level(new LevelId('level-001'), new RectSpace(COLS, ROWS), [
-            diagonal,
-          ]),
+          new Level(
+            new LevelId('level-001'),
+            new RectSpace(COLS, ROWS),
+            [diagonal],
+            90,
+          ),
       ).toThrow(InvalidLevelException);
     });
 
@@ -206,10 +221,12 @@ describe('Level', () => {
       // Act / Assert
       expect(
         () =>
-          new Level(new LevelId('level-001'), new RectSpace(COLS, ROWS), [
-            a1,
-            a2,
-          ]),
+          new Level(
+            new LevelId('level-001'),
+            new RectSpace(COLS, ROWS),
+            [a1, a2],
+            90,
+          ),
       ).toThrow(InvalidLevelException);
     });
 
@@ -228,10 +245,12 @@ describe('Level', () => {
       // Act / Assert
       expect(
         () =>
-          new Level(new LevelId('level-001'), new RectSpace(COLS, ROWS), [
-            first,
-            duplicate,
-          ]),
+          new Level(
+            new LevelId('level-001'),
+            new RectSpace(COLS, ROWS),
+            [first, duplicate],
+            90,
+          ),
       ).toThrow(InvalidLevelException);
     });
 

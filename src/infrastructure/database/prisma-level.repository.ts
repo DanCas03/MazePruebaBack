@@ -59,6 +59,10 @@ export class PrismaLevelRepository implements ILevelRepository {
     const data = record.data as LevelDataPrimitives;
     const builder = new LevelBuilder(new LevelId(record.id))
       .withDimensions(data.cols, data.rows)
+      // timeLimitSec es obligatorio en Level (ADR 0006, back#A2). Si el JSON
+      // persistido no lo trae (datos legados pre-regeneración), el builder
+      // aplica el provisional max(30, nº flechas * 6) en build() — no hay
+      // límite curado disponible para estos registros todavía.
       .withTimeLimit(data.timeLimitSec)
       .withSection(record.section)
       .withPaint(PrismaLevelRepository.toPaint(data));
