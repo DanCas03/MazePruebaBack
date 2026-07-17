@@ -64,9 +64,9 @@ campaign levels.
 
 | level | source | dims (cols x rows) | arrows | roles |
 |---|---|---|---|---|
-| t-heart | front#68 tooling, regenerated at higher mask resolution (back#47) — mask `heart`, seed 74, coverage 82% | 24x16 | 51 | heart |
-| t-happy-face | front#68 tooling, regenerated at higher mask resolution (back#47) — mask `happy_face`, seed 94, coverage face 72% / features 86% | 24x22 | 72 | face, features |
-| t-bunny | front#68 themed tooling — mask `bunny`, seed 11, coverage fur 86% / pink 88% / eye 100% | 16x20 | 37 | fur, pink, eye |
+| t-heart | front#68 tooling, full-coverage regeneration (front#114 / back#50) — mask `heart`, seed 0, coverage 100% | 24x16 | 48 | heart |
+| t-happy-face | front#68 tooling, full-coverage regeneration (front#114 / back#50) — mask `happy_face`, seed 0, coverage face 100% / features 100% | 24x22 | 80 | face, features |
+| t-bunny | front#68 tooling, full-coverage regeneration (front#114 / back#50) — mask `bunny`, seed 0, coverage fur 100% / pink 92% / eye 67% | 16x20 | 40 | fur, pink, eye |
 
 The `t-smoke` hand-made placeholder was replaced by the 3 figures above
 (front#68). Each fixture is produced by `tool/level_production/produce_themed.dart`
@@ -74,9 +74,12 @@ in MazePruebaFront, solvable by construction and re-certified here by
 `curated-levels.spec.ts` (LevelSolver + paint consistency).
 
 Since front#114 / back#50, each themed fixture also carries a `silhouette`
-(role → region cells) alongside `palette`: an opaque region fill painted
-*under* the arrows so the figure reads as a solid shape even where no arrow
-covers a cell. It travels on the wire the same way `palette` does — served as
+(role → figure cells) alongside `palette`: it is the **board mask** — only
+the figure's cells exist on the themed board; there is no rectangular
+background and no painted fill. The fixtures were regenerated so straight
+arrows of length ≥2 fill the figure near-completely (heart 48 arrows /
+happy-face 80 / bunny 40); the figure is drawn by the arrows themselves.
+`silhouette` travels on the wire the same way `palette` does — served as
 data, not consumed by `LevelSolver` — and is re-certified here (cheap
 structural check only): every `silhouette` role must exist in `palette`, and
 every cell must be within `cols`/`rows` bounds.

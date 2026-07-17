@@ -68,13 +68,13 @@ _Avoid_: nivel especial, skin.
 
 **Instrucciones de pintado**:
 Metadata visual opcional de un `Level`: paleta de roles de color + rol por flecha. Desde
-front#114 / back#50 incluye además una **silueta** (`silhouette`: rol → celdas de región) —
-el relleno opaco que pinta la figura bajo las flechas donde ninguna flecha cubre la celda.
+front#114 / back#50 incluye además una **silueta** (`silhouette`: rol → celdas de figura) —
+define la **máscara del tablero temático**: solo existen las celdas de la figura (no hay
+fondo rectangular ni relleno pintado); las flechas llenan la figura casi por completo.
 El backend las guarda y sirve como datos opacos; no participan en la validación de
 solubilidad ni en la Solución — solo se valida su forma barata (rol conocido en la paleta,
 celdas dentro de límites), nunca su semántica visual.
-_Avoid_: tema, estilo, configuración de render, máscara (esa es la fuente de generación en
-el front — la silueta servida es su consecuencia de pintado, no la máscara misma).
+_Avoid_: tema, estilo, configuración de render, relleno pintado bajo las flechas.
 
 ### Cuenta y sesión
 
