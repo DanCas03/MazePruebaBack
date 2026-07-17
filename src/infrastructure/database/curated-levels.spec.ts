@@ -4,6 +4,7 @@ import { LevelBuilder } from '../../domain/entities/level.builder';
 import { LevelSolver } from '../../domain/services/level-solver';
 import { LevelId } from '../../domain/value-objects/level-id.vo';
 import { validateLevelPaint } from './level-paint.validator';
+import { validateLevelSilhouette } from './level-silhouette.validator';
 import type { ArrowPrimitives } from '../../domain/entities/arrow.factory';
 
 // Contrato de los fixtures curados (back#10, ADR 0001 dec. 5): los 15 niveles
@@ -21,7 +22,10 @@ interface LevelFixture {
 }
 
 // Fixture temático (back#31, ADR 0004): sin order, con section y con
-// Instrucciones de pintado opcionales servidas como datos opacos.
+// Instrucciones de pintado opcionales servidas como datos opacos. back#53
+// añade `silhouette` — mismo portador opaco que `Level.silhouette`
+// (LevelSilhouette), validado solo estructuralmente por
+// `validateLevelSilhouette`.
 interface ThemedLevelFixture {
   levelId: string;
   section: string;
@@ -29,7 +33,27 @@ interface ThemedLevelFixture {
   rows: number;
   timeLimitSec?: number;
   palette?: Record<string, string>;
+  silhouette?: Record<string, number[][]>;
   arrows: (ArrowPrimitives & { paintRole?: string })[];
+}
+
+// Cobertura de flechas sobre la unión de la silueta: mismo cálculo que el
+// guardián de densidad del front (front task 7,
+// graph_board_themed_dense_test.dart) — celdas de flecha distintas dentro de
+// la unión de todas las regiones de `silhouette`, dividido por el tamaño de
+// esa unión. `validateLevelSilhouette` ya garantiza que ninguna celda de
+// flecha cae fuera de la unión, así que el numerador es simplemente el
+// tamaño del conjunto de celdas de flecha.
+function silhouetteCoverage(fixture: ThemedLevelFixture): number {
+  const union = new Set<string>();
+  Object.values(fixture.silhouette ?? {}).forEach((cells) =>
+    cells.forEach(([row, col]) => union.add(`${row},${col}`)),
+  );
+  const covered = new Set<string>();
+  fixture.arrows.forEach((arrow) =>
+    arrow.cells.forEach(([row, col]) => covered.add(`${row},${col}`)),
+  );
+  return covered.size / union.size;
 }
 
 // Los fixtures viven en prisma/levels, fuera de rootDir=src. Jest corre desde
@@ -292,10 +316,56 @@ describe('curated levels (back#10 seed fixtures)', () => {
       },
     );
 
-    it('should keep every campaign fixture free of paint metadata', () => {
+    // back#53: los 3 fixtures temáticos llevan silhouette y
+    // validateLevelSilhouette los acepta (chequeo estructural barato, sin
+    // semántica visual — ver level-silhouette.validator.ts).
+    it.each(themed.map((fixture) => [fixture.levelId, fixture] as const))(
+      'should carry a silhouette on %s that validateLevelSilhouette accepts',
+      (_levelId, fixture) => {
+        // Arrange
+        const check = () => validateLevelSilhouette(fixture);
+        // Assert
+        expect(fixture.silhouette).toBeDefined();
+        expect(check).not.toThrow();
+      },
+    );
+
+    // Guardián de densidad (espejo del front, back#53): t-heart y
+    // t-happy-face se regeneraron densos — la cobertura de flechas sobre la
+    // unión de la silueta debe superar el mismo umbral 0.90 que usa el
+    // tooling del front al elegir seed. Valores medidos sobre los datos
+    // reales sembrados (no asumidos): heart 0.9885, happy_face 0.9796.
+    describe('density guardian over the real silhouette union', () => {
+      const DENSITY_THRESHOLD = 0.9;
+      const guarded = themed.filter((f) => f.levelId !== 't-bunny');
+
+      it.each(guarded.map((fixture) => [fixture.levelId, fixture] as const))(
+        'should cover the %s silhouette union with at least 0.90 arrow density',
+        (_levelId, fixture) => {
+          // Act
+          const coverage = silhouetteCoverage(fixture);
+          // Assert
+          expect(coverage).toBeGreaterThanOrEqual(DENSITY_THRESHOLD);
+        },
+      );
+    });
+
+    // t-bunny es el benchmark estético congelado (back#47): esta tarea solo
+    // le añade `silhouette` — sus flechas quedan byte-idénticas, sin pasar
+    // por el guardián de densidad de arriba.
+    it('should keep t-bunny frozen at exactly 37 arrows', () => {
+      // Arrange
+      const bunny = themed.find((fixture) => fixture.levelId === 't-bunny');
+      // Act + Assert
+      expect(bunny).toBeDefined();
+      expect(bunny?.arrows).toHaveLength(37);
+    });
+
+    it('should keep every campaign fixture free of paint and silhouette metadata', () => {
       // Act + Assert — la campaña no cambia de semántica (retro-compat).
       fixtures.forEach((fixture) => {
         expect(fixture).not.toHaveProperty('palette');
+        expect(fixture).not.toHaveProperty('silhouette');
         fixture.arrows.forEach((arrow) => {
           expect(arrow).not.toHaveProperty('paintRole');
         });
