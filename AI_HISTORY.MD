@@ -924,3 +924,26 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - Verificación: `npm test` → 58 test suites / 434 tests, todos verdes. `npm run lint:check` → 0 errores, 28 warnings preexistentes (mismas que entrada 070, sin relación). `npm run build` → exit 0. `npm run test:e2e` → 7 suites / 23 tests verdes.
 - README no modificado (sin contrato público nuevo; nada cambia para el cliente hasta la tarea del read-path).
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 072 — feat(back/read-path): serve themed silhouette through repo and mapper (#53)
+
+**Fecha:** 2026-07-17
+**Tarea o problema abordado:** Task 10 del plan cruzado de niveles temáticos con figura — el último eslabón del wire field `silhouette`: hacer que la API lo sirva de verdad en `GET /levels/:id`. El dominio (entrada 070) y el seed (entrada 071) ya lo cargan y validan; sin este paso el cliente no puede ver ninguna silueta. Mismo trato que `paint` (ADR 0004) en toda la cadena repo → mapper → controller.
+**Herramienta de IA utilizada:** Claude Code (Sonnet 5) — rol `backend-architect` (skill arrowmaze-backend).
+**Prompt o instrucción proporcionada:** > "Task 10 del plan SDD themed-masked-board-redesign: iza `data.silhouette` a `level.silhouette` en `PrismaLevelRepository.toDomain` vía `.withSilhouette(...)`, emite `LevelResponseDto.silhouette` en el mapper con spread condicional (espejo de palette), amplía la descripción Swagger del detalle. TDD: tests primero (repo, mapper, e2e), FAIL, implementar, PASS. GET /levels no cambia."
+**Resultado obtenido:**
+- `src/infrastructure/database/prisma-level.repository.ts`: `LevelDataPrimitives` gana `silhouette?: LevelSilhouette` (import type desde `level.entity.ts`); `toDomain` encadena `.withSilhouette(data.silhouette)` tras `withPaint` — passthrough directo, sin transformación (la forma del JSON ya coincide con `LevelSilhouette`), `undefined` cuando el JSON no la trae.
+- `src/adapters/mappers/level.mapper.ts`: `LevelResponseDto` gana `silhouette?: Record<string, number[][]>`; `toDto` añade un spread condicional espejo del de `palette` — `...(level.silhouette !== undefined ? { silhouette: { ...level.silhouette } as unknown as Record<string, number[][]> } : {})` (el cast doble es necesario porque `LevelSilhouette` es readonly de punta a punta y TS rechaza la conversión directa a `number[][]` mutable; a runtime es un no-op). Una flecha campaña no emite la clave `silhouette` en absoluto.
+- `src/adapters/controllers/level.controller.ts`: solo Swagger — la `@ApiOperation`/`@ApiResponse` del detalle (`GET /levels/:id`) amplían su descripción para mencionar el root `silhouette` (región → celdas `[row, col]`) junto a palette/paintRole. Sin lógica nueva.
+- Tests nuevos (TDD, fallaron primero con `undefined`/objeto ausente, luego pasaron):
+  - `prisma-level.repository.spec.ts`: nuevo caso "should rebuild a themed Level lifting silhouette into the domain carrier (back#53)" (verifica el hoist deep-equal) + assert añadido en el caso de retro-compat de que `result?.silhouette` es `undefined` sin la columna.
+  - `level.mapper.spec.ts`: dos casos nuevos — "should omit silhouette entirely when the level has no silhouette carrier (#53)" y "should pass silhouette through intact for a themed level (deep equality round-trip, #53)" — con un nivel temático construido con `silhouette` como 8º parámetro posicional de `Level`.
+  - `test/levels-themed.e2e-spec.ts`: el fixture in-memory `themedRecord.data` gana `silhouette` (regiones `ojo`/`cara`); el test de round-trip ("round-trips palette, per-arrow paintRole and silhouette intact (#53)") verifica que `GET /levels/t-smoke` la devuelve byte a byte; el test de campaña legacy verifica también `not.toHaveProperty('silhouette')`. `GET /levels` (catálogo) no se tocó — sus asserts `toEqual({levelId, section})` ya prueban por construcción que no hay clave `silhouette` de sobra.
+- Verificación real ejecutada:
+  - `npm test` → 58 test suites / **437 tests**, todos verdes (434 previos + 3 nuevos).
+  - `npm run test:e2e` → 7 test suites / 23 tests, todos verdes.
+  - `npm run lint:check` → 0 errores, 28 warnings preexistentes (idénticas a las de las entradas 070/071, sin relación con este cambio; un error de prettier surgido durante la implementación — import multilínea y objeto anidado sin formatear — se corrigió con `npx prettier --write` antes de esta verificación final).
+  - `npm run build` → exit 0, sin salida de error.
+- Sin migración Prisma (silhouette sigue viajando dentro de la columna JSON `data`, ADR 0004 — igual que `paint`).
+- `README.md`: fila de `GET /levels/:id` en la tabla de endpoints, nota bajo la tabla sobre metadata opaca, y el ejemplo JSON del nivel temático actualizados para incluir `silhouette` — contrato público del endpoint cambia, así que corresponde documentarlo (regla del proyecto).
+**Modificaciones realizadas por el equipo:** (completar manualmente)

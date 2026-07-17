@@ -27,6 +27,10 @@ export interface LevelResponseDto {
   // Paleta de roles de color (ADR 0004): rol -> hex #RRGGBB. Solo presente
   // en niveles temáticos; el back la sirve como dato opaco (passthrough).
   palette?: Record<string, string>;
+  // Máscara de silueta (ADR 0004, back#53): región -> celdas de relleno
+  // [row, col]. Solo presente en niveles temáticos con figura; passthrough
+  // opaco, igual trato que palette.
+  silhouette?: Record<string, number[][]>;
 }
 
 export interface LevelSummaryDto {
@@ -53,6 +57,16 @@ export class LevelMapper {
       })),
       ...(level.paint !== undefined
         ? { palette: { ...level.paint.palette } }
+        : {}),
+      // Passthrough opaco: mismo trato que palette (dato opaco, sin
+      // interpretar). Ausente cuando el nivel no trae máscara de figura.
+      ...(level.silhouette !== undefined
+        ? {
+            silhouette: { ...level.silhouette } as unknown as Record<
+              string,
+              number[][]
+            >,
+          }
         : {}),
     };
   }

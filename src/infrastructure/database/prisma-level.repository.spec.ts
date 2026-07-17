@@ -108,6 +108,58 @@ describe('PrismaLevelRepository', () => {
       // Assert
       expect(result?.section).toBe('campaign');
       expect(result?.paint).toBeUndefined();
+      expect(result?.silhouette).toBeUndefined();
+    });
+
+    it('should rebuild a themed Level lifting silhouette into the domain carrier (back#53)', async () => {
+      // Arrange — temático con silhouette: clave = región, valor = celdas de relleno.
+      const themedRecord = {
+        id: 't-smiley',
+        order: null,
+        section: 'themed',
+        data: {
+          cols: 20,
+          rows: 20,
+          palette: { cara: '#FBBF24', ojo: '#1E293B' },
+          silhouette: {
+            cara: [
+              [3, 4],
+              [3, 5],
+            ],
+            ojo: [
+              [5, 0],
+              [5, 1],
+            ],
+          },
+          arrows: [
+            {
+              id: 'a1',
+              headDir: 'up',
+              cells: [
+                [3, 4],
+                [3, 5],
+              ],
+              paintRole: 'cara',
+            },
+          ],
+        },
+      };
+      mockPrisma.level.findUnique.mockResolvedValue(themedRecord);
+
+      // Act
+      const result = await sut.findById(new LevelId('t-smiley'));
+
+      // Assert
+      expect(result?.silhouette).toEqual({
+        cara: [
+          [3, 4],
+          [3, 5],
+        ],
+        ojo: [
+          [5, 0],
+          [5, 1],
+        ],
+      });
     });
 
     it('should rebuild a themed Level lifting palette and per-arrow paintRole into the paint carrier (ADR 0004)', async () => {

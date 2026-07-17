@@ -47,13 +47,15 @@ export class LevelController {
     description:
       'Themed levels additionally carry opaque paint instructions: a root ' +
       '"palette" (role -> #RRGGBB hex) and an optional "paintRole" per ' +
-      'arrow. They do not affect mechanics or solvability. ADR 0004.',
+      'arrow, plus an optional root "silhouette" (region -> fill cells ' +
+      '[row, col]) describing the figure mask. None of these affect ' +
+      'mechanics or solvability. ADR 0004.',
   })
   @ApiResponse({
     status: 200,
     description:
-      'Full arrow-path level. Themed levels include palette and per-arrow ' +
-      'paintRole (opaque paint metadata).',
+      'Full arrow-path level. Themed levels include palette, per-arrow ' +
+      'paintRole and silhouette (opaque paint/figure metadata).',
   })
   @ApiResponse({
     status: 400,
