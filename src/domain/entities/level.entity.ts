@@ -15,6 +15,10 @@ export type LevelSection = 'campaign' | 'themed';
 export interface LevelPaint {
   readonly palette: Readonly<Record<string, string>>;
   readonly roles: Readonly<Record<string, string>>;
+  // Silueta temática (back#50): rol -> lista de celdas [row, col]. Portador
+  // opaco igual que palette/roles — el dominio no valida su geometría, solo
+  // la transporta (esa verificación vive en el seed).
+  readonly silhouette?: Readonly<Record<string, [number, number][]>>;
 }
 
 // Definición de nivel arrow-path (ADR 0001, wire contract en CONTEXT-MAP.md):

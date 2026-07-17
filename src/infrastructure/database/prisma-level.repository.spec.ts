@@ -154,6 +154,47 @@ describe('PrismaLevelRepository', () => {
       });
       expect(result?.arrows).toHaveLength(2);
     });
+
+    it('should round-trip data.silhouette into the paint carrier when present (back#50)', async () => {
+      // Arrange — temático con silhouette junto a palette/paintRole.
+      const themedRecord = {
+        id: 't-smiley',
+        order: null,
+        section: 'themed',
+        data: {
+          cols: 20,
+          rows: 20,
+          palette: { cara: '#FBBF24', ojo: '#1E293B' },
+          silhouette: { cara: [[3, 4]] },
+          arrows: [
+            {
+              id: 'a1',
+              headDir: 'up',
+              cells: [
+                [3, 4],
+                [3, 5],
+              ],
+              paintRole: 'cara',
+            },
+            {
+              id: 'a2',
+              headDir: 'right',
+              cells: [
+                [5, 0],
+                [5, 1],
+              ],
+            },
+          ],
+        },
+      };
+      mockPrisma.level.findUnique.mockResolvedValue(themedRecord);
+
+      // Act
+      const result = await sut.findById(new LevelId('t-smiley'));
+
+      // Assert
+      expect(result?.paint?.silhouette).toEqual({ cara: [[3, 4]] });
+    });
   });
 
   describe('findAllOrdered', () => {

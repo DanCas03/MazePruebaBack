@@ -29,6 +29,9 @@ interface LevelDataPrimitives {
   rows: number;
   timeLimitSec?: number;
   palette?: Record<string, string>;
+  // Silueta temática (back#50): rol -> lista de celdas [row, col]. Opaca
+  // igual que palette — solo se iza al paint carrier, no se valida aquí.
+  silhouette?: Record<string, [number, number][]>;
   arrows: StoredArrowPrimitives[];
 }
 
@@ -84,6 +87,6 @@ export class PrismaLevelRepository implements ILevelRepository {
         roles[arrow.id] = arrow.paintRole;
       }
     }
-    return { palette: data.palette, roles };
+    return { palette: data.palette, roles, silhouette: data.silhouette };
   }
 }

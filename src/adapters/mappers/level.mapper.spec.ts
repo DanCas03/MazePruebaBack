@@ -36,6 +36,7 @@ describe('LevelMapper', () => {
   const themedPaint = (): LevelPaint => ({
     palette: { cara: '#FBBF24', ojo: '#1E293B' },
     roles: { a1: 'cara' },
+    silhouette: { cara: [[3, 4]] },
   });
 
   const themedLevel = () =>
@@ -81,6 +82,15 @@ describe('LevelMapper', () => {
       });
     });
 
+    it('should omit silhouette entirely when the level has no paint carrier', () => {
+      // Arrange
+      const level = campaignLevel();
+      // Act
+      const dto = LevelMapper.toDto(level);
+      // Assert
+      expect(dto).not.toHaveProperty('silhouette');
+    });
+
     it('should pass palette and per-arrow paintRole through intact for a themed level', () => {
       // Arrange
       const level = themedLevel();
@@ -99,6 +109,15 @@ describe('LevelMapper', () => {
       });
       // a2 no tiene rol asignado: la clave no debe aparecer.
       expect(dto.arrows[1]).not.toHaveProperty('paintRole');
+    });
+
+    it('should pass silhouette through intact for a themed level with a silhouette carrier', () => {
+      // Arrange
+      const level = themedLevel();
+      // Act
+      const dto = LevelMapper.toDto(level);
+      // Assert
+      expect(dto.silhouette).toEqual({ cara: [[3, 4]] });
     });
 
     it('should keep the mechanical wire contract unchanged for a themed level (cols, rows, arrows)', () => {

@@ -27,6 +27,9 @@ export interface LevelResponseDto {
   // Paleta de roles de color (ADR 0004): rol -> hex #RRGGBB. Solo presente
   // en niveles temáticos; el back la sirve como dato opaco (passthrough).
   palette?: Record<string, string>;
+  // Silueta temática (back#50): rol -> lista de celdas [row, col]. Solo
+  // presente en niveles temáticos; passthrough opaco igual que palette.
+  silhouette?: Record<string, [number, number][]>;
 }
 
 export interface LevelSummaryDto {
@@ -53,6 +56,9 @@ export class LevelMapper {
       })),
       ...(level.paint !== undefined
         ? { palette: { ...level.paint.palette } }
+        : {}),
+      ...(level.paint?.silhouette !== undefined
+        ? { silhouette: level.paint.silhouette }
         : {}),
     };
   }
