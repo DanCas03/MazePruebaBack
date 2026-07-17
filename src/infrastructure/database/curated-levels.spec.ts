@@ -134,9 +134,9 @@ describe('curated levels (back#10 seed fixtures)', () => {
 
     it('should never shrink arrow count within a tier (same dimensions)', () => {
       // Arrange — agrupar por dims: cada banda comparte un unico cols x rows.
-      // Rampa back#32 (ADR 0003): el tier 5 abarca DOS bandas de tablero — el
-      // par regular (42x46) y el finale (50x50) — asi que agrupar por dims da
-      // 6 bandas, no 5.
+      // Rampa back#46 (reshape 9:16): el tier 5 abarca DOS bandas de tablero —
+      // el par regular (25x44) y el finale (28x50) — asi que agrupar por dims
+      // da 6 bandas, no 5.
       const byTier = new Map<string, LevelFixture[]>();
       fixtures.forEach((fixture) => {
         const key = `${fixture.cols}x${fixture.rows}`;
@@ -155,8 +155,8 @@ describe('curated levels (back#10 seed fixtures)', () => {
     });
 
     it('should never shrink arrow count across the whole play order (cross-tier ramp)', () => {
-      // Act + Assert — la rampa back#32 sube la carga de flechas de forma
-      // GLOBAL (6->13->36->94->163->166->216), no solo dentro de cada banda de
+      // Act + Assert — la rampa back#46 sube la carga de flechas de forma
+      // GLOBAL (7->16->26->67->118->180), no solo dentro de cada banda de
       // dims: fija el escalon transversal de dificultad que las bandas de
       // conteo constante (T1..T4) no llegan a ejercer.
       for (let i = 1; i < fixtures.length; i++) {
@@ -165,25 +165,31 @@ describe('curated levels (back#10 seed fixtures)', () => {
         );
       }
     });
+
+    it('should match the exact per-level arrow count ramp (back#46, 9:16 reshape)', () => {
+      // Arrange — 6 bandas de dims (3+3+3+3+2+1 niveles), rampa 7->16->26->
+      // 67->118->180 leida de los fixtures copiados (Task 5 staging).
+      const expected = [
+        7, 7, 7, 16, 16, 16, 26, 26, 26, 67, 67, 67, 118, 118, 180,
+      ];
+      // Act
+      const arrowCounts = fixtures.map((fixture) => fixture.arrows.length);
+      // Assert
+      expect(arrowCounts).toEqual(expected);
+    });
   });
 
   describe('time limits', () => {
-    // Rampa back#32 (ADR 0003): se juega sin reloj hasta que la dificultad lo
-    // justifica. Orders 1..6 (6x8 y 10x12) van sin timeLimitSec; a partir del
-    // tier medio (order 7, 18x20) todos llevan cronometro alineado a 30s.
-    const untimed = fixtures.filter((f) => f.order <= 6);
-    const timed = fixtures.filter((f) => f.order >= 7);
+    // Rampa back#46 (reshape 9:16): TODOS los 15 niveles llevan reloj ahora.
+    // La rampa previa (back#32) dejaba las orders 1..6 sin timeLimitSec; esta
+    // reshape arranca el cronometro ya en el opener (30s) y escala por tier:
+    // 30,30,30,90,90,90,120,120,120,270,270,270,480,480,720.
+    const EXPECTED_TIME_LIMITS = [
+      30, 30, 30, 90, 90, 90, 120, 120, 120, 270, 270, 270, 480, 480, 720,
+    ];
 
-    it.each(untimed.map((f) => [f.levelId, f] as const))(
-      'should omit timeLimitSec on early level %s (orders 1..6)',
-      (_levelId, fixture) => {
-        // Assert
-        expect(fixture.timeLimitSec).toBeUndefined();
-      },
-    );
-
-    it.each(timed.map((f) => [f.levelId, f] as const))(
-      'should set a positive, 30s-aligned timeLimitSec on timed level %s (orders 7..15)',
+    it.each(fixtures.map((f) => [f.levelId, f] as const))(
+      'should set a positive, 30s-aligned timeLimitSec on every level %s',
       (_levelId, fixture) => {
         // Arrange
         const time = fixture.timeLimitSec;
@@ -196,17 +202,42 @@ describe('curated levels (back#10 seed fixtures)', () => {
       },
     );
 
-    it('should keep timeLimitSec non-decreasing across play order when both defined', () => {
-      // Act + Assert — los relojes crecen con la rampa (150 -> 390 -> 690 -> 930):
-      // para fixtures consecutivos con reloj, el posterior nunca es menor.
+    it('should match the exact per-tier timeLimitSec ramp', () => {
+      // Act
+      const timeLimits = fixtures.map((fixture) => fixture.timeLimitSec);
+      // Assert
+      expect(timeLimits).toEqual(EXPECTED_TIME_LIMITS);
+    });
+
+    it('should keep timeLimitSec non-decreasing across play order', () => {
+      // Act + Assert — los relojes crecen con la rampa; el posterior nunca es
+      // menor que el previo (ahora los 15 fixtures llevan reloj definido).
       for (let i = 1; i < fixtures.length; i++) {
-        const prev = fixtures[i - 1].timeLimitSec;
-        const curr = fixtures[i].timeLimitSec;
-        if (prev !== undefined && curr !== undefined) {
-          expect(curr).toBeGreaterThanOrEqual(prev);
-        }
+        const prev = fixtures[i - 1].timeLimitSec as number;
+        const curr = fixtures[i].timeLimitSec as number;
+        expect(curr).toBeGreaterThanOrEqual(prev);
       }
     });
+  });
+
+  describe('aspect band (back#46, 9:16 reshape)', () => {
+    // AspectBand vive en el front (Dart) como fuente de verdad —
+    // MazePruebaFront/lib/domain/arrows/value_objects/aspect_band.dart
+    // (minRatio 0.53, maxRatio 0.68, targetRatio 0.5625). Este repo no puede
+    // importar Dart, asi que la banda se restablece aqui como constante local
+    // documentada; mantener en sync manualmente si esa VO cambia.
+    const ASPECT_BAND = { min: 0.53, max: 0.68 } as const;
+
+    it.each(fixtures.map((f) => [f.levelId, f] as const))(
+      'should keep %s within the 9:16 aspect band [0.53, 0.68]',
+      (_levelId, fixture) => {
+        // Act
+        const ratio = fixture.cols / fixture.rows;
+        // Assert
+        expect(ratio).toBeGreaterThanOrEqual(ASPECT_BAND.min);
+        expect(ratio).toBeLessThanOrEqual(ASPECT_BAND.max);
+      },
+    );
   });
 
   // back#32 (QA brief): proxy sin DB para "npx prisma db seed" < 10 s.
