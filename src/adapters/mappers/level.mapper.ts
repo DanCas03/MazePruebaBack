@@ -1,42 +1,114 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import type { Level } from '../../domain/entities/level.entity';
 import type { ArrowId } from '../../domain/value-objects/arrow-id.vo';
 
-export interface ArrowDto {
-  id: string;
-  headDir: string;
-  cells: number[][];
-  // Rol de pintado (ADR 0004): solo en flechas de niveles temáticos con
-  // Instrucciones de pintado; dato opaco para la mecánica.
+export class ArrowDto {
+  @ApiProperty({
+    example: 'a1',
+    description: 'Arrow id, unique within the level',
+  })
+  id!: string;
+
+  @ApiProperty({
+    example: 'RIGHT',
+    description: 'Direction the arrow slides when tapped',
+  })
+  headDir!: string;
+
+  @ApiProperty({
+    example: [
+      [0, 0],
+      [0, 1],
+    ],
+    description: 'Cells the arrow occupies, each as [row, col]',
+    type: 'array',
+    items: { type: 'array', items: { type: 'number' } },
+  })
+  cells!: number[][];
+
+  @ApiPropertyOptional({
+    example: 'heart-fill',
+    description:
+      'Paint role (ADR 0004): only on arrows of themed levels with paint ' +
+      'instructions; opaque data for the mechanic.',
+  })
   paintRole?: string;
 }
 
 // Solución de un Level (back#19): el orden de ArrowId que vacía el tablero.
 // `solution` son ids planos, la lengua compartida del cable (CONTEXT-MAP.md);
 // ningún modelo de dominio cruza el HTTP.
-export interface SolutionResponseDto {
-  levelId: string;
-  solution: string[];
+export class SolutionResponseDto {
+  @ApiProperty({ example: 'level-07' })
+  levelId!: string;
+
+  @ApiProperty({
+    example: ['a3', 'a1', 'a2'],
+    description: 'Arrow ids in clearing order',
+    type: [String],
+  })
+  solution!: string[];
 }
 
-export interface LevelResponseDto {
-  levelId: string;
-  cols: number;
-  rows: number;
+export class LevelResponseDto {
+  @ApiProperty({ example: 'level-07' })
+  levelId!: string;
+
+  @ApiProperty({ example: 8 })
+  cols!: number;
+
+  @ApiProperty({ example: 8 })
+  rows!: number;
+
+  @ApiPropertyOptional({
+    example: 60,
+    description: 'Time limit in whole seconds, only present on timed levels',
+  })
   timeLimitSec?: number;
-  arrows: ArrowDto[];
-  // Paleta de roles de color (ADR 0004): rol -> hex #RRGGBB. Solo presente
-  // en niveles temáticos; el back la sirve como dato opaco (passthrough).
+
+  @ApiProperty({ type: [ArrowDto] })
+  arrows!: ArrowDto[];
+
+  @ApiPropertyOptional({
+    description:
+      'Color-role palette (ADR 0004): role -> hex #RRGGBB. Only present ' +
+      'on themed levels; served as opaque passthrough data.',
+    example: { 'heart-fill': '#E63946' },
+    type: 'object',
+    additionalProperties: { type: 'string' },
+  })
   palette?: Record<string, string>;
-  // Máscara de silueta (ADR 0004, back#53): región -> celdas de relleno
-  // [row, col]. Solo presente en niveles temáticos con figura; passthrough
-  // opaco, igual trato que palette.
+
+  @ApiPropertyOptional({
+    description:
+      'Figure silhouette mask (ADR 0004, back#53/#54): region -> fill ' +
+      'cells [row, col]. Only present on themed levels with a figure ' +
+      'mask; opaque passthrough, same treatment as palette.',
+    example: {
+      'heart-fill': [
+        [2, 3],
+        [2, 4],
+      ],
+    },
+    type: 'object',
+    additionalProperties: {
+      type: 'array',
+      items: { type: 'array', items: { type: 'number' } },
+    },
+  })
   silhouette?: Record<string, number[][]>;
 }
 
-export interface LevelSummaryDto {
-  levelId: string;
-  // Sección del catálogo (ADR 0004): 'campaign' | 'themed'.
-  section: string;
+export class LevelSummaryDto {
+  @ApiProperty({ example: 'level-07' })
+  levelId!: string;
+
+  @ApiProperty({
+    example: 'campaign',
+    enum: ['campaign', 'themed'],
+    description: 'Catalog section (ADR 0004)',
+  })
+  section!: string;
 }
 
 export class LevelMapper {
