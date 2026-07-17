@@ -97,4 +97,38 @@ describe('OpenAPI document (e2e)', () => {
     expect(res.type).toBe('text/html');
     expect(res.text.toLowerCase()).toContain('swagger');
   });
+
+  it('documents response schemas for every success status, including the newest features', async () => {
+    // Act
+    const res = await request(httpServer(app)).get('/api-json').expect(200);
+
+    // Assert
+    const doc = res.body as OpenApiDocument;
+    const schemaRefOf = (path: string, method: string, status: string) =>
+      JSON.stringify(doc.paths[path]?.[method]?.responses?.[status] ?? {});
+
+    // Themed silhouette/palette (ADR 0004, back#53/#54) and scoring/global
+    // leaderboard (ADR 0006) responses now carry a real schema, not just prose.
+    expect(schemaRefOf('/levels/{id}', 'get', '200')).toContain(
+      '#/components/schemas/LevelResponseDto',
+    );
+    expect(schemaRefOf('/scores', 'post', '201')).toContain(
+      '#/components/schemas/SubmitScoreResponseDto',
+    );
+    expect(schemaRefOf('/leaderboard', 'get', '200')).toContain(
+      '#/components/schemas/GlobalLeaderboardResponseDto',
+    );
+    expect(schemaRefOf('/auth/me', 'get', '200')).toContain(
+      '#/components/schemas/UserProfileResponseDto',
+    );
+    expect(schemaRefOf('/auth/register', 'post', '201')).toContain(
+      '#/components/schemas/TokenResponseDto',
+    );
+
+    // The themed passthrough fields must be part of the documented schema.
+    const levelSchema = doc.components.schemas.LevelResponseDto;
+    expect(Object.keys(levelSchema.properties)).toEqual(
+      expect.arrayContaining(['palette', 'silhouette', 'arrows']),
+    );
+  });
 });

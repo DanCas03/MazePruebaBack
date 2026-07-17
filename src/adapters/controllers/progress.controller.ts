@@ -31,7 +31,11 @@ export class ProgressController {
   @ApiOperation({
     summary: 'Sync player progress (completed levels + best scores)',
   })
-  @ApiResponse({ status: 201, description: 'Progress merged and persisted.' })
+  @ApiResponse({
+    status: 201,
+    description: 'Progress merged and persisted.',
+    type: [ProgressEntryResponseDto],
+  })
   @ApiResponse({ status: 400, description: 'Invalid progress payload.' })
   @ApiResponse({ status: 401, description: 'Missing or invalid bearer token.' })
   async syncProgress(
@@ -52,6 +56,7 @@ export class ProgressController {
   @ApiResponse({
     status: 200,
     description: 'Progress for the authenticated user.',
+    type: [ProgressEntryResponseDto],
   })
   @ApiResponse({ status: 401, description: 'Missing or invalid bearer token.' })
   async getProgress(
