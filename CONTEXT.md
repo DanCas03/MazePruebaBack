@@ -67,10 +67,14 @@ Instrucciones de pintado como datos.
 _Avoid_: nivel especial, skin.
 
 **Instrucciones de pintado**:
-Metadata visual opcional de un `Level`: paleta de roles de color + rol por flecha. El
-backend las guarda y sirve como datos opacos; no participan en la validación de solubilidad
-ni en la Solución.
-_Avoid_: tema, estilo, configuración de render.
+Metadata visual opcional de un `Level`: paleta de roles de color + rol por flecha. Desde
+front#114 / back#50 incluye además una **silueta** (`silhouette`: rol → celdas de región) —
+el relleno opaco que pinta la figura bajo las flechas donde ninguna flecha cubre la celda.
+El backend las guarda y sirve como datos opacos; no participan en la validación de
+solubilidad ni en la Solución — solo se valida su forma barata (rol conocido en la paleta,
+celdas dentro de límites), nunca su semántica visual.
+_Avoid_: tema, estilo, configuración de render, máscara (esa es la fuente de generación en
+el front — la silueta servida es su consecuencia de pintado, no la máscara misma).
 
 ### Cuenta y sesión
 

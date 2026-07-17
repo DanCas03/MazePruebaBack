@@ -72,3 +72,11 @@ The `t-smoke` hand-made placeholder was replaced by the 3 figures above
 (front#68). Each fixture is produced by `tool/level_production/produce_themed.dart`
 in MazePruebaFront, solvable by construction and re-certified here by
 `curated-levels.spec.ts` (LevelSolver + paint consistency).
+
+Since front#114 / back#50, each themed fixture also carries a `silhouette`
+(role → region cells) alongside `palette`: an opaque region fill painted
+*under* the arrows so the figure reads as a solid shape even where no arrow
+covers a cell. It travels on the wire the same way `palette` does — served as
+data, not consumed by `LevelSolver` — and is re-certified here (cheap
+structural check only): every `silhouette` role must exist in `palette`, and
+every cell must be within `cols`/`rows` bounds.
