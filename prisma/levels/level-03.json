@@ -2,37 +2,126 @@
   "levelId": "level-03",
   "order": 3,
   "cols": 6,
-  "rows": 8,
+  "rows": 10,
+  "timeLimitSec": 30,
   "arrows": [
     {
       "id": "arrow-0",
-      "headDir": "left",
-      "cells": [[1, 2], [0, 2]]
+      "headDir": "up",
+      "cells": [
+        [
+          4,
+          2
+        ],
+        [
+          3,
+          2
+        ]
+      ]
     },
     {
       "id": "arrow-1",
-      "headDir": "left",
-      "cells": [[4, 3], [5, 3], [5, 2]]
+      "headDir": "right",
+      "cells": [
+        [
+          6,
+          3
+        ],
+        [
+          6,
+          2
+        ],
+        [
+          5,
+          2
+        ]
+      ]
     },
     {
       "id": "arrow-2",
-      "headDir": "right",
-      "cells": [[1, 4], [1, 3], [2, 3]]
+      "headDir": "up",
+      "cells": [
+        [
+          5,
+          4
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          3,
+          4
+        ]
+      ]
     },
     {
       "id": "arrow-3",
-      "headDir": "right",
-      "cells": [[5, 4], [5, 5], [4, 5]]
+      "headDir": "up",
+      "cells": [
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          1,
+          2
+        ]
+      ]
     },
     {
       "id": "arrow-4",
-      "headDir": "up",
-      "cells": [[5, 0], [4, 0], [3, 0]]
+      "headDir": "right",
+      "cells": [
+        [
+          8,
+          5
+        ],
+        [
+          7,
+          5
+        ],
+        [
+          6,
+          5
+        ]
+      ]
     },
     {
       "id": "arrow-5",
       "headDir": "right",
-      "cells": [[4, 1], [4, 2], [3, 2]]
+      "cells": [
+        [
+          9,
+          3
+        ],
+        [
+          9,
+          4
+        ]
+      ]
+    },
+    {
+      "id": "arrow-6",
+      "headDir": "down",
+      "cells": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          1,
+          0
+        ]
+      ]
     }
   ]
 }
