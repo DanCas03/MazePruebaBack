@@ -892,3 +892,19 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - **Reseed pendiente**: `npm run db:seed` (prisma db seed) requiere una BD Postgres viva (Docker). No hay contenedor `maze-db` corriendo en este entorno, así que el reseed real lo ejecuta el equipo en Docker; los fixtures ya están certificados como sembrables.
 - README no modificado (sin endpoint ni contrato público nuevo; la sección temática ya existía por back#31/ADR 0004).
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 070 — feat(back/domain): opaque LevelSilhouette carrier on Level + builder (#53)
+
+**Fecha:** 2026-07-17
+**Tarea o problema abordado:** Task 8 del plan cruzado de niveles temáticos con figura (corazón, cara feliz, conejo): añadir al dominio backend el portador opaco `LevelSilhouette`, primer paso del wire field `silhouette` que viajará al cliente. Mismo trato que `LevelPaint` (ADR 0004) — el dominio no valida ni interpreta la máscara; la validación de forma llega en una tarea posterior (seed).
+**Herramienta de IA utilizada:** Claude Code (Sonnet 5) — rol `backend-architect` (skill arrowmaze-backend).
+**Prompt o instrucción proporcionada:** > "Task 8 del plan SDD themed-masked-board-redesign: añade el 7º parámetro opcional `silhouette` a `Level` (tras `paint`) y `LevelBuilder.withSilhouette`, portador opaco sin validación, espejo exacto de `paint`. TDD: tests primero, FAIL, implementar, PASS."
+**Resultado obtenido:**
+- `src/domain/entities/level.entity.ts`: nuevo tipo exportado `LevelSilhouette = Readonly<Record<string, ReadonlyArray<readonly [number, number]>>>` (clave = nombre de región, valor = celdas `[row, col]` de relleno), con comentario en el mismo espíritu que `LevelPaint` explicando la decisión de portador opaco. `Level` gana el 7º parámetro posicional opcional `silhouette?: LevelSilhouette`, inmediatamente después de `paint`, sin ninguna validación añadida al constructor.
+- `src/domain/entities/level.builder.ts`: `LevelBuilder` gana `private silhouette?: LevelSilhouette`, `withSilhouette(silhouette?: LevelSilhouette): this` (passthrough puro, mismo comentario de portador opaco que `withPaint`), y `build()` propaga `this.silhouette` como 7º argumento posicional al constructor de `Level`.
+- `src/domain/entities/level.entity.spec.ts`: nuevo caso `should carry silhouette as opaque data without validating its content, leaving it undefined when omitted (task 8)` — construye un `Level` con silhouette arbitrario (`{ heart: [[0,0],[0,1]]] }`) y otro sin él, afirma que el primero lo expone tal cual (`toEqual`) y el segundo lo deja `undefined`.
+- `src/domain/entities/level.builder.spec.ts`: nuevo `describe('withSilhouette')` con dos casos — silhouette queda `undefined` cuando nunca se fija, y `build()` propaga el silhouette fijado sin tocarlo.
+- TDD verificado: ambos specs nuevos fallaron primero (`TypeError: withSilhouette is not a function` y `Received: undefined`), luego pasaron tras la implementación.
+- Verificación: `npm test` → 57 test suites / 425 tests, todos verdes. `npm run lint:check` → 0 errores, 28 warnings preexistentes (`no-unsafe-argument` en módulos NestJS y specs, sin relación con este cambio). `npm run build` → sin salida, exit 0.
+- README no modificado (sin contrato público nuevo; `silhouette` todavía no viaja al wire — eso llega en la tarea del read-path).
+**Modificaciones realizadas por el equipo:** (completar manualmente)

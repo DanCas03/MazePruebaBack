@@ -17,6 +17,16 @@ export interface LevelPaint {
   readonly roles: Readonly<Record<string, string>>;
 }
 
+// Máscara de silueta temática (ADR 0004, back#53): celdas de relleno de cada
+// región de la figura, clave = nombre de región, valor = lista de pares
+// [row, col]. Es un PORTADOR OPACO como LevelPaint: el dominio no lo valida
+// ni lo interpreta — LevelSolver y LevelBuilder lo ignoran. La única
+// verificación de forma vive en el seed, la frontera donde entran los
+// fixtures.
+export type LevelSilhouette = Readonly<
+  Record<string, ReadonlyArray<readonly [number, number]>>
+>;
+
 // Definición de nivel arrow-path (ADR 0001, wire contract en CONTEXT-MAP.md):
 // el backend guarda y sirve el nivel como DATOS; la mecánica corre en el
 // cliente. timeLimitSec obligatorio (ADR 0006, back scoring): límite de
@@ -43,6 +53,7 @@ export class Level {
     readonly timeLimitSec: number,
     readonly section: LevelSection = 'campaign',
     readonly paint?: LevelPaint,
+    readonly silhouette?: LevelSilhouette,
   ) {
     if (!Number.isInteger(timeLimitSec) || timeLimitSec < 1) {
       throw new InvalidLevelException(

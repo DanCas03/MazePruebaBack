@@ -200,4 +200,37 @@ describe('LevelBuilder', () => {
       expect(levelFromUnknown.section).toBe('campaign');
     });
   });
+
+  // Task 8: silhouette como dato opaco (espejo de withPaint) — la forma de
+  // la figura se valida en el seed, no aquí.
+  describe('withSilhouette', () => {
+    const minimalBuilder = () =>
+      new LevelBuilder(new LevelId('t-smoke'))
+        .withDimensions(COLS, ROWS)
+        .addArrow(bentArrowA1);
+
+    it('should leave silhouette undefined when never set', () => {
+      // Arrange
+      const sut = minimalBuilder();
+      // Act
+      const level = sut.build();
+      // Assert
+      expect(level.silhouette).toBeUndefined();
+    });
+
+    it('should build a Level carrying the silhouette metadata untouched', () => {
+      // Arrange
+      const silhouette = {
+        heart: [
+          [0, 0],
+          [0, 1],
+        ] as [number, number][],
+      };
+      const sut = minimalBuilder().withSilhouette(silhouette);
+      // Act
+      const level = sut.build();
+      // Assert
+      expect(level.silhouette).toEqual(silhouette);
+    });
+  });
 });
