@@ -14,7 +14,13 @@ const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
 // desacopla el validador de la forma completa del LevelFixture del seed.
 export interface PaintFixtureShape {
   levelId: string;
+  cols?: number;
+  rows?: number;
   palette?: Record<string, string>;
+  // silhouette: dato opaco de dominio (celda de máscara por rol temático).
+  // El back solo valida forma barata — igual que palette/paintRole — nunca
+  // semántica visual.
+  silhouette?: Record<string, [number, number][]>;
   arrows: { id: string; paintRole?: string }[];
 }
 
@@ -51,6 +57,31 @@ export function validateLevelPaint(fixture: PaintFixtureShape): void {
           `paintRole '${arrow.paintRole}' missing from the palette — ` +
           `refusing to seed.`,
       );
+    }
+  }
+
+  if (fixture.silhouette) {
+    const roles = new Set(Object.keys(fixture.palette ?? {}));
+    for (const [role, cells] of Object.entries(fixture.silhouette)) {
+      if (!roles.has(role)) {
+        throw new Error(
+          `Level ${fixture.levelId}: silhouette role '${role}' is not in ` +
+            `the palette — refusing to seed.`,
+        );
+      }
+      for (const [row, col] of cells) {
+        if (
+          row < 0 ||
+          row >= (fixture.rows ?? 0) ||
+          col < 0 ||
+          col >= (fixture.cols ?? 0)
+        ) {
+          throw new Error(
+            `Level ${fixture.levelId}: silhouette cell [${row},${col}] for ` +
+              `role '${role}' is out of bounds — refusing to seed.`,
+          );
+        }
+      }
     }
   }
 }

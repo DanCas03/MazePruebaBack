@@ -87,4 +87,48 @@ describe('validateLevelPaint', () => {
     // Assert
     expect(act).toThrow(/malformed/);
   });
+
+  it('should throw when a silhouette role is not in the palette', () => {
+    // Arrange
+    const fixture = themedFixture({
+      cols: 4,
+      rows: 4,
+      silhouette: { fantasma: [[0, 0]] },
+    });
+    // Act
+    const act = () => validateLevelPaint(fixture);
+    // Assert
+    expect(act).toThrow(/silhouette/i);
+  });
+
+  it('should throw when a silhouette cell is out of bounds', () => {
+    // Arrange
+    const fixture = themedFixture({
+      cols: 4,
+      rows: 4,
+      silhouette: { cara: [[9, 9]] },
+    });
+    // Act
+    const act = () => validateLevelPaint(fixture);
+    // Assert
+    expect(act).toThrow(/bounds|silhouette/i);
+  });
+
+  it('should accept a well-formed silhouette whose roles exist in the palette and cells are in bounds', () => {
+    // Arrange
+    const fixture = themedFixture({
+      cols: 4,
+      rows: 4,
+      silhouette: {
+        cara: [
+          [0, 0],
+          [0, 1],
+        ],
+      },
+    });
+    // Act
+    const act = () => validateLevelPaint(fixture);
+    // Assert
+    expect(act).not.toThrow();
+  });
 });

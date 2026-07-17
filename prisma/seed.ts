@@ -24,6 +24,10 @@ interface LevelFixture {
   rows: number;
   timeLimitSec?: number;
   palette?: Record<string, string>;
+  // silhouette: máscara opaca por rol temático (celdas [row,col] de la
+  // región); el back solo valida forma (roles ⊆ palette, in-bounds) — ver
+  // validateLevelPaint. Nunca interpreta la semántica visual.
+  silhouette?: Record<string, [number, number][]>;
   arrows: (ArrowPrimitives & { paintRole?: string })[];
 }
 
@@ -77,8 +81,8 @@ function validate(fixture: LevelFixture): void {
 // Forma persistida en Level.data (CONTEXT-MAP.md, wire contract). Excluye
 // levelId/order/section a propósito: son columnas de tabla, no van dentro de
 // `data`, o PrismaLevelRepository.toDomain leería una forma equivocada.
-// palette y paintRole (dentro de cada arrow) SÍ van en data: son parte del
-// JSON del nivel que el repositorio iza al portador paint (ADR 0004).
+// palette, paintRole (dentro de cada arrow) y silhouette SÍ van en data: son
+// parte del JSON del nivel que el repositorio iza al portador paint (ADR 0004).
 function toData(fixture: LevelFixture): Prisma.InputJsonValue {
   return {
     cols: fixture.cols,
@@ -87,6 +91,9 @@ function toData(fixture: LevelFixture): Prisma.InputJsonValue {
       ? { timeLimitSec: fixture.timeLimitSec }
       : {}),
     ...(fixture.palette !== undefined ? { palette: fixture.palette } : {}),
+    ...(fixture.silhouette !== undefined
+      ? { silhouette: fixture.silhouette }
+      : {}),
     // Los fixtures son JSON por construcción; el cast salva solo la fricción
     // de tipos entre la interfaz ArrowPrimitives y el JSON de entrada de Prisma.
     arrows: fixture.arrows as unknown as Prisma.InputJsonArray,
