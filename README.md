@@ -5,9 +5,10 @@
 ![Prisma](https://img.shields.io/badge/Prisma-6-2D3748?logo=prisma&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-database-4169E1?logo=postgresql&logoColor=white)
 [![CI](https://github.com/DanCas03/MazePruebaBack/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/DanCas03/MazePruebaBack/actions/workflows/ci.yml)
+![Tests](https://img.shields.io/badge/tests-unit%20%2B%20e2e-brightgreen)
 ![License](https://img.shields.io/badge/license-UNLICENSED-lightgrey)
 
-> The CI badge reflects the [GitHub Actions workflow](.github/workflows/ci.yml) on `main`: ESLint, the full Jest suite, and `nest build` run on every pull request; see [Contributing](#contributing).
+> The CI badge reflects the [GitHub Actions workflow](.github/workflows/ci.yml) on `main`: ESLint, the full Jest unit suite, the e2e suite, and `nest build` run on every pull request; see [Contributing](#contributing).
 
 REST API for **Arrow Maze**, a casual mobile puzzle game. It handles user registration and authentication with JWT, score submission with per-level leaderboards, and cross-device progress sync; serving arrow-path puzzle levels to the Flutter client returns with back#5 (see ADR 0001). The codebase is a study in **Clean Architecture**: the business rules sit in a framework-free core, and NestJS, Prisma, and JWT live at the edges as replaceable details.
 
@@ -33,20 +34,46 @@ shared/aspects/      LoggingInterceptor + DomainExceptionFilter (AOP, cross-cutt
 
 Why it is organized this way: the inner layers state *what* the system does, the outer layers decide *how*. You can swap Prisma for another ORM, or NestJS for another HTTP framework, by rewriting the outer layers; the use cases and domain rules never change. The litmus test is enforced in code: `grep @nestjs src/application src/domain` returns nothing.
 
+### Diagrams
+
+[`docs/diagrams/class-diagram.png`](docs/diagrams/class-diagram.png) — class diagram of the main entities, use cases, ports, and adapters, color-coded by Clean Architecture layer (Adapters / Application / Infrastructure / Domain / Shared-Aspects), with the GoF patterns from the table below called out inline:
+
+![Class diagram](docs/diagrams/class-diagram.png)
+
 ## Design Patterns
 
-Patterns are used where they solve a concrete problem, and each one carries an inline comment explaining why it exists.
+Gang of Four patterns, distributed across the three classic categories. Each carries an inline comment at its source explaining why it exists.
+
+### Creational
 
 | Pattern | Where | Problem it solves |
 |---|---|---|
 | **Factory Method** | [`arrow.factory.ts`](src/domain/entities/arrow.factory.ts) | Guards the primitives→domain boundary: raw arrow-path JSON (`{ id, headDir, cells }`) becomes a validated `Arrow` — direction parsed case-insensitively, cell shape checked — failing with domain exceptions so no invalid arrow ever enters the system. |
 | **Builder** | [`level.builder.ts`](src/domain/entities/level.builder.ts) | Assembles a `Level` from raw arrow-path JSON via a fluent step-by-step API (`withDimensions`/`withTimeLimit`/`addArrow`/`build`), delegating per-arrow parsing to `ArrowFactory` and board invariants to `Level` itself — separates the multi-step assembly process from the validated result. |
-| **Template Method** | [`board-space.ts`](src/domain/space/board-space.ts) | Concentrates board geometry behind one seam (ADR 0005): `step` is the only primitive a space defines; `areAdjacent` and `exitLane` derive from it in the abstract base, so a new geometry (holed, 3D) redefines "one step" and every consumer — `Level` validation, `LevelSolver` lanes — works unchanged. `RectSpace` holds the artifact's single direction→delta switch. |
+
+### Structural
+
+| Pattern | Where | Problem it solves |
+|---|---|---|
 | **Adapter** | [`nest-logger.adapter.ts`](src/infrastructure/logger/nest-logger.adapter.ts), [`jwt-token.service.ts`](src/infrastructure/security/jwt-token.service.ts), [`bcrypt-hash.service.ts`](src/infrastructure/security/bcrypt-hash.service.ts) | Wraps concrete libraries (NestJS `Logger`, `@nestjs/jwt`, `bcryptjs`) behind application ports, so the core never imports them directly. |
-| **Strategy (Passport)** | [`jwt.strategy.ts`](src/infrastructure/security/jwt.strategy.ts) | Encapsulates the JWT validation algorithm as a swappable Passport strategy reading its secret from `ConfigService`. |
-| **Dependency Injection / Composition Root** | [`auth.module.ts`](src/adapters/auth.module.ts) | `useFactory` instantiates framework-free use cases with their ports, keeping construction out of the business code. |
-| **Interceptor (AOP)** | [`logging.interceptor.ts`](src/shared/aspects/logging.interceptor.ts) | Logs every request/response around the handler without touching handlers. |
-| **Exception Filter (AOP)** | [`domain-exception.filter.ts`](src/shared/aspects/domain-exception.filter.ts) | Translates domain exceptions to HTTP status codes in one place. |
+
+### Behavioral
+
+| Pattern | Where | Problem it solves |
+|---|---|---|
+| **Template Method** | [`board-space.ts`](src/domain/space/board-space.ts) | Concentrates board geometry behind one seam (ADR 0005): `step` is the only primitive a space defines; `areAdjacent` and `exitLane` derive from it in the abstract base, so a new geometry (holed, 3D) redefines "one step" and every consumer — `Level` validation, `LevelSolver` lanes — works unchanged. `RectSpace` holds the artifact's single direction→delta switch. |
+| **Strategy** | [`jwt.strategy.ts`](src/infrastructure/security/jwt.strategy.ts) | `JwtStrategy` encapsulates the JWT validation algorithm as a swappable Passport strategy (selected by `JwtAuthGuard` via the `'jwt'` key), reading its secret from `ConfigService` so the mechanism can be swapped without touching the guard or controllers. |
+
+### Other patterns & mechanisms (not GoF)
+
+Real and worth documenting, but not counted toward the GoF total above:
+
+- **Dependency Injection / Composition Root** — [`auth.module.ts`](src/adapters/auth.module.ts) and the other feature modules — `useFactory` instantiates framework-free use cases with their ports, keeping construction out of the business code.
+- **Interceptor** (AOP) — [`logging.interceptor.ts`](src/shared/aspects/logging.interceptor.ts) — logs every request/response around the handler without touching handlers; documented in full under [AOP — Cross-Cutting Concerns](#aop--cross-cutting-concerns).
+- **Exception Filter** (AOP) — [`domain-exception.filter.ts`](src/shared/aspects/domain-exception.filter.ts) — translates domain exceptions to HTTP status codes via a lookup map in one place.
+- **Repository** (Fowler/PoEAA, not GoF) — the `Prisma*Repository` adapters realizing each application port over Prisma.
+
+Each use case's single `execute()` method is *not* claimed as a GoF Command here, despite that framing appearing in early design notes: Command requires a shared command interface an Invoker can hold, queue, or undo generically, and none of that exists — there is no common interface across use cases (each `execute()` has its own signature), no invoker, and no undo. This is the Clean Architecture Use Case / Interactor idiom, which conventionally names its method `execute()` — a naming coincidence with Command, not a structural instance of it.
 
 ## SOLID Principles
 
@@ -276,18 +303,18 @@ npm run test:cov    # with coverage
 npm run test:e2e    # end-to-end HTTP contract against mocked Prisma (error body, OpenAPI, solution, CORS)
 ```
 
-Unit tests isolate the unit under test by mocking its ports, so the suite runs without a real database.
+Unit tests isolate the unit under test by mocking its ports, so the suite runs without a real database (58 spec files, one per production file across all four layers). The e2e suite (7 `*.e2e-spec.ts` files under `test/`) bootstraps the full Nest app with `PrismaService` mocked and drives it with `supertest` — an HTTP-contract-level check, not a live-database or live-client integration test. There is no consumer-driven contract testing (Pact) against the Flutter client yet; the client/server JSON shape is instead pinned by the e2e suite on this side and by the front's own repository-mapping tests on the other, a gap the spec lists as recommended rather than required.
 
 ## AI Usage Documentation
 
-This codebase was built with AI assistance (Claude Code), and every significant fragment is logged in [`AI_HISTORY.MD`](AI_HISTORY.MD) at the repository root. Each entry records the task, the tool used, the prompt, the resulting design decisions, and a field reserved for manual edits by the team. Read that file to trace how — and why — each module came to exist, sublote by sublote, from project setup through the auth backend.
+This codebase was built with AI assistance (Claude Code). [`AI_USAGE.md`](AI_USAGE.md) is the course-required summary: tools and roles used, a curated log of the most significant tasks (prompt, result, team modifications, lessons learned), and a critical evaluation (approximate share of AI-assisted code, concrete cases where the AI was wrong and how that was caught, and a team reflection). The complete fragment-by-fragment ledger — every significant change, in commit order — lives in [`AI_HISTORY.MD`](AI_HISTORY.MD).
 
 ## Contributing
 
 - **Commits** follow [Conventional Commits](https://www.conventionalcommits.org/): `<type>(<scope>): <description>` in the imperative present, one significant fragment per commit (for example, `feat(back/application): add LoginUseCase`).
 - **Branching**: feature work happens on a `feat/<name>` branch cut from `main`; this milestone lives on `feat/main-sprint`.
-- **Pull requests**: open a PR against `main`, ensure `npm test` and `npm run build` are green, and update `AI_HISTORY.MD` (and this README when public behavior changes) as part of the change.
-- **CI**: every pull request runs the [`CI` workflow](.github/workflows/ci.yml) (`npm run lint:check` + `npm test` + `npm run build` on Node 22); merging to `main` requires the `CI / lint · test · build` check to be green (branch protection is configured in Settings → Branches). Run the same three commands locally to reproduce the gate.
+- **Pull requests**: open a PR against `main`, ensure `npm test`, `npm run test:e2e` and `npm run build` are green, and update `AI_HISTORY.MD` (and this README when public behavior changes) as part of the change.
+- **CI**: every pull request runs the [`CI` workflow](.github/workflows/ci.yml) (`npm run lint:check` + `npm test` + `npm run test:e2e` + `npm run build` on Node 22); merging to `main` requires the `CI / lint · test · build` check to be green (branch protection is configured in Settings → Branches). Run the same four commands locally to reproduce the gate.
 
 ## License
 
