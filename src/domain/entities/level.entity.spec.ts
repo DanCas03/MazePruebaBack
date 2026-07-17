@@ -113,6 +113,36 @@ describe('Level', () => {
       expect(sut.paint).toEqual(paint);
     });
 
+    it('should carry silhouette as opaque data without validating its content, leaving it undefined when omitted (task 8)', () => {
+      // Arrange — silhouette deliberadamente arbitrario: el dominio no lo interpreta.
+      const arrows = [bentArrowA1(), straightArrowA2()];
+      const silhouette = {
+        heart: [
+          [0, 0],
+          [0, 1],
+        ] as [number, number][],
+      };
+      // Act
+      const withSilhouette = new Level(
+        new LevelId('t-smoke'),
+        new RectSpace(COLS, ROWS),
+        arrows,
+        90,
+        'themed',
+        undefined,
+        silhouette,
+      );
+      const withoutSilhouette = new Level(
+        new LevelId('level-001'),
+        new RectSpace(COLS, ROWS),
+        arrows,
+        90,
+      );
+      // Assert
+      expect(withSilhouette.silhouette).toEqual(silhouette);
+      expect(withoutSilhouette.silhouette).toBeUndefined();
+    });
+
     it('should create a degenerate level when arrows is empty — the brief does not forbid it', () => {
       // Arrange
       const arrows: Arrow[] = [];

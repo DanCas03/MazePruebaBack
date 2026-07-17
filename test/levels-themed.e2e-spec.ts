@@ -28,6 +28,21 @@ describe('Themed section and paint wire (e2e)', () => {
       cols: 6,
       rows: 6,
       palette: { cara: '#FBBF24', ojo: '#1E293B' },
+      // Máscara de silueta (ADR 0004, back#53): región -> celdas de relleno.
+      silhouette: {
+        ojo: [
+          [1, 1],
+          [1, 2],
+          [1, 3],
+          [1, 4],
+        ],
+        cara: [
+          [4, 1],
+          [4, 2],
+          [4, 3],
+          [4, 4],
+        ],
+      },
       arrows: [
         {
           id: 'a1',
@@ -165,7 +180,7 @@ describe('Themed section and paint wire (e2e)', () => {
   });
 
   describe('GET /levels/:id (themed level with paint instructions)', () => {
-    it('round-trips palette and per-arrow paintRole intact', async () => {
+    it('round-trips palette, per-arrow paintRole and silhouette intact (#53)', async () => {
       // Arrange
       prisma.level.findUnique.mockResolvedValue(themedRecord);
 
@@ -184,6 +199,20 @@ describe('Themed section and paint wire (e2e)', () => {
         rows: 6,
         timeLimitSec: 30,
         palette: { cara: '#FBBF24', ojo: '#1E293B' },
+        silhouette: {
+          ojo: [
+            [1, 1],
+            [1, 2],
+            [1, 3],
+            [1, 4],
+          ],
+          cara: [
+            [4, 1],
+            [4, 2],
+            [4, 3],
+            [4, 4],
+          ],
+        },
         arrows: [
           {
             id: 'a1',
@@ -218,7 +247,7 @@ describe('Themed section and paint wire (e2e)', () => {
       });
     });
 
-    it('keeps the campaign wire free of palette and paintRole keys (no semantics change)', async () => {
+    it('keeps the campaign wire free of palette, paintRole and silhouette keys (no semantics change)', async () => {
       // Arrange
       prisma.level.findUnique.mockResolvedValue(legacyCampaignRecord);
 
@@ -229,6 +258,7 @@ describe('Themed section and paint wire (e2e)', () => {
 
       // Assert
       expect(res.body).not.toHaveProperty('palette');
+      expect(res.body).not.toHaveProperty('silhouette');
       const arrows = (res.body as { arrows: object[] }).arrows;
       arrows.forEach((arrow) => {
         expect(arrow).not.toHaveProperty('paintRole');

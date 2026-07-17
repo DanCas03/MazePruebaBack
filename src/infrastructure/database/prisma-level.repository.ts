@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 import type { ILevelRepository } from '../../application/ports/i-level.repository';
 import { Level } from '../../domain/entities/level.entity';
+import type { LevelSilhouette } from '../../domain/entities/level.entity';
 import { LevelBuilder } from '../../domain/entities/level.builder';
 import { LevelId } from '../../domain/value-objects/level-id.vo';
 import type { ArrowPrimitives } from '../../domain/entities/arrow.factory';
@@ -24,11 +25,14 @@ type StoredArrowPrimitives = ArrowPrimitives & { paintRole?: string };
 
 // Forma cruda del JSON arrow-path guardado en Level.data (CONTEXT-MAP.md).
 // `palette` solo aparece en niveles temáticos con Instrucciones de pintado.
+// `silhouette` (back#53) solo aparece en niveles temáticos con máscara de
+// figura; misma forma que el portador opaco LevelSilhouette del dominio.
 interface LevelDataPrimitives {
   cols: number;
   rows: number;
   timeLimitSec?: number;
   palette?: Record<string, string>;
+  silhouette?: LevelSilhouette;
   arrows: StoredArrowPrimitives[];
 }
 
@@ -65,7 +69,10 @@ export class PrismaLevelRepository implements ILevelRepository {
       // límite curado disponible para estos registros todavía.
       .withTimeLimit(data.timeLimitSec)
       .withSection(record.section)
-      .withPaint(PrismaLevelRepository.toPaint(data));
+      .withPaint(PrismaLevelRepository.toPaint(data))
+      // Portador opaco de máscara de silueta (back#53): passthrough directo,
+      // igual trato que paint — undefined si el JSON no la trae.
+      .withSilhouette(data.silhouette);
     data.arrows.forEach((raw) => builder.addArrow(raw));
     return builder.build();
   }

@@ -117,7 +117,7 @@ bootstrap from the controllers' decorators via `DocumentBuilder` (`src/app.setup
 | POST   | `/auth/login`         | No   | Authenticate a user; returns a JWT   |
 | GET    | `/auth/me`            | Yes  | Return the authenticated user's basic profile (`id`, `username`, `email`) |
 | GET    | `/levels`             | No   | List the level catalog with each level's `section`: campaign in play order, then themed by id |
-| GET    | `/levels/:id`         | No   | Get a level as arrow-path JSON; themed levels carry opaque paint instructions (`palette` + per-arrow `paintRole`) |
+| GET    | `/levels/:id`         | No   | Get a level as arrow-path JSON; themed levels carry opaque paint instructions (`palette` + per-arrow `paintRole`) and an opaque figure mask (`silhouette`) |
 | GET    | `/levels/:id/solution` | No  | Clearing Solution for a level: arrow ids in removal order (422 if unsolvable) |
 | POST   | `/scores`             | Yes  | Submit a completed run's metrics; the back derives the canonical `score`/`stars` (404 if the level does not exist) |
 | GET    | `/leaderboard`        | Yes  | Global player ranking: best-per-level campaign totals, `{top, me}` (`me` = requesting user's row or `null`) |
@@ -125,7 +125,7 @@ bootstrap from the controllers' decorators via `DocumentBuilder` (`src/app.setup
 | POST   | `/progress`           | Yes  | Sync completed levels + best scores (merges, never degrades) |
 | GET    | `/progress`           | Yes  | Get the authenticated user's progress |
 
-> The `order` on a `Level` record is an explicit, curatable sequence (not insertion order) — the curated 15-level seed (back#10) controls it directly. Since back#31 (ADR 0004) `order` is nullable and a `section` column splits the catalog: **campaign** levels keep the contiguous play order, **themed** levels (figure boards) have no play order and are listed after the campaign, sorted by id. Paint metadata is opaque to the backend: it never affects mechanics, solvability, or the Solution.
+> The `order` on a `Level` record is an explicit, curatable sequence (not insertion order) — the curated 15-level seed (back#10) controls it directly. Since back#31 (ADR 0004) `order` is nullable and a `section` column splits the catalog: **campaign** levels keep the contiguous play order, **themed** levels (figure boards) have no play order and are listed after the campaign, sorted by id. Paint metadata and the `silhouette` figure mask (back#53) are opaque to the backend: neither affects mechanics, solvability, or the Solution.
 
 ```jsonc
 // POST /auth/register → 201
@@ -153,12 +153,15 @@ bootstrap from the controllers' decorators via `DocumentBuilder` (`src/app.setup
 }
 // GET /levels/:id → 200 for a THEMED level (ADR 0004): same contract plus
 // opaque paint instructions — a root palette (role → #RRGGBB) and an
-// optional paintRole per arrow. They do not affect mechanics or solvability.
+// optional paintRole per arrow — and, since back#53, an opaque root
+// silhouette (region → fill cells [row, col]) describing the figure mask.
+// None of these affect mechanics or solvability.
 {
   "levelId": "t-smoke",
   "cols": 6,
   "rows": 6,
   "palette": { "cara": "#FBBF24", "ojo": "#1E293B" },
+  "silhouette": { "ojo": [[1, 1], [1, 2]], "cara": [[4, 1], [4, 2]] },
   "arrows": [
     { "id": "a1", "headDir": "up", "cells": [[1, 1], [1, 2]], "paintRole": "ojo" }
   ]

@@ -1,4 +1,9 @@
-import { Level, LevelPaint, LevelSection } from './level.entity';
+import {
+  Level,
+  LevelPaint,
+  LevelSection,
+  LevelSilhouette,
+} from './level.entity';
 import { Arrow } from './arrow.entity';
 import { ArrowFactory, ArrowPrimitives } from './arrow.factory';
 import { LevelId } from '../value-objects/level-id.vo';
@@ -17,6 +22,7 @@ export class LevelBuilder {
   private timeLimitSec?: number;
   private section: LevelSection = 'campaign';
   private paint?: LevelPaint;
+  private silhouette?: LevelSilhouette;
   private readonly arrows: Arrow[] = [];
 
   constructor(private readonly id: LevelId) {}
@@ -47,6 +53,14 @@ export class LevelBuilder {
     return this;
   }
 
+  // Portador opaco de la máscara de silueta (back#53): passthrough sin
+  // validación — mismo trato que withPaint. La verificación de forma es
+  // responsabilidad del seed, no del dominio.
+  withSilhouette(silhouette?: LevelSilhouette): this {
+    this.silhouette = silhouette;
+    return this;
+  }
+
   addArrow(raw: ArrowPrimitives): this {
     this.arrows.push(ArrowFactory.create(raw));
     return this;
@@ -72,6 +86,7 @@ export class LevelBuilder {
       timeLimitSec,
       this.section,
       this.paint,
+      this.silhouette,
     );
   }
 }

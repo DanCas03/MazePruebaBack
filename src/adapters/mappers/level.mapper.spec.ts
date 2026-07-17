@@ -1,6 +1,9 @@
 import { LevelMapper } from './level.mapper';
 import { Level } from '../../domain/entities/level.entity';
-import type { LevelPaint } from '../../domain/entities/level.entity';
+import type {
+  LevelPaint,
+  LevelSilhouette,
+} from '../../domain/entities/level.entity';
 import { Arrow } from '../../domain/entities/arrow.entity';
 import { LevelId } from '../../domain/value-objects/level-id.vo';
 import { ArrowId } from '../../domain/value-objects/arrow-id.vo';
@@ -46,6 +49,28 @@ describe('LevelMapper', () => {
       90,
       'themed',
       themedPaint(),
+    );
+
+  const themedSilhouette = (): LevelSilhouette => ({
+    cara: [
+      [3, 4],
+      [3, 5],
+    ],
+    ojo: [
+      [5, 0],
+      [5, 1],
+    ],
+  });
+
+  const themedLevelWithSilhouette = () =>
+    new Level(
+      new LevelId('t-smiley'),
+      new RectSpace(20, 20),
+      [arrowA1(), arrowA2()],
+      90,
+      'themed',
+      themedPaint(),
+      themedSilhouette(),
     );
 
   describe('toSummaryDto', () => {
@@ -113,6 +138,34 @@ describe('LevelMapper', () => {
       expect(dto.arrows).toHaveLength(2);
       expect(dto.arrows[1].id).toBe('a2');
       expect(dto.arrows[1].headDir).toBe('right');
+    });
+
+    it('should omit silhouette entirely when the level has no silhouette carrier (#53)', () => {
+      // Arrange — nivel temático CON paint pero sin silhouette (retro-compat
+      // de temáticos previos a back#53).
+      const level = themedLevel();
+      // Act
+      const dto = LevelMapper.toDto(level);
+      // Assert
+      expect(dto).not.toHaveProperty('silhouette');
+    });
+
+    it('should pass silhouette through intact for a themed level (deep equality round-trip, #53)', () => {
+      // Arrange
+      const level = themedLevelWithSilhouette();
+      // Act
+      const dto = LevelMapper.toDto(level);
+      // Assert
+      expect(dto.silhouette).toEqual({
+        cara: [
+          [3, 4],
+          [3, 5],
+        ],
+        ojo: [
+          [5, 0],
+          [5, 1],
+        ],
+      });
     });
   });
 });
