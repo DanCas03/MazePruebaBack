@@ -5,6 +5,7 @@ import { LevelBuilder } from '../src/domain/entities/level.builder';
 import { LevelSolver } from '../src/domain/services/level-solver';
 import { LevelId } from '../src/domain/value-objects/level-id.vo';
 import { validateLevelPaint } from '../src/infrastructure/database/level-paint.validator';
+import { validateLevelSilhouette } from '../src/infrastructure/database/level-silhouette.validator';
 import type { ArrowPrimitives } from '../src/domain/entities/arrow.factory';
 
 // Seed del catálogo de niveles: los 15 curados de campaña (back#10, ADR 0001
@@ -15,7 +16,8 @@ import type { ArrowPrimitives } from '../src/domain/entities/arrow.factory';
 //
 // Campaña: order contiguo 1..15, sin section (default campaign).
 // Temáticos: section "themed", sin order (null en la tabla), con
-// Instrucciones de pintado opcionales (palette + paintRole por flecha).
+// Instrucciones de pintado opcionales (palette + paintRole por flecha) y
+// máscara de silueta opcional (silhouette, back#53).
 interface LevelFixture {
   levelId: string;
   order?: number;
@@ -24,6 +26,7 @@ interface LevelFixture {
   rows: number;
   timeLimitSec?: number;
   palette?: Record<string, string>;
+  silhouette?: Record<string, number[][]>;
   arrows: (ArrowPrimitives & { paintRole?: string })[];
 }
 
@@ -58,7 +61,9 @@ function loadFixtures(): LevelFixture[] {
 // y de flecha— y exige que LevelSolver lo declare soluble. La invariante
 // aplica igual a los temáticos (ADR 0004: son Level como cualquier otro).
 // Además, chequeo barato de las Instrucciones de pintado (roles existentes,
-// hex #RRGGBB) — la única validación de esa metadata en todo el back.
+// hex #RRGGBB) y de la máscara de silueta (regiones con palette, celdas
+// in-bounds sin duplicar ni solapar, flechas dentro de la unión) — la única
+// validación de esa metadata en todo el back.
 // Lanza a la primera violación para no sembrar jamás un lote inválido.
 function validate(fixture: LevelFixture): void {
   const builder = new LevelBuilder(new LevelId(fixture.levelId))
@@ -72,6 +77,7 @@ function validate(fixture: LevelFixture): void {
     );
   }
   validateLevelPaint(fixture);
+  validateLevelSilhouette(fixture);
 }
 
 // Forma persistida en Level.data (CONTEXT-MAP.md, wire contract). Excluye
@@ -79,6 +85,7 @@ function validate(fixture: LevelFixture): void {
 // `data`, o PrismaLevelRepository.toDomain leería una forma equivocada.
 // palette y paintRole (dentro de cada arrow) SÍ van en data: son parte del
 // JSON del nivel que el repositorio iza al portador paint (ADR 0004).
+// silhouette igual: viaja dentro de data como portador opaco (back#53).
 function toData(fixture: LevelFixture): Prisma.InputJsonValue {
   return {
     cols: fixture.cols,
@@ -87,6 +94,9 @@ function toData(fixture: LevelFixture): Prisma.InputJsonValue {
       ? { timeLimitSec: fixture.timeLimitSec }
       : {}),
     ...(fixture.palette !== undefined ? { palette: fixture.palette } : {}),
+    ...(fixture.silhouette !== undefined
+      ? { silhouette: fixture.silhouette }
+      : {}),
     // Los fixtures son JSON por construcción; el cast salva solo la fricción
     // de tipos entre la interfaz ArrowPrimitives y el JSON de entrada de Prisma.
     arrows: fixture.arrows as unknown as Prisma.InputJsonArray,
