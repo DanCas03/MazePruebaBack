@@ -892,3 +892,16 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - **Reseed pendiente**: `npm run db:seed` (prisma db seed) requiere una BD Postgres viva (Docker). No hay contenedor `maze-db` corriendo en este entorno, así que el reseed real lo ejecuta el equipo en Docker; los fixtures ya están certificados como sembrables.
 - README no modificado (sin endpoint ni contrato público nuevo; la sección temática ya existía por back#31/ADR 0004).
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 070 — feat(back): servir la silueta temática en el wire (back#50)
+
+**Fecha:** 2026-07-16
+**Tarea o problema abordado:** back#50 — lado backend del relleno de silueta temática (front#114). Los niveles temáticos ganan un campo opaco `silhouette` (rol→celdas de su región, `Record<string,[number,number][]>`) para que el cliente pinte la figura sin huecos. El back debe validarlo, persistirlo y SERVIRLO por el read path.
+**Herramienta de IA utilizada:** Claude Code (Opus 4.8) — ejecución subagent-driven (implementador+revisor por tarea, revisión final de rama). Rol backend-architect.
+**Prompt o instrucción proporcionada:** > "completa los huecos de cobertura de las tres figuras" (cross-repo; este lado sirve la silueta).
+**Resultado obtenido:**
+- Write path: `validateLevelPaint` valida `silhouette` (roles ⊆ palette, celdas in-bounds, fail-fast); `seed.ts toData` iza `silhouette` a `data` como `palette`.
+- Read path (gap del plan detectado y cerrado — la silueta se guardaba pero no se servía): `LevelPaint.silhouette?` (dominio) → `PrismaLevelRepository.toPaint` → `LevelResponseDto.silhouette?` → `LevelMapper.toDto`. Espejo de `palette`; opaco, `LevelSolver` no lo toca.
+- Fixtures `t-{heart,happy-face,bunny}.json` regenerados con `silhouette` (flechas byte-idénticas); `manifest.md` + `CONTEXT.md` documentan que la silueta viaja en el wire.
+- Verificado end-to-end en Docker: `Seed complete: 18 levels`; la API sirve `GET /levels/:id` con silhouette (heart 260 celdas, happy-face 328/64, bunny 6/140/26). Tests: validator+curated 54, read-path 15 + suite unitaria 411, tsc limpio. Revisión final de rama: READY TO MERGE (0 Critical/Important).
+**Modificaciones realizadas por el equipo:** (completar manualmente)
