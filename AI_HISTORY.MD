@@ -905,3 +905,15 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 - Fixtures `t-{heart,happy-face,bunny}.json` regenerados con `silhouette` (flechas byte-idénticas); `manifest.md` + `CONTEXT.md` documentan que la silueta viaja en el wire.
 - Verificado end-to-end en Docker: `Seed complete: 18 levels`; la API sirve `GET /levels/:id` con silhouette (heart 260 celdas, happy-face 328/64, bunny 6/140/26). Tests: validator+curated 54, read-path 15 + suite unitaria 411, tsc limpio. Revisión final de rama: READY TO MERGE (0 Critical/Important).
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 071 — feat(back): reseed temáticos con flechas de cobertura total (pivote back#50)
+
+**Fecha:** 2026-07-16
+**Tarea o problema abordado:** Lado backend del pivote "figuras solo-flechas" (front#114). Los fixtures temáticos se regeneran para que la figura esté hecha ~100% de flechas rectas ≥2 (sin relleno pintado). El campo `silhouette` pasa a documentarse como la MÁSCARA del tablero (el cliente monta un MaskedSpace), no como pintura.
+**Herramienta de IA utilizada:** Claude Code — subagent-driven con Fable 5 (implementador) + revisores Sonnet/Opus.
+**Prompt o instrucción proporcionada:** > "rellenar por completo con flechas las figuras… que el tablero se ajuste a cada figura… mantén flechas >= 2" (cross-repo; este lado re-siembra).
+**Resultado obtenido:**
+- `prisma/levels/t-{heart,happy-face,bunny}.json` reemplazados por la versión de cobertura total del front: heart 48 flechas (100%), happy-face 80 (100%), bunny 40 (fur 100% / pink 92% / eye 67% ≈ 97.7%); todas las flechas ≥2 celdas; `palette` + `silhouette` presentes.
+- `manifest.md` + `CONTEXT.md`: `silhouette` redefinida como máscara del tablero (solo existen las celdas de la figura; sin fondo/relleno pintado); conteos y cobertura actualizados (bunny reportado honestamente <100%).
+- Sin cambios de código fuente (la validación + read-path de `silhouette` ya existían). Certificado sin BD por `curated-levels.spec.ts` (44/44: LevelSolver soluble + validación de silueta). Reseed en Docker: `Seed complete: 18 levels`; la API sirve 48/80/40 flechas + silhouette. Revisión final de rama: READY TO MERGE (0 Critical/Important).
+**Modificaciones realizadas por el equipo:** (completar manualmente)
