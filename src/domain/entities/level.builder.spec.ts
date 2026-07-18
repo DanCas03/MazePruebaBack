@@ -1,4 +1,4 @@
-import { LevelBuilder } from './level.builder';
+import { LevelBuilder, SpaceDescriptor } from './level.builder';
 import { ArrowPrimitives } from './arrow.factory';
 import { LevelId } from '../value-objects/level-id.vo';
 import { InvalidArrowException } from '../exceptions/invalid-arrow.exception';
@@ -6,6 +6,9 @@ import { InvalidDirectionException } from '../exceptions/invalid-direction.excep
 import { InvalidLevelException } from '../exceptions/invalid-level.exception';
 import { InvalidBoardSpaceException } from '../exceptions/invalid-board-space.exception';
 import { RectSpace } from '../space/rect-space';
+import { HexSpace } from '../space/hex-space';
+import { HexMaskedSpace } from '../space/hex-masked-space';
+import { Position } from '../value-objects/position.vo';
 
 describe('LevelBuilder', () => {
   // Fixture: nivel de ejemplo del wire contract (CONTEXT-MAP.md) — tablero 8x11.
@@ -231,6 +234,92 @@ describe('LevelBuilder', () => {
       const level = sut.build();
       // Assert
       expect(level.silhouette).toEqual(silhouette);
+    });
+  });
+
+  // back#59: descriptor de espacio del wire — el builder es el único punto
+  // que traduce {type:'hex', radius} a espacios concretos.
+  describe('withSpace (back#59)', () => {
+    it('should build a rectangular level when the descriptor is absent', () => {
+      // Arrange / Act
+      const level = new LevelBuilder(new LevelId('l-rect'))
+        .withDimensions(3, 2)
+        .addArrow({ id: 'a-0', headDir: 'right', cells: [[0, 0], [0, 1]] })
+        .build();
+      // Assert — bounding box del rect intacto.
+      expect(level.cols).toBe(3);
+      expect(level.rows).toBe(2);
+      expect(level.space).toBeInstanceOf(RectSpace);
+    });
+
+    it('should build a HexSpace level ignoring wire cols/rows', () => {
+      // Arrange / Act — cols/rows del wire contradicen al hex a propósito.
+      const level = new LevelBuilder(new LevelId('l-hex'))
+        .withDimensions(99, 99)
+        .withSpace({ type: 'hex', radius: 2 })
+        .addArrow({ id: 'a-0', headDir: 'up', cells: [[2, 2], [3, 2]] })
+        .build();
+      // Assert — bounding box derivado del espacio: (2R+1)².
+      expect(level.space).toBeInstanceOf(HexSpace);
+      expect(level.cols).toBe(5);
+      expect(level.rows).toBe(5);
+    });
+
+    it('should build a HexMaskedSpace when the descriptor comes with a silhouette', () => {
+      // Arrange — activas = unión de las regiones de la silueta (R=1, fila
+      // central). La flecha vive dentro de la máscara.
+      const silhouette = {
+        stem: [[1, 0], [1, 1]] as [number, number][],
+        tip: [[1, 2]] as [number, number][],
+      };
+      // Act
+      const level = new LevelBuilder(new LevelId('l-hex-masked'))
+        .withDimensions(0, 0)
+        .withSpace({ type: 'hex', radius: 1 })
+        .withSilhouette(silhouette)
+        .addArrow({ id: 'a-0', headDir: 'downRight', cells: [[1, 1], [1, 0]] })
+        .build();
+      // Assert — la celda hex fuera de la máscara no pertenece al espacio.
+      expect(level.space).toBeInstanceOf(HexMaskedSpace);
+      expect(level.space.contains(new Position(0, 1))).toBe(false);
+      expect(level.space.cellCount).toBe(3);
+    });
+
+    it('should reject an arrow whose headDir is foreign to the hex space', () => {
+      // Arrange / Act / Assert — invariante de Level (back#58): right ∉ hex.
+      expect(() =>
+        new LevelBuilder(new LevelId('l-hex-bad-dir'))
+          .withDimensions(0, 0)
+          .withSpace({ type: 'hex', radius: 2 })
+          .addArrow({ id: 'a-0', headDir: 'right', cells: [[2, 2], [2, 1]] })
+          .build(),
+      ).toThrow(InvalidLevelException);
+    });
+
+    it.each([
+      [{ type: 'octo', radius: 2 }],
+      [{ type: 'hex', radius: 0 }],
+      [{ type: 'hex', radius: 1.5 }],
+    ])('should throw for invalid space descriptor %o', (descriptor) => {
+      // Act / Assert — fail-fast en construcción, no datos corruptos servidos.
+      expect(() =>
+        new LevelBuilder(new LevelId('l-bad-space'))
+          .withDimensions(3, 3)
+          .withSpace(descriptor as SpaceDescriptor)
+          .addArrow({ id: 'a-0', headDir: 'up', cells: [[2, 2], [3, 2]] })
+          .build(),
+      ).toThrow(InvalidBoardSpaceException);
+    });
+
+    it('should accept hex as a first-class section', () => {
+      // Arrange / Act
+      const level = new LevelBuilder(new LevelId('l-hex-section'))
+        .withDimensions(3, 3)
+        .withSection('hex')
+        .addArrow({ id: 'a-0', headDir: 'up', cells: [[1, 1], [2, 1]] })
+        .build();
+      // Assert
+      expect(level.section).toBe('hex');
     });
   });
 });

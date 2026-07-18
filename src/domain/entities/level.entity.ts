@@ -3,9 +3,9 @@ import { Arrow } from './arrow.entity';
 import { BoardSpace } from '../space/board-space';
 import { InvalidLevelException } from '../exceptions/invalid-level.exception';
 
-// Sección del catálogo (ADR 0004, back#31): campaña (con orden de juego) o
-// temático (sin orden). Ausente en datos viejos => campaign (retro-compat).
-export type LevelSection = 'campaign' | 'themed';
+// Sección del catálogo (ADR 0004; 'hex' desde ADR-0007/back#59 — taxonomía de
+// producto ORTOGONAL a la geometría: un nivel themed puede declarar space hex).
+export type LevelSection = 'campaign' | 'themed' | 'hex';
 
 // Instrucciones de pintado (ADR 0004): paleta de roles de color + rol por
 // flecha (clave = ArrowId plano). Es un PORTADOR OPACO: el dominio no lo
