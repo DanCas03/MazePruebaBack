@@ -1,0 +1,21 @@
+{
+  "levelId": "hex-01",
+  "section": "hex",
+  "cols": 7,
+  "rows": 7,
+  "timeLimitSec": 50,
+  "space": { "type": "hex", "radius": 3 },
+  "arrows": [
+    { "id": "arrow-0", "headDir": "up", "cells": [[1, 3], [0, 3]] },
+    { "id": "arrow-1", "headDir": "down", "cells": [[2, 3], [3, 3]] },
+    { "id": "arrow-2", "headDir": "down", "cells": [[4, 3], [5, 3]] },
+    { "id": "arrow-3", "headDir": "down", "cells": [[6, 3]] },
+    { "id": "arrow-4", "headDir": "upRight", "cells": [[2, 4], [1, 5], [0, 6]] },
+    { "id": "arrow-5", "headDir": "downLeft", "cells": [[4, 2], [5, 1], [6, 0]] },
+    { "id": "arrow-6", "headDir": "upLeft", "cells": [[3, 2], [3, 1], [3, 0]] },
+    { "id": "arrow-7", "headDir": "downRight", "cells": [[3, 4], [3, 5], [3, 6]] },
+    { "id": "arrow-8", "headDir": "upLeft", "cells": [[2, 2], [2, 1]] },
+    { "id": "arrow-9", "headDir": "downRight", "cells": [[2, 5], [2, 6]] },
+    { "id": "arrow-10", "headDir": "upLeft", "cells": [[6, 2], [6, 1]] }
+  ]
+}
