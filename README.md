@@ -200,8 +200,9 @@ bootstrap from the controllers' decorators via `DocumentBuilder` (`src/app.setup
 // GET /levels/:id → 200 for a HEX level (back#59, ADR-0007): same contract
 // plus an optional `space` descriptor — absent for rectangular levels, where
 // the space is implied by `cols`×`rows`. `cols`/`rows` are ALWAYS the
-// bounding box of the board in either geometry (for hex, `(2*radius+1)^2`),
-// never the hexagon's cell count. Hex levels may also belong to the `hex`
+// bounding box of the board in either geometry (for hex, `cols = rows =
+// 2*radius+1`, i.e. `(2*radius+1)^2` cells total) — never the hexagon's
+// smaller playable cell count. Hex levels may also belong to the `hex`
 // section (a third, product-taxonomy value of `LevelSection`, orthogonal to
 // the geometry — a level's section does not by itself determine its shape).
 {
