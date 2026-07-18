@@ -36,7 +36,9 @@ Why it is organized this way: the inner layers state *what* the system does, the
 
 ### Diagrams
 
-[`docs/diagrams/class-diagram-back.jpeg`](docs/diagrams/class-diagram-back.jpeg) — class diagram of the main entities, use cases, ports, and adapters, color-coded by Clean Architecture layer (Adapters / Application / Infrastructure / Domain / Shared-Aspects), with the GoF patterns from the table below called out inline:
+[`docs/diagrams/class-diagram-back.jpeg`](docs/diagrams/class-diagram-back.jpeg) — 
+https://lucid.app/lucidchart/30317137-3702-4da3-a049-0422b82e3ba0/edit?viewport_loc=-797%2C-155%2C5088%2C3292%2Cpage1&invitationId=inv_2df616de-9f2b-4737-90a9-efd71abd347f
+class diagram of the main entities, use cases, ports, and adapters, color-coded by Clean Architecture layer (Adapters / Application / Infrastructure / Domain / Shared-Aspects), with the GoF patterns from the table below called out inline:
 
 ![Class diagram](docs/diagrams/class-diagram-back.jpeg)
 
