@@ -244,7 +244,14 @@ describe('LevelBuilder', () => {
       // Arrange / Act
       const level = new LevelBuilder(new LevelId('l-rect'))
         .withDimensions(3, 2)
-        .addArrow({ id: 'a-0', headDir: 'right', cells: [[0, 0], [0, 1]] })
+        .addArrow({
+          id: 'a-0',
+          headDir: 'right',
+          cells: [
+            [0, 0],
+            [0, 1],
+          ],
+        })
         .build();
       // Assert — bounding box del rect intacto.
       expect(level.cols).toBe(3);
@@ -257,7 +264,14 @@ describe('LevelBuilder', () => {
       const level = new LevelBuilder(new LevelId('l-hex'))
         .withDimensions(99, 99)
         .withSpace({ type: 'hex', radius: 2 })
-        .addArrow({ id: 'a-0', headDir: 'up', cells: [[2, 2], [3, 2]] })
+        .addArrow({
+          id: 'a-0',
+          headDir: 'up',
+          cells: [
+            [2, 2],
+            [3, 2],
+          ],
+        })
         .build();
       // Assert — bounding box derivado del espacio: (2R+1)².
       expect(level.space).toBeInstanceOf(HexSpace);
@@ -269,7 +283,10 @@ describe('LevelBuilder', () => {
       // Arrange — activas = unión de las regiones de la silueta (R=1, fila
       // central). La flecha vive dentro de la máscara.
       const silhouette = {
-        stem: [[1, 0], [1, 1]] as [number, number][],
+        stem: [
+          [1, 0],
+          [1, 1],
+        ] as [number, number][],
         tip: [[1, 2]] as [number, number][],
       };
       // Act
@@ -277,7 +294,14 @@ describe('LevelBuilder', () => {
         .withDimensions(0, 0)
         .withSpace({ type: 'hex', radius: 1 })
         .withSilhouette(silhouette)
-        .addArrow({ id: 'a-0', headDir: 'downRight', cells: [[1, 1], [1, 0]] })
+        .addArrow({
+          id: 'a-0',
+          headDir: 'downRight',
+          cells: [
+            [1, 1],
+            [1, 0],
+          ],
+        })
         .build();
       // Assert — la celda hex fuera de la máscara no pertenece al espacio.
       expect(level.space).toBeInstanceOf(HexMaskedSpace);
@@ -291,7 +315,14 @@ describe('LevelBuilder', () => {
         new LevelBuilder(new LevelId('l-hex-bad-dir'))
           .withDimensions(0, 0)
           .withSpace({ type: 'hex', radius: 2 })
-          .addArrow({ id: 'a-0', headDir: 'right', cells: [[2, 2], [2, 1]] })
+          .addArrow({
+            id: 'a-0',
+            headDir: 'right',
+            cells: [
+              [2, 2],
+              [2, 1],
+            ],
+          })
           .build(),
       ).toThrow(InvalidLevelException);
     });
@@ -306,7 +337,14 @@ describe('LevelBuilder', () => {
         new LevelBuilder(new LevelId('l-bad-space'))
           .withDimensions(3, 3)
           .withSpace(descriptor as SpaceDescriptor)
-          .addArrow({ id: 'a-0', headDir: 'up', cells: [[2, 2], [3, 2]] })
+          .addArrow({
+            id: 'a-0',
+            headDir: 'up',
+            cells: [
+              [2, 2],
+              [3, 2],
+            ],
+          })
           .build(),
       ).toThrow(InvalidBoardSpaceException);
     });
@@ -316,7 +354,14 @@ describe('LevelBuilder', () => {
       const level = new LevelBuilder(new LevelId('l-hex-section'))
         .withDimensions(3, 3)
         .withSection('hex')
-        .addArrow({ id: 'a-0', headDir: 'up', cells: [[1, 1], [2, 1]] })
+        .addArrow({
+          id: 'a-0',
+          headDir: 'up',
+          cells: [
+            [1, 1],
+            [2, 1],
+          ],
+        })
         .build();
       // Assert
       expect(level.section).toBe('hex');

@@ -11,9 +11,7 @@ describe('HexSpace', () => {
     'should throw for invalid radius %p',
     (radius) => {
       // Act / Assert
-      expect(() => new HexSpace(radius as number)).toThrow(
-        InvalidBoardSpaceException,
-      );
+      expect(() => new HexSpace(radius)).toThrow(InvalidBoardSpaceException);
     },
   );
 
