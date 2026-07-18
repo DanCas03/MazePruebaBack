@@ -10,6 +10,7 @@ import { ArrowId } from '../../domain/value-objects/arrow-id.vo';
 import { Position } from '../../domain/value-objects/position.vo';
 import { Direction } from '../../domain/value-objects/direction.vo';
 import { RectSpace } from '../../domain/space/rect-space';
+import { HexSpace } from '../../domain/space/hex-space';
 
 // Passthrough del wire temático (ADR 0004, back#31): el mapper copia
 // section/palette/paintRole tal cual — datos opacos, sin interpretación.
@@ -71,6 +72,22 @@ describe('LevelMapper', () => {
       'themed',
       themedPaint(),
       themedSilhouette(),
+    );
+
+  // Descriptor de geometría (ADR-0007, back#59): presente solo en niveles hex.
+  const hexLevel = () =>
+    new Level(
+      new LevelId('l-hex-dto'),
+      new HexSpace(2),
+      [
+        new Arrow(
+          new ArrowId('a-0'),
+          [new Position(2, 2), new Position(3, 2)],
+          Direction.UP,
+        ),
+      ],
+      90,
+      'hex',
     );
 
   describe('toSummaryDto', () => {
@@ -166,6 +183,29 @@ describe('LevelMapper', () => {
           [5, 1],
         ],
       });
+    });
+  });
+
+  // back#59: descriptor de geometría en el DTO — presente solo en niveles hex.
+  describe('space descriptor (back#59)', () => {
+    it('should expose the hex space descriptor with bounding-box cols/rows', () => {
+      // Arrange
+      const level = hexLevel();
+      // Act
+      const dto = LevelMapper.toDto(level);
+      // Assert
+      expect(dto.space).toEqual({ type: 'hex', radius: 2 });
+      expect(dto.cols).toBe(5);
+      expect(dto.rows).toBe(5);
+    });
+
+    it('should omit the space field entirely for rectangular levels', () => {
+      // Arrange
+      const level = campaignLevel();
+      // Act
+      const dto = LevelMapper.toDto(level);
+      // Assert — retrocompat byte a byte: la clave ni siquiera existe.
+      expect('space' in dto).toBe(false);
     });
   });
 });

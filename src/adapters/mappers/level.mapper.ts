@@ -1,5 +1,6 @@
 import type { Level } from '../../domain/entities/level.entity';
 import type { ArrowId } from '../../domain/value-objects/arrow-id.vo';
+import { HexSpace } from '../../domain/space/hex-space';
 
 export interface ArrowDto {
   id: string;
@@ -36,11 +37,15 @@ export interface LevelResponseDto {
   // [row, col]. Solo presente en niveles temáticos con figura; passthrough
   // opaco, igual trato que palette.
   silhouette?: Record<string, number[][]>;
+  // Descriptor de geometría (ADR-0007, back#59): presente solo en niveles
+  // hexagonales; ausente ⇒ rectángulo cols×rows (retrocompatibilidad total).
+  // cols/rows siguen siendo el bounding box en ambas geometrías.
+  space?: { type: 'hex'; radius: number };
 }
 
 export interface LevelSummaryDto {
   levelId: string;
-  // Sección del catálogo (ADR 0004): 'campaign' | 'themed'.
+  // Sección del catálogo (ADR 0004): 'campaign' | 'themed' | 'hex'.
   section: string;
 }
 
@@ -72,6 +77,9 @@ export class LevelMapper {
               number[][]
             >,
           }
+        : {}),
+      ...(level.space instanceof HexSpace
+        ? { space: { type: 'hex' as const, radius: level.space.radius } }
         : {}),
     };
   }
