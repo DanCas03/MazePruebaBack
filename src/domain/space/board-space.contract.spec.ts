@@ -1,6 +1,8 @@
 import { BoardSpace } from './board-space';
 import { RectSpace } from './rect-space';
 import { HoledRectSpace } from './testing/holed-rect-space';
+import { HexSpace } from './hex-space';
+import { HexMaskedSpace } from './hex-masked-space';
 import { Position } from '../value-objects/position.vo';
 import { Direction } from '../value-objects/direction.vo';
 import { InvalidBoardSpaceException } from '../exceptions/invalid-board-space.exception';
@@ -16,11 +18,26 @@ import { InvalidDirectionException } from '../exceptions/invalid-direction.excep
 const positionsOf = (...coords: [number, number][]): Position[] =>
   coords.map(([row, col]) => new Position(row, col));
 
-// Ambos espacios comparten bounding box 4 columnas x 3 filas; el agujereado
-// quita la celda (1, 2), que pasa a ser FRONTERA.
+// Rect y HoledRectSpace comparten bounding box 4 columnas x 3 filas; el
+// agujereado quita la celda (1, 2), que pasa a ser FRONTERA. HexSpace y
+// HexMaskedSpace (ADR-0007 D5, back#59) certifican la misma ley geométrica
+// sobre una geometría no rectangular: el masked restringe el hex R=2 a una
+// cruz de 5 celdas, el resto pasa a ser FRONTERA.
 const spaceCases: Array<[string, () => BoardSpace]> = [
   ['RectSpace', () => new RectSpace(4, 3)],
   ['HoledRectSpace', () => new HoledRectSpace(4, 3, [new Position(1, 2)])],
+  ['HexSpace', () => new HexSpace(2)],
+  [
+    'HexMaskedSpace',
+    () =>
+      new HexMaskedSpace(2, [
+        new Position(2, 1),
+        new Position(2, 2),
+        new Position(2, 3),
+        new Position(1, 2),
+        new Position(3, 2),
+      ]),
+  ],
 ];
 
 describe.each(spaceCases)('BoardSpace contract — %s', (_name, makeSpace) => {
@@ -111,10 +128,14 @@ describe.each(spaceCases)('BoardSpace contract — %s', (_name, makeSpace) => {
     expect(sut.cellCount).toBe(cells.length);
   });
 
-  it('should not exceed the bounding box on either axis', () => {
-    // Act / Assert — (3, 0) tiene row === rows; (0, 4) tiene col === cols.
-    expect(sut.contains(new Position(3, 0))).toBe(false);
-    expect(sut.contains(new Position(0, 4))).toBe(false);
+  it('should not contain any cell beyond the bounding box of its own cells', () => {
+    // Arrange — bounding box real derivado de allCells (vale en toda geometría).
+    const cells = Array.from(sut.allCells());
+    const maxRow = Math.max(...cells.map((c) => c.row));
+    const maxCol = Math.max(...cells.map((c) => c.col));
+    // Act / Assert — una fila/columna más allá del máximo nunca pertenece.
+    expect(sut.contains(new Position(maxRow + 1, 0))).toBe(false);
+    expect(sut.contains(new Position(0, maxCol + 1))).toBe(false);
   });
 
   it('should throw when stepping from a contained cell in a direction the space does not publish', () => {
