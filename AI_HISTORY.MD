@@ -1165,3 +1165,12 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 **Prompt o instrucción proporcionada:** > "Author t-snowflake: themed, hex R=5 masked, palette {core,snow}, 6-fold snowflake silhouette fully tessellated by arrows, converge to SOLVABLE with no uncovered cells."
 **Resultado obtenido:** `prisma/levels/t-snowflake.json` (nuevo): copo de nieve 6-fold-simétrico dentro del hexágono R=5 (centro [5,5]) — cúmulo central de 7 celdas (centro + sus 6 vecinos hex, `paintRole:"core"`, `#3B82F6`) más 6 brazos rectos de 4 celdas por las 6 direcciones hex con puntas en la frontera (`paintRole:"snow"`, `#E8F4FF`) = 31 celdas activas. `palette` `{ core:'#3B82F6', snow:'#E8F4FF' }`; `silhouette` partida en `core`/`snow` disjuntos cuya unión = las 31 celdas. 10 flechas teselan por completo la silueta (6 flechas de brazo + 4 de núcleo: tres pares de 2 celdas y una de 1), sin celdas `·` sin cubrir, sin solapes, `paintRole` de cada flecha acorde al rol de sus celdas. `verify-hex-level.ts` → render de copo limpio sin `·`, `SOLVABLE: YES  solutionLength=10`; `timeLimitSec=45` (fórmula D6, punto abierto §7 del spec resuelto: el temático lleva `timeLimitSec` explícito). Certificado por `level-catalog.spec` (23/23) incluyendo los validadores de silueta y paint.
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 096 — test(back): add e2e for hex space wire and section
+
+**Fecha:** 2026-07-18
+**Tarea o problema abordado:** back#60 (Task 9): e2e que prueba que la API sirve el descriptor `space` en el DTO de nivel y que los niveles de sección `hex` viajan con `section: 'hex'` sin `order`.
+**Herramienta de IA utilizada:** Claude Code (Sonnet 5), spec transcrito verbatim del plan (Task 9).
+**Prompt o instrucción proporcionada:** > "Create test/levels-hex.e2e-spec.ts with the exact code from the plan; verify 3/3 pass."
+**Resultado obtenido:** `test/levels-hex.e2e-spec.ts` (nuevo): mismo patrón de PrismaService mockeado que `levels-themed.e2e-spec.ts` (contrato HTTP, no BD). 3 casos: (1) el catálogo expone `section: 'hex'` para niveles hex libres; (2) `GET /levels/:id` sirve el descriptor `space: { type:'hex', radius:3 }` en el DTO; (3) round-trip de un nivel temático hex con `palette`, `silhouette` y `space`. `npm run test:e2e -- levels-hex` → 3/3 verdes — confirma que el mapper de #59 emite `space` vía `instanceof HexSpace` y que el repositorio reconstruye los records vía `LevelBuilder`. Sin cambios en código de producción.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
