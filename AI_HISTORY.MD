@@ -994,3 +994,12 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 **Prompt o instrucción proporcionada:** > "Lee el handoff y ejecuta el plan" (back#58 Task 2).
 **Resultado obtenido:** `src/domain/space/rect-space.ts`: `step` reescrito — las 4 diagonales (`UP_LEFT`/`UP_RIGHT`/`DOWN_LEFT`/`DOWN_RIGHT`) lanzan `InvalidDirectionException` (fail-fast, `code: INVALID_DIRECTION`, 400 por defecto — no toca el filtro); `default: { const _exhaustive: never = dir }` es el tripwire que rompe la compilación si `Direction` gana un 9º valor sin manejarse. Las 4 ortogonales y la frontera (`null`) siguen intactas; `directions` sigue devolviendo exactamente las 4 ortogonales. `src/domain/space/rect-space.spec.ts` (AAA): test parametrizado que exige `toThrow(InvalidDirectionException)` para las 4 diagonales desde una celda interior. TDD rojo→verde verificado (28/28).
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 077 — test(domain): ley de contrato BoardSpace — fail-fast ante dirección ajena
+
+**Fecha:** 2026-07-18
+**Tarea o problema abordado:** back#58 (P1): elevar el fail-fast de `RectSpace.step` (entrada 076) al contrato compartido `BoardSpace`, de modo que back#59 (`HexSpace`) herede la ley gratis — «pisar en una dirección ∉ `directions` lanza `InvalidDirectionException`, nunca devuelve frontera».
+**Herramienta de IA utilizada:** Claude Code (Opus 4.8, 1M context); TDD/AAA sobre el plan back#58 Task 3.
+**Prompt o instrucción proporcionada:** > "Lee el handoff y ejecuta el plan" (back#58 Task 3).
+**Resultado obtenido:** `src/domain/space/board-space.contract.spec.ts`: nueva ley parametrizada sobre `spaceCases` (RectSpace + HoledRectSpace, instancias reales — BoardSpace nunca se mockea) que para cada espacio calcula las direcciones ajenas (`Object.values(Direction)` menos `sut.directions`) y exige `toThrow(InvalidDirectionException)` desde una celda contenida. Verde por construcción: HoledRectSpace hereda `step` de RectSpace (entrada 076); la ley es un test de caracterización que eleva a contrato ese comportamiento. `src/domain/space/board-space.ts`: documentada la precondición en el método abstracto `step` (dir ∈ directions; ajena = fail-fast, no frontera; ley verificada por el contract-spec). Los template methods `areAdjacent`/`exitLane` iteran solo `directions`, así que nunca disparan el fail-fast. Suite `src/domain/space` verde (57/57).
+**Modificaciones realizadas por el equipo:** (completar manualmente)

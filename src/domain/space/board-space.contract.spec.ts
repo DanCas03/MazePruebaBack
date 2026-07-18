@@ -4,6 +4,7 @@ import { HoledRectSpace } from './testing/holed-rect-space';
 import { Position } from '../value-objects/position.vo';
 import { Direction } from '../value-objects/direction.vo';
 import { InvalidBoardSpaceException } from '../exceptions/invalid-board-space.exception';
+import { InvalidDirectionException } from '../exceptions/invalid-direction.exception';
 
 // Contract test compartido (ADR 0005): las mismas leyes geométricas corren
 // contra TODA implementación de BoardSpace con instancias REALES — BoardSpace
@@ -114,6 +115,18 @@ describe.each(spaceCases)('BoardSpace contract — %s', (_name, makeSpace) => {
     // Act / Assert — (3, 0) tiene row === rows; (0, 4) tiene col === cols.
     expect(sut.contains(new Position(3, 0))).toBe(false);
     expect(sut.contains(new Position(0, 4))).toBe(false);
+  });
+
+  it('should throw when stepping from a contained cell in a direction the space does not publish', () => {
+    // Arrange — direcciones ajenas = las de Direction que este espacio NO publica.
+    const own = new Set(sut.directions);
+    const foreign = Object.values(Direction).filter((d) => !own.has(d));
+    const cell = Array.from(sut.allCells())[0];
+    // Act / Assert — fail-fast: dirección ajena nunca es frontera (null).
+    expect(foreign.length).toBeGreaterThan(0);
+    for (const dir of foreign) {
+      expect(() => sut.step(cell, dir)).toThrow(InvalidDirectionException);
+    }
   });
 });
 

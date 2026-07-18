@@ -13,7 +13,11 @@ export abstract class BoardSpace {
   abstract contains(pos: Position): boolean;
 
   // Celda vecina de `pos` en `dir`, o null si el paso sale del espacio
-  // (frontera). null es resultado normal, nunca una excepción.
+  // (frontera). null es resultado normal, nunca una excepción. Precondición
+  // (ADR-0007, back#58): `dir` debe pertenecer a `directions`; pisar en una
+  // dirección ajena al espacio es fail-fast y lanza InvalidDirectionException
+  // — no es frontera. La ley la verifica board-space.contract.spec.ts contra
+  // toda implementación.
   abstract step(pos: Position, dir: Direction): Position | null;
 
   abstract get cellCount(): number;
