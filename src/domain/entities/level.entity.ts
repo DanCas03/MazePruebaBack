@@ -69,6 +69,14 @@ export class Level {
         );
       }
       arrowIds.add(arrow.id.value);
+      // Invariante espacial (ADR-0007, back#58): la flecha solo puede apuntar
+      // por una dirección que su espacio reconoce. Vive aquí, junto al resto
+      // de validaciones geométricas del agregado (in-space, solape, adyacencia).
+      if (!space.directions.includes(arrow.headDir)) {
+        throw new InvalidLevelException(
+          `Level(${id.value}): arrow '${arrow.id.value}' headDir '${arrow.headDir}' is not a valid direction in the board space`,
+        );
+      }
       for (const cell of arrow.cells) {
         if (!space.contains(cell)) {
           throw new InvalidLevelException(

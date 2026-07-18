@@ -217,6 +217,26 @@ describe('Level', () => {
       ).toThrow(InvalidLevelException);
     });
 
+    it('should throw InvalidLevelException when an arrow headDir is not a direction of the space (diagonal in a RectSpace)', () => {
+      // Arrange — RectSpace solo publica las 4 ortogonales; una flecha diagonal
+      // no cabe en su espacio (ADR-0007, back#58).
+      const diagonal = new Arrow(
+        new ArrowId('a1'),
+        cellsOf([0, 0], [0, 1]),
+        Direction.UP_LEFT,
+      );
+      // Act / Assert
+      expect(
+        () =>
+          new Level(
+            new LevelId('level-001'),
+            new RectSpace(COLS, ROWS),
+            [diagonal],
+            90,
+          ),
+      ).toThrow(InvalidLevelException);
+    });
+
     it('should throw InvalidLevelException when consecutive cells of an arrow are diagonally adjacent', () => {
       // Arrange
       const diagonal = new Arrow(
