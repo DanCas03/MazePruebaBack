@@ -188,6 +188,10 @@ descriptions for them): response DTOs live next to their `*Mapper` in
     { "id": "a2", "headDir": "right", "cells": [[2, 0], [2, 1]] }
   ]
 }
+// `headDir` accepts 8 directions in camelCase wire form (`up`, `down`, `left`,
+// `right`, `upLeft`, `upRight`, `downLeft`, `downRight`; ADR-0007). Rectangular
+// levels restrict to the 4 orthogonals — an arrow with a diagonal headDir in a
+// rectangular space is rejected at construction (InvalidLevelException).
 // GET /levels/:id → 200 for a THEMED level (ADR 0004): same contract plus
 // opaque paint instructions — a root palette (role → #RRGGBB) and an
 // optional paintRole per arrow — and, since back#53, an opaque root

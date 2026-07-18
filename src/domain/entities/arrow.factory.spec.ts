@@ -48,6 +48,11 @@ describe('ArrowFactory', () => {
       ['UP', Direction.UP],
       ['Right', Direction.RIGHT],
       ['dOwN', Direction.DOWN],
+      ['upLeft', Direction.UP_LEFT],
+      ['UPLEFT', Direction.UP_LEFT],
+      ['downright', Direction.DOWN_RIGHT],
+      ['upRight', Direction.UP_RIGHT],
+      ['downLeft', Direction.DOWN_LEFT],
     ])(
       'should parse headDir case-insensitively when the wire value is %s',
       (headDir, expected) => {

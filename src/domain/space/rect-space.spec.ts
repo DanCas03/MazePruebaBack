@@ -2,6 +2,7 @@ import { RectSpace } from './rect-space';
 import { Position } from '../value-objects/position.vo';
 import { Direction } from '../value-objects/direction.vo';
 import { InvalidBoardSpaceException } from '../exceptions/invalid-board-space.exception';
+import { InvalidDirectionException } from '../exceptions/invalid-direction.exception';
 
 describe('RectSpace', () => {
   // Helper: construye la lista de posiciones a partir de pares (row, col).
@@ -110,6 +111,24 @@ describe('RectSpace', () => {
       // Desde fuera del espacio no se pisa, sin importar dónde caería la vecina.
       // Act / Assert
       expect(sut.step(new Position(5, 5), Direction.LEFT)).toBeNull();
+    });
+
+    it('should throw InvalidDirectionException when stepping in a diagonal direction from an interior cell', () => {
+      // Arrange — RectSpace no publica diagonales (ADR-0007): pisar en una es
+      // error de datos/programa, no frontera.
+      const interior = new Position(1, 1);
+      const diagonals = [
+        Direction.UP_LEFT,
+        Direction.UP_RIGHT,
+        Direction.DOWN_LEFT,
+        Direction.DOWN_RIGHT,
+      ];
+      // Act / Assert
+      for (const dir of diagonals) {
+        expect(() => sut.step(interior, dir)).toThrow(
+          InvalidDirectionException,
+        );
+      }
     });
   });
 
