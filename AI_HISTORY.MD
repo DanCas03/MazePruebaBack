@@ -1201,3 +1201,21 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 **Prompt o instrucción proporcionada:** > "Por que aun no aparecen los niveles hexagonales, se hicieron las migraciones de prisma? esta bien conectado el front con el back? revisa todo lo que pueda estar pasando"
 **Resultado obtenido:** Fix de raíz, no de síntoma: se extrajo `LEVEL_FIXTURE_FILENAME_PATTERN` (regex único, con `hex-\d+` incluido) a `level-fixture.ts` — la misma fuente DRY ya usada por `buildLevelFromFixture`/`fixtureToData`/`resolveSection` — y se hizo que tanto `prisma/seed.ts` como `level-catalog.spec.ts` importen esa única constante en vez de mantener regex duplicados que pueden volver a divergir. TDD: test RED en `level-fixture.spec.ts` (`LEVEL_FIXTURE_FILENAME_PATTERN` sin exportar → `TypeError`), luego GREEN tras exportar la constante (24/24 en el spec). Suite completa: 63 suites / 560 tests unitarios verdes, lint limpio en los 4 archivos tocados. Verificación end-to-end: `docker exec maze-back npx prisma db seed` sembró los 3 niveles hex faltantes (`Seed complete: 22 levels`, antes 19); `SELECT section, count(*) FROM "Level" GROUP BY section` confirma `hex=3`; `GET /levels` (puerto 3000, el mismo que consume el front) ahora devuelve `hex-01`, `hex-02`, `hex-03` con `section: "hex"`.
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 100 — feat(tooling): generador procedimental de niveles hex por inserción inversa
+
+**Fecha:** 2026-07-18
+**Tarea o problema abordado:** El usuario rechazó el estado del modo hexagonal: t-snowflake era un asterisco esquelético (10 flechas / 31 celdas sobre las ~90 prometidas) y hex-03 quedaba en 76/91. Autorar a mano niveles hex densos no converge; hacía falta un generador real.
+**Herramienta de IA utilizada:** Claude Code (Fable 5)
+**Prompt o instrucción proporcionada:** > "Hagamos un trabajo rapido creativo que arregle esto a como deberia ser, tablero estilo panal con niveles bien generados y buena animacion"
+**Resultado obtenido:** `scripts/generate-hex-level.ts` (herramienta de autoría, NO producto): tesela las celdas objetivo de dentro hacia fuera con segmentos rectos insertados en orden inverso de solución — cada flecha nueva exige su carril de salida libre de las ya insertadas, así el orden inverso de inserción ES una solución (solubilidad por construcción). Sesgo "hacia fuera primero" (producto punto en píxel flat-top, misma proyección que HexGeometry del front), dos pasadas anti-singles (segmentos ≥2 antes que flechas de una celda), PRNG mulberry32 determinista (misma semilla ⇒ mismo nivel), best-of-60 semillas por menor número de flechas, y re-verificación final con LevelSolver + validadores de paint/silueta antes de escribir el fixture. Incluye constructor de silueta de copo 6-simétrico (brazo en axiales rotado 60°: rotCW(q,r)=(-r,q+r); espina + raíles paralelos + puntas dendríticas, 91 celdas sobre R=6). Lint limpio.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 101 — feat(levels): hex-03 y t-snowflake densos regenerados con el generador
+
+**Fecha:** 2026-07-18
+**Tarea o problema abordado:** Regenerar los dos niveles hex señalados: hex-03 como finale denso R=5 y t-snowflake como copo real que cumpla las ~90 celdas del diseño (ADR-0007 D1/D2 recalibrado: R=6 para que el copo tenga espacio negativo y siga leyéndose como copo).
+**Herramienta de IA utilizada:** Claude Code (Fable 5)
+**Prompt o instrucción proporcionada:** > "npx ts-node scripts/generate-hex-level.ts --figure free --id hex-03 --radius 5 --fill 0.95 --max-len 5 --seed 1 / --figure snowflake --seed 1"
+**Resultado obtenido:** `hex-03`: 86/91 celdas (fill 0.95), 29 flechas (media 3.0 celdas), timeLimitSec 130 (D6: round5(29×4.5)). `t-snowflake`: R=6 (cols/rows 13), silueta copo 6-simétrico de 91 celdas totalmente teselada (roles core=19 celdas azul #3B82F6 + snow=72 hielo #E8F4FF, las flechas no cruzan regiones), 41 flechas, timeLimitSec 185. Assert del spec `curated-levels.spec.ts` actualizado (45→185, con la derivación D6 comentada). Suite unit completa 63 suites / 560 tests verdes; guardianes de catálogo (solver+silueta+paint) 133/133. README: sección Seeding actualizada (copo R=6 y comandos del generador).
+**Modificaciones realizadas por el equipo:** (completar manualmente)

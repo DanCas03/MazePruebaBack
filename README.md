@@ -162,7 +162,7 @@ descriptions for them): response DTOs live next to their `*Mapper` in
 | POST   | `/progress`           | Yes  | Sync completed levels + best scores (merges, never degrades) |
 | GET    | `/progress`           | Yes  | Get the authenticated user's progress |
 
-> The `order` on a `Level` record is an explicit, curatable sequence (not insertion order) — the curated 15-level seed (back#10) controls it directly. Since back#31 (ADR 0004) `order` is nullable and a `section` column splits the catalog: **campaign** levels keep the contiguous play order, **themed** levels (figure boards) have no play order and are listed after the campaign, sorted by id. Paint metadata and the `silhouette` figure mask (back#53) are opaque to the backend: neither affects mechanics, solvability, or the Solution. Since back#60 the seed also persists the optional `space` descriptor and ships four hexagonal levels: three free boards `hex-01`/`hex-02`/`hex-03` (section `hex`, radii R=3/4/5, no play order, timed) and one themed masked board `t-snowflake` (a 6-fold snowflake silhouette over an R=5 hex).
+> The `order` on a `Level` record is an explicit, curatable sequence (not insertion order) — the curated 15-level seed (back#10) controls it directly. Since back#31 (ADR 0004) `order` is nullable and a `section` column splits the catalog: **campaign** levels keep the contiguous play order, **themed** levels (figure boards) have no play order and are listed after the campaign, sorted by id. Paint metadata and the `silhouette` figure mask (back#53) are opaque to the backend: neither affects mechanics, solvability, or the Solution. Since back#60 the seed also persists the optional `space` descriptor and ships four hexagonal levels: three free boards `hex-01`/`hex-02`/`hex-03` (section `hex`, radii R=3/4/5, no play order, timed) and one themed masked board `t-snowflake` (a fully tessellated 6-fold snowflake silhouette of 91 cells over an R=6 hex).
 
 ```jsonc
 // POST /auth/register → 201
@@ -316,6 +316,13 @@ Hex levels are authored by hand against the hexagon geometry and converged with 
 
 ```bash
 npx ts-node scripts/verify-hex-level.ts prisma/levels/hex-01.json
+```
+
+The dense hex boards (`hex-03` at 86/91 cells over R=5; `t-snowflake` as a fully tessellated 6-fold snowflake of 91 cells over R=6) are instead produced by a deterministic procedural generator, `scripts/generate-hex-level.ts`: it tessellates the target cells center-out with straight segments inserted in **reverse solution order** (each new arrow's exit lane is clear of the arrows already placed, so the reverse insertion order is a solution by construction), then re-verifies the result with the real `LevelSolver` and the paint/silhouette validators before writing the fixture. Same seed ⇒ same level:
+
+```bash
+npx ts-node scripts/generate-hex-level.ts --figure free --id hex-03 --radius 5 --fill 0.95 --max-len 5 --seed 1
+npx ts-node scripts/generate-hex-level.ts --figure snowflake --seed 1
 ```
 
 Every fixture in `prisma/levels/` (the 18 rectangular + 4 hexagonal boards) is additionally guarded in CI — with no database — by [`level-catalog.spec.ts`](src/infrastructure/database/level-catalog.spec.ts), which re-runs the seed's solvability and paint/silhouette checks over the whole catalog.

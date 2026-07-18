@@ -299,7 +299,9 @@ describe('curated levels (back#10 seed fixtures)', () => {
         expect(fixture).not.toHaveProperty('order');
       });
       // Las figuras front#68 son sin cronómetro; t-snowflake SÍ lleva
-      // `timeLimitSec` explícito (back#60 D6/D7: el temático hex es cronometrado).
+      // `timeLimitSec` explícito (back#60 D6/D7: el temático hex es
+      // cronometrado). 185 = round5(41 flechas × 4.5) del copo denso R=6
+      // regenerado con scripts/generate-hex-level.ts (seed 1).
       themed
         .filter((fixture) => fixture.levelId !== 't-snowflake')
         .forEach((fixture) =>
@@ -308,7 +310,7 @@ describe('curated levels (back#10 seed fixtures)', () => {
       expect(
         themed.find((fixture) => fixture.levelId === 't-snowflake')
           ?.timeLimitSec,
-      ).toBe(45);
+      ).toBe(185);
     });
 
     it.each(themed.map((fixture) => [fixture.levelId, fixture] as const))(
