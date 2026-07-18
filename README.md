@@ -318,11 +318,13 @@ Hex levels are authored by hand against the hexagon geometry and converged with 
 npx ts-node scripts/verify-hex-level.ts prisma/levels/hex-01.json
 ```
 
-The dense hex boards (`hex-03` at 86/91 cells over R=5; `t-snowflake` as a fully tessellated 6-fold snowflake of 91 cells over R=6) are instead produced by a deterministic procedural generator, `scripts/generate-hex-level.ts`: it tessellates the target cells center-out with straight segments inserted in **reverse solution order** (each new arrow's exit lane is clear of the arrows already placed, so the reverse insertion order is a solution by construction), then re-verifies the result with the real `LevelSolver` and the paint/silhouette validators before writing the fixture. Same seed ⇒ same level:
+All four shipped hex boards are produced by a deterministic procedural generator, `scripts/generate-hex-level.ts`: it tessellates the target cells center-out with **snake paths** (±60° elbows with probability `--turn-prob`, matching the canonical arrow-path model — `headDir` always continues the last body segment) inserted in **reverse solution order** (each new snake's exit lane is clear of the snakes already placed, so the reverse insertion order is a solution by construction), then re-verifies the result with the real `LevelSolver` and the paint/silhouette validators before writing the fixture. Same seed ⇒ same level:
 
 ```bash
-npx ts-node scripts/generate-hex-level.ts --figure free --id hex-03 --radius 5 --fill 0.95 --max-len 5 --seed 1
-npx ts-node scripts/generate-hex-level.ts --figure snowflake --seed 1
+npx ts-node scripts/generate-hex-level.ts --figure free --id hex-01 --radius 3 --fill 0.7 --max-len 3 --seed 2
+npx ts-node scripts/generate-hex-level.ts --figure free --id hex-02 --radius 4 --fill 0.8 --max-len 4 --seed 2
+npx ts-node scripts/generate-hex-level.ts --figure free --id hex-03 --radius 5 --fill 0.95 --max-len 5 --seed 2 --turn-prob 0.3
+npx ts-node scripts/generate-hex-level.ts --figure snowflake --seed 2
 ```
 
 Every fixture in `prisma/levels/` (the 18 rectangular + 4 hexagonal boards) is additionally guarded in CI — with no database — by [`level-catalog.spec.ts`](src/infrastructure/database/level-catalog.spec.ts), which re-runs the seed's solvability and paint/silhouette checks over the whole catalog.

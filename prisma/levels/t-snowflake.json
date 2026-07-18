@@ -3,7 +3,7 @@
   "section": "themed",
   "cols": 13,
   "rows": 13,
-  "timeLimitSec": 185,
+  "timeLimitSec": 165,
   "space": {
     "type": "hex",
     "radius": 6
@@ -385,31 +385,12 @@
   "arrows": [
     {
       "id": "arrow-0",
-      "headDir": "up",
+      "headDir": "downLeft",
       "cells": [
-        [
-          7,
-          6
-        ],
         [
           6,
           6
         ],
-        [
-          5,
-          6
-        ],
-        [
-          4,
-          6
-        ]
-      ],
-      "paintRole": "core"
-    },
-    {
-      "id": "arrow-1",
-      "headDir": "downLeft",
-      "cells": [
         [
           7,
           5
@@ -422,7 +403,53 @@
       "paintRole": "core"
     },
     {
+      "id": "arrow-1",
+      "headDir": "down",
+      "cells": [
+        [
+          5,
+          6
+        ],
+        [
+          4,
+          7
+        ],
+        [
+          4,
+          8
+        ],
+        [
+          5,
+          8
+        ]
+      ],
+      "paintRole": "core"
+    },
+    {
       "id": "arrow-2",
+      "headDir": "downLeft",
+      "cells": [
+        [
+          5,
+          7
+        ],
+        [
+          6,
+          7
+        ],
+        [
+          7,
+          7
+        ],
+        [
+          8,
+          6
+        ]
+      ],
+      "paintRole": "core"
+    },
+    {
+      "id": "arrow-3",
       "headDir": "upLeft",
       "cells": [
         [
@@ -437,45 +464,30 @@
       "paintRole": "core"
     },
     {
-      "id": "arrow-3",
-      "headDir": "downRight",
-      "cells": [
-        [
-          6,
-          7
-        ],
-        [
-          6,
-          8
-        ]
-      ],
-      "paintRole": "core"
-    },
-    {
       "id": "arrow-4",
-      "headDir": "upRight",
+      "headDir": "downLeft",
       "cells": [
         [
-          5,
-          7
+          7,
+          6
         ],
         [
-          4,
-          8
+          8,
+          5
         ]
       ],
       "paintRole": "core"
     },
     {
       "id": "arrow-5",
-      "headDir": "downLeft",
+      "headDir": "upRight",
       "cells": [
         [
-          7,
-          7
+          5,
+          5
         ],
         [
-          8,
+          4,
           6
         ]
       ],
@@ -486,17 +498,6 @@
       "headDir": "upLeft",
       "cells": [
         [
-          5,
-          5
-        ]
-      ],
-      "paintRole": "core"
-    },
-    {
-      "id": "arrow-7",
-      "headDir": "downLeft",
-      "cells": [
-        [
           7,
           4
         ]
@@ -504,37 +505,84 @@
       "paintRole": "core"
     },
     {
-      "id": "arrow-8",
-      "headDir": "upRight",
-      "cells": [
-        [
-          4,
-          7
-        ]
-      ],
-      "paintRole": "core"
-    },
-    {
-      "id": "arrow-9",
-      "headDir": "downLeft",
-      "cells": [
-        [
-          8,
-          5
-        ]
-      ],
-      "paintRole": "core"
-    },
-    {
-      "id": "arrow-10",
+      "id": "arrow-7",
       "headDir": "downRight",
       "cells": [
         [
-          5,
+          6,
           8
         ]
       ],
       "paintRole": "core"
+    },
+    {
+      "id": "arrow-8",
+      "headDir": "downRight",
+      "cells": [
+        [
+          9,
+          6
+        ],
+        [
+          10,
+          6
+        ],
+        [
+          10,
+          7
+        ],
+        [
+          10,
+          8
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-9",
+      "headDir": "downRight",
+      "cells": [
+        [
+          6,
+          9
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          7,
+          10
+        ],
+        [
+          7,
+          11
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-10",
+      "headDir": "down",
+      "cells": [
+        [
+          9,
+          3
+        ],
+        [
+          10,
+          2
+        ],
+        [
+          11,
+          2
+        ],
+        [
+          12,
+          2
+        ]
+      ],
+      "paintRole": "snow"
     },
     {
       "id": "arrow-11",
@@ -561,75 +609,6 @@
     },
     {
       "id": "arrow-12",
-      "headDir": "down",
-      "cells": [
-        [
-          9,
-          6
-        ],
-        [
-          10,
-          6
-        ],
-        [
-          11,
-          6
-        ],
-        [
-          12,
-          6
-        ]
-      ],
-      "paintRole": "snow"
-    },
-    {
-      "id": "arrow-13",
-      "headDir": "downLeft",
-      "cells": [
-        [
-          9,
-          3
-        ],
-        [
-          10,
-          2
-        ],
-        [
-          11,
-          1
-        ],
-        [
-          12,
-          0
-        ]
-      ],
-      "paintRole": "snow"
-    },
-    {
-      "id": "arrow-14",
-      "headDir": "upLeft",
-      "cells": [
-        [
-          6,
-          3
-        ],
-        [
-          6,
-          2
-        ],
-        [
-          6,
-          1
-        ],
-        [
-          6,
-          0
-        ]
-      ],
-      "paintRole": "snow"
-    },
-    {
-      "id": "arrow-15",
       "headDir": "up",
       "cells": [
         [
@@ -647,6 +626,71 @@
         [
           0,
           6
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-13",
+      "headDir": "up",
+      "cells": [
+        [
+          6,
+          3
+        ],
+        [
+          6,
+          2
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          5,
+          1
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-14",
+      "headDir": "up",
+      "cells": [
+        [
+          2,
+          7
+        ],
+        [
+          1,
+          7
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-15",
+      "headDir": "down",
+      "cells": [
+        [
+          9,
+          2
+        ],
+        [
+          10,
+          1
+        ],
+        [
+          11,
+          0
+        ],
+        [
+          12,
+          0
         ]
       ],
       "paintRole": "snow"
@@ -656,39 +700,27 @@
       "headDir": "downRight",
       "cells": [
         [
-          6,
-          9
-        ],
-        [
-          6,
-          10
-        ],
-        [
-          6,
-          11
-        ],
-        [
-          6,
-          12
+          9,
+          7
         ]
       ],
       "paintRole": "snow"
     },
     {
       "id": "arrow-17",
-      "headDir": "upLeft",
+      "headDir": "up",
       "cells": [
         [
-          5,
-          3
+          3,
+          5
         ],
         [
-          5,
-          2
+          2,
+          5
         ],
         [
-          5,
-          1
+          1,
+          5
         ]
       ],
       "paintRole": "snow"
@@ -698,35 +730,27 @@
       "headDir": "up",
       "cells": [
         [
-          3,
-          5
-        ],
-        [
           2,
-          5
+          9
         ],
         [
           1,
-          5
+          10
+        ],
+        [
+          0,
+          10
         ]
       ],
       "paintRole": "snow"
     },
     {
       "id": "arrow-19",
-      "headDir": "downRight",
+      "headDir": "down",
       "cells": [
         [
-          5,
-          10
-        ],
-        [
-          5,
-          11
-        ],
-        [
-          5,
-          12
+          10,
+          3
         ]
       ],
       "paintRole": "snow"
@@ -736,42 +760,42 @@
       "headDir": "downRight",
       "cells": [
         [
-          7,
-          9
-        ],
-        [
-          7,
+          6,
           10
         ],
         [
-          7,
+          6,
           11
+        ],
+        [
+          6,
+          12
         ]
       ],
       "paintRole": "snow"
     },
     {
       "id": "arrow-21",
-      "headDir": "up",
+      "headDir": "downRight",
       "cells": [
         [
-          2,
-          7
+          5,
+          10
         ],
         [
-          1,
-          7
+          5,
+          11
         ],
         [
-          0,
-          7
+          5,
+          12
         ]
       ],
       "paintRole": "snow"
     },
     {
       "id": "arrow-22",
-      "headDir": "upLeft",
+      "headDir": "up",
       "cells": [
         [
           7,
@@ -784,13 +808,59 @@
         [
           7,
           0
+        ],
+        [
+          6,
+          0
         ]
       ],
       "paintRole": "snow"
     },
     {
       "id": "arrow-23",
-      "headDir": "upRight",
+      "headDir": "up",
+      "cells": [
+        [
+          5,
+          3
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          4,
+          2
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-24",
+      "headDir": "downRight",
+      "cells": [
+        [
+          10,
+          5
+        ],
+        [
+          11,
+          5
+        ],
+        [
+          12,
+          5
+        ],
+        [
+          12,
+          6
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-25",
+      "headDir": "downRight",
       "cells": [
         [
           3,
@@ -801,65 +871,23 @@
           11
         ],
         [
-          1,
+          2,
           12
         ]
       ],
       "paintRole": "snow"
     },
     {
-      "id": "arrow-24",
-      "headDir": "upRight",
-      "cells": [
-        [
-          2,
-          9
-        ],
-        [
-          1,
-          10
-        ],
-        [
-          0,
-          11
-        ]
-      ],
-      "paintRole": "snow"
-    },
-    {
-      "id": "arrow-25",
-      "headDir": "down",
-      "cells": [
-        [
-          9,
-          7
-        ],
-        [
-          10,
-          7
-        ],
-        [
-          11,
-          7
-        ]
-      ],
-      "paintRole": "snow"
-    },
-    {
       "id": "arrow-26",
-      "headDir": "downLeft",
+      "headDir": "downRight",
       "cells": [
         [
-          10,
-          3
+          11,
+          6
         ],
         [
           11,
-          2
-        ],
-        [
-          12,
-          1
+          7
         ]
       ],
       "paintRole": "snow"
@@ -869,46 +897,34 @@
       "headDir": "down",
       "cells": [
         [
-          10,
-          5
-        ],
-        [
           11,
-          5
+          1
         ],
         [
           12,
-          5
+          1
         ]
       ],
       "paintRole": "snow"
     },
     {
       "id": "arrow-28",
-      "headDir": "downLeft",
+      "headDir": "upRight",
       "cells": [
         [
-          9,
-          2
-        ],
-        [
-          10,
-          1
-        ],
-        [
-          11,
-          0
+          1,
+          12
         ]
       ],
       "paintRole": "snow"
     },
     {
       "id": "arrow-29",
-      "headDir": "down",
+      "headDir": "up",
       "cells": [
         [
-          12,
-          4
+          0,
+          8
         ]
       ],
       "paintRole": "snow"
@@ -918,17 +934,6 @@
       "headDir": "downRight",
       "cells": [
         [
-          8,
-          10
-        ]
-      ],
-      "paintRole": "snow"
-    },
-    {
-      "id": "arrow-31",
-      "headDir": "downRight",
-      "cells": [
-        [
           4,
           12
         ]
@@ -936,29 +941,18 @@
       "paintRole": "snow"
     },
     {
-      "id": "arrow-32",
-      "headDir": "up",
-      "cells": [
-        [
-          0,
-          8
-        ]
-      ],
-      "paintRole": "snow"
-    },
-    {
-      "id": "arrow-33",
+      "id": "arrow-31",
       "headDir": "upLeft",
       "cells": [
         [
-          4,
-          2
+          8,
+          0
         ]
       ],
       "paintRole": "snow"
     },
     {
-      "id": "arrow-34",
+      "id": "arrow-32",
       "headDir": "downLeft",
       "cells": [
         [
@@ -969,18 +963,29 @@
       "paintRole": "snow"
     },
     {
-      "id": "arrow-35",
+      "id": "arrow-33",
       "headDir": "upRight",
       "cells": [
         [
           0,
+          11
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-34",
+      "headDir": "downRight",
+      "cells": [
+        [
+          8,
           10
         ]
       ],
       "paintRole": "snow"
     },
     {
-      "id": "arrow-36",
+      "id": "arrow-35",
       "headDir": "up",
       "cells": [
         [
@@ -991,45 +996,12 @@
       "paintRole": "snow"
     },
     {
-      "id": "arrow-37",
-      "headDir": "downLeft",
-      "cells": [
-        [
-          12,
-          2
-        ]
-      ],
-      "paintRole": "snow"
-    },
-    {
-      "id": "arrow-38",
+      "id": "arrow-36",
       "headDir": "down",
       "cells": [
         [
-          10,
-          8
-        ]
-      ],
-      "paintRole": "snow"
-    },
-    {
-      "id": "arrow-39",
-      "headDir": "upLeft",
-      "cells": [
-        [
-          8,
-          0
-        ]
-      ],
-      "paintRole": "snow"
-    },
-    {
-      "id": "arrow-40",
-      "headDir": "upRight",
-      "cells": [
-        [
-          2,
-          12
+          12,
+          4
         ]
       ],
       "paintRole": "snow"

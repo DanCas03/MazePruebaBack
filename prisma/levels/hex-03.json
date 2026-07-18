@@ -3,7 +3,7 @@
   "section": "hex",
   "cols": 11,
   "rows": 11,
-  "timeLimitSec": 130,
+  "timeLimitSec": 115,
   "space": {
     "type": "hex",
     "radius": 5
@@ -11,53 +11,53 @@
   "arrows": [
     {
       "id": "arrow-0",
-      "headDir": "downLeft",
+      "headDir": "upRight",
       "cells": [
         [
           5,
           5
         ],
         [
-          6,
-          4
+          4,
+          6
         ],
         [
-          7,
-          3
+          3,
+          7
         ],
         [
-          8,
-          2
+          2,
+          8
         ],
         [
-          9,
-          1
+          1,
+          9
         ]
       ]
     },
     {
       "id": "arrow-1",
-      "headDir": "upLeft",
+      "headDir": "down",
       "cells": [
         [
-          5,
-          4
+          6,
+          5
         ],
         [
-          5,
-          3
+          7,
+          5
         ],
         [
-          5,
-          2
+          8,
+          5
         ],
         [
-          5,
-          1
+          9,
+          5
         ],
         [
-          5,
-          0
+          10,
+          5
         ]
       ]
     },
@@ -67,307 +67,299 @@
       "cells": [
         [
           6,
-          5
+          4
         ],
         [
           7,
-          5
+          3
         ],
         [
           8,
-          5
+          3
         ],
         [
           9,
-          5
+          3
         ],
         [
           10,
-          5
+          3
         ]
       ]
     },
     {
       "id": "arrow-3",
-      "headDir": "upRight",
+      "headDir": "upLeft",
       "cells": [
         [
+          5,
+          4
+        ],
+        [
           4,
-          6
+          4
         ],
         [
           3,
-          7
+          4
         ],
         [
-          2,
-          8
+          3,
+          3
         ],
         [
-          1,
-          9
-        ],
-        [
-          0,
-          10
+          3,
+          2
         ]
       ]
     },
     {
       "id": "arrow-4",
-      "headDir": "up",
+      "headDir": "upRight",
       "cells": [
         [
+          5,
+          6
+        ],
+        [
+          5,
+          7
+        ],
+        [
           4,
-          5
+          8
         ],
         [
           3,
-          5
+          9
         ],
         [
           2,
-          5
-        ],
-        [
-          1,
-          5
-        ],
-        [
-          0,
-          5
+          10
         ]
       ]
     },
     {
       "id": "arrow-5",
-      "headDir": "downRight",
+      "headDir": "upLeft",
       "cells": [
         [
-          5,
+          4,
+          5
+        ],
+        [
+          3,
           6
         ],
         [
-          5,
-          7
+          2,
+          6
         ],
         [
-          5,
-          8
+          1,
+          6
         ],
         [
-          5,
-          9
-        ],
-        [
-          5,
-          10
+          1,
+          5
         ]
       ]
     },
     {
       "id": "arrow-6",
-      "headDir": "downLeft",
+      "headDir": "upRight",
       "cells": [
         [
-          7,
-          4
+          6,
+          6
         ],
         [
-          8,
-          3
+          6,
+          7
+        ],
+        [
+          5,
+          8
+        ],
+        [
+          4,
+          9
+        ],
+        [
+          3,
+          10
         ]
       ]
     },
     {
       "id": "arrow-7",
-      "headDir": "upLeft",
+      "headDir": "down",
       "cells": [
         [
-          4,
-          4
-        ],
-        [
-          4,
+          6,
           3
         ],
         [
-          4,
+          7,
           2
         ],
         [
-          4,
+          8,
           1
+        ],
+        [
+          9,
+          0
+        ],
+        [
+          10,
+          0
         ]
       ]
     },
     {
       "id": "arrow-8",
-      "headDir": "upLeft",
+      "headDir": "down",
       "cells": [
         [
-          6,
-          3
+          7,
+          4
         ],
         [
-          6,
-          2
+          8,
+          4
         ],
         [
-          6,
-          1
+          9,
+          4
         ],
         [
-          6,
-          0
+          10,
+          4
         ]
       ]
     },
     {
       "id": "arrow-9",
-      "headDir": "upRight",
+      "headDir": "up",
       "cells": [
         [
-          3,
-          6
-        ],
-        [
-          2,
+          4,
           7
         ],
         [
-          1,
+          3,
           8
         ],
         [
-          0,
+          2,
           9
+        ],
+        [
+          1,
+          10
+        ],
+        [
+          0,
+          10
         ]
       ]
     },
     {
       "id": "arrow-10",
-      "headDir": "downRight",
+      "headDir": "upLeft",
       "cells": [
         [
-          6,
-          6
+          3,
+          5
         ],
         [
-          6,
-          7
+          2,
+          5
         ],
         [
-          6,
-          8
+          2,
+          4
         ],
         [
-          6,
-          9
+          2,
+          3
         ]
       ]
     },
     {
       "id": "arrow-11",
-      "headDir": "upRight",
+      "headDir": "down",
       "cells": [
         [
           4,
-          7
-        ],
-        [
-          3,
-          8
-        ],
-        [
-          2,
-          9
-        ],
-        [
-          1,
-          10
+          3
         ]
       ]
     },
     {
       "id": "arrow-12",
-      "headDir": "downLeft",
+      "headDir": "upLeft",
       "cells": [
         [
-          7,
-          2
+          2,
+          7
         ],
         [
-          8,
-          1
+          1,
+          7
         ],
         [
-          9,
-          0
+          0,
+          7
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          0,
+          5
         ]
       ]
     },
     {
       "id": "arrow-13",
-      "headDir": "down",
-      "cells": [
-        [
-          8,
-          4
-        ],
-        [
-          9,
-          4
-        ],
-        [
-          10,
-          4
-        ]
-      ]
-    },
-    {
-      "id": "arrow-14",
-      "headDir": "up",
-      "cells": [
-        [
-          3,
-          4
-        ],
-        [
-          2,
-          4
-        ],
-        [
-          1,
-          4
-        ]
-      ]
-    },
-    {
-      "id": "arrow-15",
-      "headDir": "down",
+      "headDir": "upRight",
       "cells": [
         [
           7,
           6
         ],
         [
-          8,
-          6
+          7,
+          7
         ],
         [
-          9,
-          6
+          7,
+          8
+        ],
+        [
+          6,
+          9
+        ],
+        [
+          5,
+          10
         ]
       ]
     },
     {
-      "id": "arrow-16",
-      "headDir": "downLeft",
+      "id": "arrow-14",
+      "headDir": "down",
       "cells": [
         [
+          8,
+          2
+        ],
+        [
           9,
-          3
+          2
         ],
         [
           10,
@@ -376,11 +368,15 @@
       ]
     },
     {
-      "id": "arrow-17",
-      "headDir": "downRight",
+      "id": "arrow-15",
+      "headDir": "upRight",
       "cells": [
         [
-          4,
+          6,
+          8
+        ],
+        [
+          5,
           9
         ],
         [
@@ -390,58 +386,86 @@
       ]
     },
     {
-      "id": "arrow-18",
-      "headDir": "downRight",
+      "id": "arrow-16",
+      "headDir": "upLeft",
       "cells": [
         [
-          7,
-          7
+          5,
+          1
         ],
         [
-          7,
-          8
+          5,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "arrow-17",
+      "headDir": "down",
+      "cells": [
+        [
+          9,
+          1
+        ],
+        [
+          10,
+          1
+        ]
+      ]
+    },
+    {
+      "id": "arrow-18",
+      "headDir": "upLeft",
+      "cells": [
+        [
+          4,
+          2
+        ],
+        [
+          4,
+          1
         ]
       ]
     },
     {
       "id": "arrow-19",
-      "headDir": "upLeft",
+      "headDir": "downLeft",
       "cells": [
         [
           7,
           1
         ],
         [
-          7,
+          8,
           0
         ]
       ]
     },
     {
       "id": "arrow-20",
-      "headDir": "up",
+      "headDir": "down",
       "cells": [
         [
-          1,
-          7
+          8,
+          6
         ],
         [
-          0,
-          7
+          9,
+          6
         ]
       ]
     },
     {
       "id": "arrow-21",
-      "headDir": "downRight",
+      "headDir": "upLeft",
       "cells": [
         [
-          3,
-          9
+          6,
+          1
         ],
         [
-          3,
-          10
+          6,
+          0
         ]
       ]
     },
@@ -450,12 +474,8 @@
       "headDir": "up",
       "cells": [
         [
-          1,
-          6
-        ],
-        [
           0,
-          6
+          8
         ]
       ]
     },
@@ -464,22 +484,18 @@
       "headDir": "upLeft",
       "cells": [
         [
-          3,
-          3
-        ],
-        [
-          3,
-          2
+          7,
+          0
         ]
       ]
     },
     {
       "id": "arrow-24",
-      "headDir": "down",
+      "headDir": "upRight",
       "cells": [
         [
-          10,
-          3
+          0,
+          9
         ]
       ]
     },
@@ -490,40 +506,6 @@
         [
           8,
           7
-        ]
-      ]
-    },
-    {
-      "id": "arrow-26",
-      "headDir": "upLeft",
-      "cells": [
-        [
-          10,
-          1
-        ],
-        [
-          10,
-          0
-        ]
-      ]
-    },
-    {
-      "id": "arrow-27",
-      "headDir": "downLeft",
-      "cells": [
-        [
-          8,
-          0
-        ]
-      ]
-    },
-    {
-      "id": "arrow-28",
-      "headDir": "up",
-      "cells": [
-        [
-          2,
-          3
         ]
       ]
     }
