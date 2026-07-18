@@ -1,87 +1,1038 @@
 {
   "levelId": "t-snowflake",
   "section": "themed",
-  "cols": 11,
-  "rows": 11,
-  "space": { "type": "hex", "radius": 5 },
-  "timeLimitSec": 45,
+  "cols": 13,
+  "rows": 13,
+  "timeLimitSec": 185,
+  "space": {
+    "type": "hex",
+    "radius": 6
+  },
   "palette": {
     "core": "#3B82F6",
     "snow": "#E8F4FF"
+  },
+  "silhouette": {
+    "core": [
+      [
+        4,
+        6
+      ],
+      [
+        4,
+        7
+      ],
+      [
+        4,
+        8
+      ],
+      [
+        5,
+        5
+      ],
+      [
+        5,
+        6
+      ],
+      [
+        5,
+        7
+      ],
+      [
+        5,
+        8
+      ],
+      [
+        6,
+        4
+      ],
+      [
+        6,
+        5
+      ],
+      [
+        6,
+        6
+      ],
+      [
+        6,
+        7
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        7,
+        4
+      ],
+      [
+        7,
+        5
+      ],
+      [
+        7,
+        6
+      ],
+      [
+        7,
+        7
+      ],
+      [
+        8,
+        4
+      ],
+      [
+        8,
+        5
+      ],
+      [
+        8,
+        6
+      ]
+    ],
+    "snow": [
+      [
+        0,
+        6
+      ],
+      [
+        0,
+        7
+      ],
+      [
+        0,
+        8
+      ],
+      [
+        0,
+        10
+      ],
+      [
+        0,
+        11
+      ],
+      [
+        0,
+        12
+      ],
+      [
+        1,
+        5
+      ],
+      [
+        1,
+        6
+      ],
+      [
+        1,
+        7
+      ],
+      [
+        1,
+        10
+      ],
+      [
+        1,
+        11
+      ],
+      [
+        1,
+        12
+      ],
+      [
+        2,
+        4
+      ],
+      [
+        2,
+        5
+      ],
+      [
+        2,
+        6
+      ],
+      [
+        2,
+        7
+      ],
+      [
+        2,
+        9
+      ],
+      [
+        2,
+        10
+      ],
+      [
+        2,
+        11
+      ],
+      [
+        2,
+        12
+      ],
+      [
+        3,
+        5
+      ],
+      [
+        3,
+        6
+      ],
+      [
+        3,
+        9
+      ],
+      [
+        3,
+        10
+      ],
+      [
+        4,
+        2
+      ],
+      [
+        4,
+        12
+      ],
+      [
+        5,
+        1
+      ],
+      [
+        5,
+        2
+      ],
+      [
+        5,
+        3
+      ],
+      [
+        5,
+        10
+      ],
+      [
+        5,
+        11
+      ],
+      [
+        5,
+        12
+      ],
+      [
+        6,
+        0
+      ],
+      [
+        6,
+        1
+      ],
+      [
+        6,
+        2
+      ],
+      [
+        6,
+        3
+      ],
+      [
+        6,
+        9
+      ],
+      [
+        6,
+        10
+      ],
+      [
+        6,
+        11
+      ],
+      [
+        6,
+        12
+      ],
+      [
+        7,
+        0
+      ],
+      [
+        7,
+        1
+      ],
+      [
+        7,
+        2
+      ],
+      [
+        7,
+        9
+      ],
+      [
+        7,
+        10
+      ],
+      [
+        7,
+        11
+      ],
+      [
+        8,
+        0
+      ],
+      [
+        8,
+        10
+      ],
+      [
+        9,
+        2
+      ],
+      [
+        9,
+        3
+      ],
+      [
+        9,
+        6
+      ],
+      [
+        9,
+        7
+      ],
+      [
+        10,
+        0
+      ],
+      [
+        10,
+        1
+      ],
+      [
+        10,
+        2
+      ],
+      [
+        10,
+        3
+      ],
+      [
+        10,
+        5
+      ],
+      [
+        10,
+        6
+      ],
+      [
+        10,
+        7
+      ],
+      [
+        10,
+        8
+      ],
+      [
+        11,
+        0
+      ],
+      [
+        11,
+        1
+      ],
+      [
+        11,
+        2
+      ],
+      [
+        11,
+        5
+      ],
+      [
+        11,
+        6
+      ],
+      [
+        11,
+        7
+      ],
+      [
+        12,
+        0
+      ],
+      [
+        12,
+        1
+      ],
+      [
+        12,
+        2
+      ],
+      [
+        12,
+        4
+      ],
+      [
+        12,
+        5
+      ],
+      [
+        12,
+        6
+      ]
+    ]
   },
   "arrows": [
     {
       "id": "arrow-0",
       "headDir": "up",
-      "cells": [[0, 5], [1, 5], [2, 5], [3, 5]],
-      "paintRole": "snow"
+      "cells": [
+        [
+          7,
+          6
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          4,
+          6
+        ]
+      ],
+      "paintRole": "core"
     },
     {
       "id": "arrow-1",
-      "headDir": "down",
-      "cells": [[10, 5], [9, 5], [8, 5], [7, 5]],
-      "paintRole": "snow"
+      "headDir": "downLeft",
+      "cells": [
+        [
+          7,
+          5
+        ],
+        [
+          8,
+          4
+        ]
+      ],
+      "paintRole": "core"
     },
     {
       "id": "arrow-2",
-      "headDir": "upRight",
-      "cells": [[0, 10], [1, 9], [2, 8], [3, 7]],
-      "paintRole": "snow"
+      "headDir": "upLeft",
+      "cells": [
+        [
+          6,
+          5
+        ],
+        [
+          6,
+          4
+        ]
+      ],
+      "paintRole": "core"
     },
     {
       "id": "arrow-3",
-      "headDir": "downLeft",
-      "cells": [[10, 0], [9, 1], [8, 2], [7, 3]],
-      "paintRole": "snow"
+      "headDir": "downRight",
+      "cells": [
+        [
+          6,
+          7
+        ],
+        [
+          6,
+          8
+        ]
+      ],
+      "paintRole": "core"
     },
     {
       "id": "arrow-4",
-      "headDir": "downRight",
-      "cells": [[5, 10], [5, 9], [5, 8], [5, 7]],
-      "paintRole": "snow"
+      "headDir": "upRight",
+      "cells": [
+        [
+          5,
+          7
+        ],
+        [
+          4,
+          8
+        ]
+      ],
+      "paintRole": "core"
     },
     {
       "id": "arrow-5",
-      "headDir": "upLeft",
-      "cells": [[5, 0], [5, 1], [5, 2], [5, 3]],
-      "paintRole": "snow"
+      "headDir": "downLeft",
+      "cells": [
+        [
+          7,
+          7
+        ],
+        [
+          8,
+          6
+        ]
+      ],
+      "paintRole": "core"
     },
     {
       "id": "arrow-6",
-      "headDir": "up",
-      "cells": [[4, 5], [5, 5]],
+      "headDir": "upLeft",
+      "cells": [
+        [
+          5,
+          5
+        ]
+      ],
       "paintRole": "core"
     },
     {
       "id": "arrow-7",
-      "headDir": "up",
-      "cells": [[4, 6], [5, 6]],
+      "headDir": "downLeft",
+      "cells": [
+        [
+          7,
+          4
+        ]
+      ],
       "paintRole": "core"
     },
     {
       "id": "arrow-8",
-      "headDir": "down",
-      "cells": [[6, 4], [5, 4]],
+      "headDir": "upRight",
+      "cells": [
+        [
+          4,
+          7
+        ]
+      ],
       "paintRole": "core"
     },
     {
       "id": "arrow-9",
-      "headDir": "down",
-      "cells": [[6, 5]],
+      "headDir": "downLeft",
+      "cells": [
+        [
+          8,
+          5
+        ]
+      ],
       "paintRole": "core"
+    },
+    {
+      "id": "arrow-10",
+      "headDir": "downRight",
+      "cells": [
+        [
+          5,
+          8
+        ]
+      ],
+      "paintRole": "core"
+    },
+    {
+      "id": "arrow-11",
+      "headDir": "upRight",
+      "cells": [
+        [
+          3,
+          9
+        ],
+        [
+          2,
+          10
+        ],
+        [
+          1,
+          11
+        ],
+        [
+          0,
+          12
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-12",
+      "headDir": "down",
+      "cells": [
+        [
+          9,
+          6
+        ],
+        [
+          10,
+          6
+        ],
+        [
+          11,
+          6
+        ],
+        [
+          12,
+          6
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-13",
+      "headDir": "downLeft",
+      "cells": [
+        [
+          9,
+          3
+        ],
+        [
+          10,
+          2
+        ],
+        [
+          11,
+          1
+        ],
+        [
+          12,
+          0
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-14",
+      "headDir": "upLeft",
+      "cells": [
+        [
+          6,
+          3
+        ],
+        [
+          6,
+          2
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          6,
+          0
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-15",
+      "headDir": "up",
+      "cells": [
+        [
+          3,
+          6
+        ],
+        [
+          2,
+          6
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          0,
+          6
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-16",
+      "headDir": "downRight",
+      "cells": [
+        [
+          6,
+          9
+        ],
+        [
+          6,
+          10
+        ],
+        [
+          6,
+          11
+        ],
+        [
+          6,
+          12
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-17",
+      "headDir": "upLeft",
+      "cells": [
+        [
+          5,
+          3
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          5,
+          1
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-18",
+      "headDir": "up",
+      "cells": [
+        [
+          3,
+          5
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          1,
+          5
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-19",
+      "headDir": "downRight",
+      "cells": [
+        [
+          5,
+          10
+        ],
+        [
+          5,
+          11
+        ],
+        [
+          5,
+          12
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-20",
+      "headDir": "downRight",
+      "cells": [
+        [
+          7,
+          9
+        ],
+        [
+          7,
+          10
+        ],
+        [
+          7,
+          11
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-21",
+      "headDir": "up",
+      "cells": [
+        [
+          2,
+          7
+        ],
+        [
+          1,
+          7
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-22",
+      "headDir": "upLeft",
+      "cells": [
+        [
+          7,
+          2
+        ],
+        [
+          7,
+          1
+        ],
+        [
+          7,
+          0
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-23",
+      "headDir": "upRight",
+      "cells": [
+        [
+          3,
+          10
+        ],
+        [
+          2,
+          11
+        ],
+        [
+          1,
+          12
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-24",
+      "headDir": "upRight",
+      "cells": [
+        [
+          2,
+          9
+        ],
+        [
+          1,
+          10
+        ],
+        [
+          0,
+          11
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-25",
+      "headDir": "down",
+      "cells": [
+        [
+          9,
+          7
+        ],
+        [
+          10,
+          7
+        ],
+        [
+          11,
+          7
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-26",
+      "headDir": "downLeft",
+      "cells": [
+        [
+          10,
+          3
+        ],
+        [
+          11,
+          2
+        ],
+        [
+          12,
+          1
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-27",
+      "headDir": "down",
+      "cells": [
+        [
+          10,
+          5
+        ],
+        [
+          11,
+          5
+        ],
+        [
+          12,
+          5
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-28",
+      "headDir": "downLeft",
+      "cells": [
+        [
+          9,
+          2
+        ],
+        [
+          10,
+          1
+        ],
+        [
+          11,
+          0
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-29",
+      "headDir": "down",
+      "cells": [
+        [
+          12,
+          4
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-30",
+      "headDir": "downRight",
+      "cells": [
+        [
+          8,
+          10
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-31",
+      "headDir": "downRight",
+      "cells": [
+        [
+          4,
+          12
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-32",
+      "headDir": "up",
+      "cells": [
+        [
+          0,
+          8
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-33",
+      "headDir": "upLeft",
+      "cells": [
+        [
+          4,
+          2
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-34",
+      "headDir": "downLeft",
+      "cells": [
+        [
+          10,
+          0
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-35",
+      "headDir": "upRight",
+      "cells": [
+        [
+          0,
+          10
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-36",
+      "headDir": "up",
+      "cells": [
+        [
+          2,
+          4
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-37",
+      "headDir": "downLeft",
+      "cells": [
+        [
+          12,
+          2
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-38",
+      "headDir": "down",
+      "cells": [
+        [
+          10,
+          8
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-39",
+      "headDir": "upLeft",
+      "cells": [
+        [
+          8,
+          0
+        ]
+      ],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-40",
+      "headDir": "upRight",
+      "cells": [
+        [
+          2,
+          12
+        ]
+      ],
+      "paintRole": "snow"
     }
-  ],
-  "silhouette": {
-    "core": [
-      [5, 5], [4, 5], [6, 5], [4, 6], [5, 6], [5, 4], [6, 4]
-    ],
-    "snow": [
-      [3, 5], [2, 5], [1, 5], [0, 5],
-      [7, 5], [8, 5], [9, 5], [10, 5],
-      [3, 7], [2, 8], [1, 9], [0, 10],
-      [7, 3], [8, 2], [9, 1], [10, 0],
-      [5, 7], [5, 8], [5, 9], [5, 10],
-      [5, 3], [5, 2], [5, 1], [5, 0]
-    ]
-  }
+  ]
 }
