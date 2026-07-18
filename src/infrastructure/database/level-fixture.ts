@@ -60,8 +60,11 @@ export function fixtureToData(fixture: LevelFixture): Prisma.InputJsonValue {
     ...(fixture.silhouette !== undefined
       ? { silhouette: fixture.silhouette }
       : {}),
+    // Los fixtures son JSON por construcción; el cast salva solo la fricción
+    // de tipos entre la forma declarativa (space/silhouette con literales
+    // TS) y el tipo estructural InputJsonValue de Prisma.
     arrows: fixture.arrows as unknown as Prisma.InputJsonArray,
-  };
+  } as unknown as Prisma.InputJsonValue;
 }
 
 // Sección de catálogo: 'themed'/'hex' literales; cualquier otro valor (o

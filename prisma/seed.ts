@@ -1,34 +1,29 @@
-import { Prisma, PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
-import { LevelBuilder } from '../src/domain/entities/level.builder';
 import { LevelSolver } from '../src/domain/services/level-solver';
-import { LevelId } from '../src/domain/value-objects/level-id.vo';
 import { validateLevelPaint } from '../src/infrastructure/database/level-paint.validator';
 import { validateLevelSilhouette } from '../src/infrastructure/database/level-silhouette.validator';
-import type { ArrowPrimitives } from '../src/domain/entities/arrow.factory';
+import {
+  LevelFixture,
+  buildLevelFromFixture,
+  fixtureToData,
+  resolveSection,
+} from '../src/infrastructure/database/level-fixture';
 
 // Seed del catálogo de niveles: los 15 curados de campaña (back#10, ADR 0001
-// dec. 5) más los temáticos (back#31, ADR 0004). Los fixtures en
-// prisma/levels/ son la única fuente: cada uno es el superset declarativo de
-// Level.data con las columnas de tabla (levelId, order, section) izadas al
-// nivel raíz. Ver prisma/levels/manifest.md para la procedencia.
+// dec. 5) más los temáticos (back#31, ADR 0004) y los hexagonales (back#60,
+// ADR-0007). Los fixtures en prisma/levels/ son la única fuente: cada uno es
+// el superset declarativo de Level.data con las columnas de tabla (levelId,
+// order, section) izadas al nivel raíz. Ver prisma/levels/manifest.md para
+// la procedencia.
 //
 // Campaña: order contiguo 1..15, sin section (default campaign).
 // Temáticos: section "themed", sin order (null en la tabla), con
 // Instrucciones de pintado opcionales (palette + paintRole por flecha) y
 // máscara de silueta opcional (silhouette, back#53).
-interface LevelFixture {
-  levelId: string;
-  order?: number;
-  section?: string;
-  cols: number;
-  rows: number;
-  timeLimitSec?: number;
-  palette?: Record<string, string>;
-  silhouette?: Record<string, number[][]>;
-  arrows: (ArrowPrimitives & { paintRole?: string })[];
-}
+// Hexagonales: section "hex", sin order, geometría descrita por `space`
+// (back#60).
 
 const LEVELS_DIR = path.join(__dirname, 'levels');
 const solver = new LevelSolver();
@@ -66,11 +61,7 @@ function loadFixtures(): LevelFixture[] {
 // validación de esa metadata en todo el back.
 // Lanza a la primera violación para no sembrar jamás un lote inválido.
 function validate(fixture: LevelFixture): void {
-  const builder = new LevelBuilder(new LevelId(fixture.levelId))
-    .withDimensions(fixture.cols, fixture.rows)
-    .withTimeLimit(fixture.timeLimitSec);
-  fixture.arrows.forEach((arrow) => builder.addArrow(arrow));
-  const level = builder.build();
+  const level = buildLevelFromFixture(fixture);
   if (!solver.isSolvable(level)) {
     throw new Error(
       `Level ${fixture.levelId} is not solvable — refusing to seed.`,
@@ -78,29 +69,6 @@ function validate(fixture: LevelFixture): void {
   }
   validateLevelPaint(fixture);
   validateLevelSilhouette(fixture);
-}
-
-// Forma persistida en Level.data (CONTEXT-MAP.md, wire contract). Excluye
-// levelId/order/section a propósito: son columnas de tabla, no van dentro de
-// `data`, o PrismaLevelRepository.toDomain leería una forma equivocada.
-// palette y paintRole (dentro de cada arrow) SÍ van en data: son parte del
-// JSON del nivel que el repositorio iza al portador paint (ADR 0004).
-// silhouette igual: viaja dentro de data como portador opaco (back#53).
-function toData(fixture: LevelFixture): Prisma.InputJsonValue {
-  return {
-    cols: fixture.cols,
-    rows: fixture.rows,
-    ...(fixture.timeLimitSec !== undefined
-      ? { timeLimitSec: fixture.timeLimitSec }
-      : {}),
-    ...(fixture.palette !== undefined ? { palette: fixture.palette } : {}),
-    ...(fixture.silhouette !== undefined
-      ? { silhouette: fixture.silhouette }
-      : {}),
-    // Los fixtures son JSON por construcción; el cast salva solo la fricción
-    // de tipos entre la interfaz ArrowPrimitives y el JSON de entrada de Prisma.
-    arrows: fixture.arrows as unknown as Prisma.InputJsonArray,
-  };
 }
 
 async function main(): Promise<void> {
@@ -117,9 +85,9 @@ async function main(): Promise<void> {
     // Paso 2: upsert idempotente por id. Preserva los ids referenciados por
     // ScoreEntry/Progress y permite re-sembrar sin duplicar (ADR 0001 dec. 7).
     for (const fixture of fixtures) {
-      const data = toData(fixture);
+      const data = fixtureToData(fixture);
       const order = fixture.order ?? null;
-      const section = fixture.section === 'themed' ? 'themed' : 'campaign';
+      const section = resolveSection(fixture);
       await prisma.level.upsert({
         where: { id: fixture.levelId },
         update: { order, section, data },
@@ -137,7 +105,9 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error) => {
-  console.error('Seed failed:', error);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((error) => {
+    console.error('Seed failed:', error);
+    process.exit(1);
+  });
+}
