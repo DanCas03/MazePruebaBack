@@ -985,3 +985,12 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 **Prompt o instrucción proporcionada:** > "Lee el handoff y ejecuta el plan" (back#58 Task 1).
 **Resultado obtenido:** `src/domain/value-objects/direction.vo.ts`: enum `Direction` ampliado a 8 literales — `UP_LEFT='upLeft'`, `UP_RIGHT='upRight'`, `DOWN_LEFT='downLeft'`, `DOWN_RIGHT='downRight'` sumados a las 4 ortogonales; valor wire = camelCase idéntico al nombre del literal (retro-compatible: los seeds en minúscula no cambian). `src/domain/value-objects/direction.vo.spec.ts` (nuevo, AAA): fija los 8 valores (`toHaveLength(8)`) y su formato wire camelCase. TDD rojo→verde verificado (2 tests). La suite completa sigue verde: añadir valores al enum no rompe el `switch` sin `default` de `RectSpace.step` (Task 2 lo blinda con tripwire). Nota de numeración: la última entrada en `main` era 074 (el plan asumía 075); se usa numeración contigua 075.
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 076 — feat(domain): RectSpace.step fail-fast ante diagonales
+
+**Fecha:** 2026-07-18
+**Tarea o problema abordado:** back#58 (D3): convertir en real el contrato «cada espacio publica su subconjunto de direcciones». `RectSpace` solo publica las 4 ortogonales; pisar en una de las 4 diagonales nuevas era un bug silencioso (el `switch` sin `default` caía por debajo y devolvía la misma celda). Se blinda con un `switch` exhaustivo sobre los 8 valores + tripwire de compilación.
+**Herramienta de IA utilizada:** Claude Code (Opus 4.8, 1M context); TDD/AAA sobre el plan back#58 Task 2.
+**Prompt o instrucción proporcionada:** > "Lee el handoff y ejecuta el plan" (back#58 Task 2).
+**Resultado obtenido:** `src/domain/space/rect-space.ts`: `step` reescrito — las 4 diagonales (`UP_LEFT`/`UP_RIGHT`/`DOWN_LEFT`/`DOWN_RIGHT`) lanzan `InvalidDirectionException` (fail-fast, `code: INVALID_DIRECTION`, 400 por defecto — no toca el filtro); `default: { const _exhaustive: never = dir }` es el tripwire que rompe la compilación si `Direction` gana un 9º valor sin manejarse. Las 4 ortogonales y la frontera (`null`) siguen intactas; `directions` sigue devolviendo exactamente las 4 ortogonales. `src/domain/space/rect-space.spec.ts` (AAA): test parametrizado que exige `toThrow(InvalidDirectionException)` para las 4 diagonales desde una celda interior. TDD rojo→verde verificado (28/28).
+**Modificaciones realizadas por el equipo:** (completar manualmente)
