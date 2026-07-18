@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { LevelSolver } from './level-solver';
-import { LevelBuilder } from '../entities/level.builder';
+import { LevelBuilder, SpaceDescriptor } from '../entities/level.builder';
 import { Level } from '../entities/level.entity';
 import { LevelId } from '../value-objects/level-id.vo';
 import { ArrowId } from '../value-objects/arrow-id.vo';
@@ -290,6 +290,8 @@ describe('LevelSolver', () => {
       cols: number;
       rows: number;
       timeLimitSec?: number;
+      // back#59: fixtures hex declaran su geometría igual que el wire real.
+      space?: SpaceDescriptor;
       arrows: ArrowPrimitives[];
     }
 
@@ -312,6 +314,7 @@ describe('LevelSolver', () => {
     const buildLevel = (fixture: LevelFixture): Level => {
       const builder = new LevelBuilder(new LevelId(fixture.levelId))
         .withDimensions(fixture.cols, fixture.rows)
+        .withSpace(fixture.space)
         .withTimeLimit(fixture.timeLimitSec);
       fixture.arrows.forEach((arrow) => builder.addArrow(arrow));
       return builder.build();
@@ -320,7 +323,7 @@ describe('LevelSolver', () => {
     it('should cover every static characterization fixture in the frozen snapshot', () => {
       // Arrange + Act — lectura de fixtures y snapshot estáticos
       // Assert — cuenta exacta (bloquea pérdida silenciosa) + paridad de ids
-      expect(fixtures).toHaveLength(4);
+      expect(fixtures).toHaveLength(5);
       expect(Object.keys(snapshot).sort()).toEqual(
         fixtures.map((fixture) => fixture.levelId).sort(),
       );
