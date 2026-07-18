@@ -125,7 +125,9 @@ describe('RectSpace', () => {
       ];
       // Act / Assert
       for (const dir of diagonals) {
-        expect(() => sut.step(interior, dir)).toThrow(InvalidDirectionException);
+        expect(() => sut.step(interior, dir)).toThrow(
+          InvalidDirectionException,
+        );
       }
     });
   });
