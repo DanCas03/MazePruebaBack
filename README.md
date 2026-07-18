@@ -162,7 +162,7 @@ descriptions for them): response DTOs live next to their `*Mapper` in
 | POST   | `/progress`           | Yes  | Sync completed levels + best scores (merges, never degrades) |
 | GET    | `/progress`           | Yes  | Get the authenticated user's progress |
 
-> The `order` on a `Level` record is an explicit, curatable sequence (not insertion order) — the curated 15-level seed (back#10) controls it directly. Since back#31 (ADR 0004) `order` is nullable and a `section` column splits the catalog: **campaign** levels keep the contiguous play order, **themed** levels (figure boards) have no play order and are listed after the campaign, sorted by id. Paint metadata and the `silhouette` figure mask (back#53) are opaque to the backend: neither affects mechanics, solvability, or the Solution.
+> The `order` on a `Level` record is an explicit, curatable sequence (not insertion order) — the curated 15-level seed (back#10) controls it directly. Since back#31 (ADR 0004) `order` is nullable and a `section` column splits the catalog: **campaign** levels keep the contiguous play order, **themed** levels (figure boards) have no play order and are listed after the campaign, sorted by id. Paint metadata and the `silhouette` figure mask (back#53) are opaque to the backend: neither affects mechanics, solvability, or the Solution. Since back#60 the seed also persists the optional `space` descriptor and ships four hexagonal levels: three free boards `hex-01`/`hex-02`/`hex-03` (section `hex`, radii R=3/4/5, no play order, timed) and one themed masked board `t-snowflake` (a 6-fold snowflake silhouette over an R=5 hex).
 
 ```jsonc
 // POST /auth/register → 201
@@ -310,7 +310,15 @@ The backend container applies migrations and seeds the curated levels automatica
 
 ### Seeding levels
 
-The game ships with **15 curated campaign levels** (`level-01`…`level-15`) on a 9:16 portrait difficulty ramp (back#46): five tiers of three that climb from a **6×10 opener** to a **28×50 near-full-coverage finale** (~0.77 density), every board's `cols/rows` ratio held within the `[0.53, 0.68]` aspect band, and board size and density rising each tier. **All 15 levels are timed** (30/90/120/270/480/720s per tier) — unlike the previous ramp (ADR 0003), which left the first two tiers without a clock. They are frozen as arrow-path fixtures in [`prisma/levels/`](prisma/levels) (produced by the front's `tool/level_production` CLI and human-curated — see [`prisma/levels/manifest.md`](prisma/levels/manifest.md)) and seeded with an explicit play order, plus the **themed** fixtures (`t-*.json`, ADR 0004) seeded without play order and carrying opaque paint instructions. Every level — campaign or themed — is guaranteed solvable by the domain `LevelSolver`.
+The game ships with **15 curated campaign levels** (`level-01`…`level-15`) on a 9:16 portrait difficulty ramp (back#46): five tiers of three that climb from a **6×10 opener** to a **28×50 near-full-coverage finale** (~0.77 density), every board's `cols/rows` ratio held within the `[0.53, 0.68]` aspect band, and board size and density rising each tier. **All 15 levels are timed** (30/90/120/270/480/720s per tier) — unlike the previous ramp (ADR 0003), which left the first two tiers without a clock. They are frozen as arrow-path fixtures in [`prisma/levels/`](prisma/levels) (produced by the front's `tool/level_production` CLI and human-curated — see [`prisma/levels/manifest.md`](prisma/levels/manifest.md)) and seeded with an explicit play order, plus the **themed** fixtures (`t-*.json`, ADR 0004) seeded without play order and carrying opaque paint instructions, and — since back#60 — four **hexagonal** fixtures (`hex-01/02/03.json` free + `t-snowflake.json` themed, ADR-0007) whose `space` descriptor the seed now persists alongside `Level.data`. Every level — campaign, themed or hex — is guaranteed solvable by the domain `LevelSolver`.
+
+Hex levels are authored by hand against the hexagon geometry and converged with a standalone tool that builds and solves a candidate fixture without a DB, printing solvability, the suggested `timeLimitSec`, and an ASCII render of the board:
+
+```bash
+npx ts-node scripts/verify-hex-level.ts prisma/levels/hex-01.json
+```
+
+Every fixture in `prisma/levels/` (the 18 rectangular + 4 hexagonal boards) is additionally guarded in CI — with no database — by [`level-catalog.spec.ts`](src/infrastructure/database/level-catalog.spec.ts), which re-runs the seed's solvability and paint/silhouette checks over the whole catalog.
 
 ```bash
 npm run db:seed     # upsert the curated + themed levels into the database
