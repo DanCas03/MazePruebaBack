@@ -38,7 +38,9 @@ export function buildLevelFromFixture(fixture: LevelFixture): Level {
     .withSpace(fixture.space)
     .withSection(fixture.section)
     // number[][] del JSON -> tuplas readonly del dominio (idénticos en runtime).
-    .withSilhouette(fixture.silhouette as unknown as LevelSilhouette | undefined)
+    .withSilhouette(
+      fixture.silhouette as unknown as LevelSilhouette | undefined,
+    )
     .withTimeLimit(fixture.timeLimitSec);
   fixture.arrows.forEach((arrow) => builder.addArrow(arrow));
   return builder.build();

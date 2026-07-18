@@ -25,7 +25,16 @@ describe('Hex space wire (e2e)', () => {
       rows: 7,
       space: { type: 'hex', radius: 3 },
       timeLimitSec: 45,
-      arrows: [{ id: 'a1', headDir: 'up', cells: [[3, 3], [4, 3]] }],
+      arrows: [
+        {
+          id: 'a1',
+          headDir: 'up',
+          cells: [
+            [3, 3],
+            [4, 3],
+          ],
+        },
+      ],
     },
   };
 
@@ -39,9 +48,23 @@ describe('Hex space wire (e2e)', () => {
       space: { type: 'hex', radius: 5 },
       timeLimitSec: 120,
       palette: { core: '#3B82F6', snow: '#E8F4FF' },
-      silhouette: { core: [[5, 4]], snow: [[4, 5], [5, 5]] },
+      silhouette: {
+        core: [[5, 4]],
+        snow: [
+          [4, 5],
+          [5, 5],
+        ],
+      },
       arrows: [
-        { id: 'a1', headDir: 'up', cells: [[4, 5], [5, 5]], paintRole: 'snow' },
+        {
+          id: 'a1',
+          headDir: 'up',
+          cells: [
+            [4, 5],
+            [5, 5],
+          ],
+          paintRole: 'snow',
+        },
       ],
     },
   };
@@ -73,7 +96,9 @@ describe('Hex space wire (e2e)', () => {
     // Arrange
     prisma.level.findUnique.mockResolvedValue(hexRecord);
     // Act
-    const res = await request(httpServer(app)).get('/levels/hex-01').expect(200);
+    const res = await request(httpServer(app))
+      .get('/levels/hex-01')
+      .expect(200);
     // Assert
     expect(res.body).toMatchObject({
       levelId: 'hex-01',
@@ -94,7 +119,13 @@ describe('Hex space wire (e2e)', () => {
       levelId: 't-snowflake',
       space: { type: 'hex', radius: 5 },
       palette: { core: '#3B82F6', snow: '#E8F4FF' },
-      silhouette: { core: [[5, 4]], snow: [[4, 5], [5, 5]] },
+      silhouette: {
+        core: [[5, 4]],
+        snow: [
+          [4, 5],
+          [5, 5],
+        ],
+      },
     });
   });
 });
