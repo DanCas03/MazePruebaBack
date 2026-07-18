@@ -11,6 +11,15 @@ import {
 import { LevelId } from '../../domain/value-objects/level-id.vo';
 import type { ArrowPrimitives } from '../../domain/entities/arrow.factory';
 
+// Fuente ÚNICA de qué archivos de prisma/levels/ cuentan como fixture de
+// nivel: la comparten el seed (prisma/seed.ts) y el guardián de CI
+// (level-catalog.spec.ts). Antes de back#60 vivía duplicada en ambos lados;
+// duplicada, el seed se quedó sin el patrón hex-NN cuando se añadió y sembró
+// 0 niveles hexagonales pese a que el guardián de CI (con su propia copia,
+// sí actualizada) los daba por válidos.
+export const LEVEL_FIXTURE_FILENAME_PATTERN =
+  /^(level-\d+|t-[a-z0-9-]+|hex-\d+)\.json$/;
+
 // Superset declarativo de un fixture de nivel (prisma/levels/*.json): las
 // columnas de tabla (levelId, order, section) izadas junto a Level.data.
 // back#60 (ADR-0007): `space` opcional describe la geometría hex; ausente ⇒ rect.

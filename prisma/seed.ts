@@ -5,6 +5,7 @@ import { LevelSolver } from '../src/domain/services/level-solver';
 import { validateLevelPaint } from '../src/infrastructure/database/level-paint.validator';
 import { validateLevelSilhouette } from '../src/infrastructure/database/level-silhouette.validator';
 import {
+  LEVEL_FIXTURE_FILENAME_PATTERN,
   LevelFixture,
   buildLevelFromFixture,
   fixtureToData,
@@ -34,7 +35,7 @@ const solver = new LevelSolver();
 function loadFixtures(): LevelFixture[] {
   return fs
     .readdirSync(LEVELS_DIR)
-    .filter((file) => /^(level-\d+|t-[a-z0-9-]+)\.json$/.test(file))
+    .filter((file) => LEVEL_FIXTURE_FILENAME_PATTERN.test(file))
     .map(
       (file) =>
         JSON.parse(

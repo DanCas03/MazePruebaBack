@@ -1,4 +1,5 @@
 import {
+  LEVEL_FIXTURE_FILENAME_PATTERN,
   LevelFixture,
   buildLevelFromFixture,
   fixtureToData,
@@ -206,6 +207,25 @@ describe('level-fixture (back#60)', () => {
         }),
       ).toBe(expected);
     });
+  });
+
+  describe('LEVEL_FIXTURE_FILENAME_PATTERN', () => {
+    it.each([
+      'level-01.json',
+      't-heart.json',
+      't-snowflake.json',
+      'hex-01.json',
+      'hex-12.json',
+    ])('matches %s', (filename) => {
+      expect(LEVEL_FIXTURE_FILENAME_PATTERN.test(filename)).toBe(true);
+    });
+
+    it.each(['manifest.md', 'hex.json', 'level-01.json.bak', 'notes.txt'])(
+      'rejects %s',
+      (filename) => {
+        expect(LEVEL_FIXTURE_FILENAME_PATTERN.test(filename)).toBe(false);
+      },
+    );
   });
 
   describe('suggestTimeLimitSec', () => {
