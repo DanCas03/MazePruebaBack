@@ -1,0 +1,87 @@
+{
+  "levelId": "t-snowflake",
+  "section": "themed",
+  "cols": 11,
+  "rows": 11,
+  "space": { "type": "hex", "radius": 5 },
+  "timeLimitSec": 45,
+  "palette": {
+    "core": "#3B82F6",
+    "snow": "#E8F4FF"
+  },
+  "arrows": [
+    {
+      "id": "arrow-0",
+      "headDir": "up",
+      "cells": [[0, 5], [1, 5], [2, 5], [3, 5]],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-1",
+      "headDir": "down",
+      "cells": [[10, 5], [9, 5], [8, 5], [7, 5]],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-2",
+      "headDir": "upRight",
+      "cells": [[0, 10], [1, 9], [2, 8], [3, 7]],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-3",
+      "headDir": "downLeft",
+      "cells": [[10, 0], [9, 1], [8, 2], [7, 3]],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-4",
+      "headDir": "downRight",
+      "cells": [[5, 10], [5, 9], [5, 8], [5, 7]],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-5",
+      "headDir": "upLeft",
+      "cells": [[5, 0], [5, 1], [5, 2], [5, 3]],
+      "paintRole": "snow"
+    },
+    {
+      "id": "arrow-6",
+      "headDir": "up",
+      "cells": [[4, 5], [5, 5]],
+      "paintRole": "core"
+    },
+    {
+      "id": "arrow-7",
+      "headDir": "up",
+      "cells": [[4, 6], [5, 6]],
+      "paintRole": "core"
+    },
+    {
+      "id": "arrow-8",
+      "headDir": "down",
+      "cells": [[6, 4], [5, 4]],
+      "paintRole": "core"
+    },
+    {
+      "id": "arrow-9",
+      "headDir": "down",
+      "cells": [[6, 5]],
+      "paintRole": "core"
+    }
+  ],
+  "silhouette": {
+    "core": [
+      [5, 5], [4, 5], [6, 5], [4, 6], [5, 6], [5, 4], [6, 4]
+    ],
+    "snow": [
+      [3, 5], [2, 5], [1, 5], [0, 5],
+      [7, 5], [8, 5], [9, 5], [10, 5],
+      [3, 7], [2, 8], [1, 9], [0, 10],
+      [7, 3], [8, 2], [9, 1], [10, 0],
+      [5, 7], [5, 8], [5, 9], [5, 10],
+      [5, 3], [5, 2], [5, 1], [5, 0]
+    ]
+  }
+}
