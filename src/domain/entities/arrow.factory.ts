@@ -30,12 +30,15 @@ export class ArrowFactory {
 
   private static parseDirection(raw: string): Direction {
     const normalized = raw.toLowerCase();
+    // Case-insensitive en AMBOS lados (back#58): el valor wire canónico es
+    // camelCase (`upLeft`), así que hay que bajar también el valor del enum
+    // para comparar — bajar solo la entrada rompería el match de camelCase.
     const match = Object.values(Direction).find(
-      (d) => (d as string) === normalized,
+      (d) => (d as string).toLowerCase() === normalized,
     );
     if (!match) {
       throw new InvalidDirectionException(
-        `'${raw}' is not a valid direction (expected up|down|left|right)`,
+        `'${raw}' is not a valid direction (expected up|down|left|right|upLeft|upRight|downLeft|downRight)`,
       );
     }
     return match;

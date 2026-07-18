@@ -1012,3 +1012,12 @@ Aplicar en un entorno con `DATABASE_URL` con `npx prisma db push` (flujo del equ
 **Prompt o instrucción proporcionada:** > "Lee el handoff y ejecuta el plan" (back#58 Task 4).
 **Resultado obtenido:** `src/domain/entities/level.entity.ts`: en el `for (const arrow of arrows)` del constructor, tras `arrowIds.add(...)` y antes del bucle de celdas, se añade `if (!space.directions.includes(arrow.headDir)) throw new InvalidLevelException(...)`. Punto único de estrangulamiento: `LevelBuilder.build()` construye vía este constructor, así que hereda la garantía sin duplicarla. `src/domain/entities/level.entity.spec.ts` (AAA): test que construye una flecha `headDir: UP_LEFT` con celdas adyacentes e in-space (`[0,0]`,`[0,1]`) en un `RectSpace` — la única razón de rechazo es la nueva invariante — y exige `toThrow(InvalidLevelException)`. TDD rojo verificado (stash de la impl → 1 failed) y verde (17/17). Los fixtures existentes usan solo las 4 ortogonales, así que siguen construyendo.
 **Modificaciones realizadas por el equipo:** (completar manualmente)
+
+## Entrada 079 — fix(domain): parseDirection parsea diagonales camelCase
+
+**Fecha:** 2026-07-18
+**Tarea o problema abordado:** back#58 (P4): `ArrowFactory.parseDirection` comparaba `raw.toLowerCase()` contra el valor del enum sin normalizar — con los nuevos valores camelCase (`upLeft`) `'upLeft'.toLowerCase() === 'upleft' !== 'upLeft'`, por lo que las diagonales NUNCA harían match. Bug latente que aparece al estrenar los 8 valores.
+**Herramienta de IA utilizada:** Claude Code (Opus 4.8, 1M context); TDD/AAA sobre el plan back#58 Task 5.
+**Prompt o instrucción proporcionada:** > "Lee el handoff y ejecuta el plan" (back#58 Task 5).
+**Resultado obtenido:** `src/domain/entities/arrow.factory.ts`: `parseDirection` ahora baja a minúscula AMBOS lados (`(d as string).toLowerCase() === normalized`), preservando el contrato case-insensitive ya testeado (Postel: estricto al emitir, tolerante al recibir); mensaje de error ampliado a los 8 nombres. Arreglo de mínima modificación (P4). `src/domain/entities/arrow.factory.spec.ts`: tabla del `it.each` parametrizado ampliada con diagonales y variantes de caja (`upLeft`, `UPLEFT`, `downright`, `upRight`, `downLeft`). TDD rojo (5 casos diagonales fallando) → verde (19/19). Los tests de error existentes (`'diagonal'`, `''`) siguen lanzando `InvalidDirectionException`.
+**Modificaciones realizadas por el equipo:** (completar manualmente)
