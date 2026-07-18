@@ -137,6 +137,16 @@ export class LoggingInterceptor implements NestInterceptor {
 Interactive OpenAPI documentation (Swagger UI) is served at **`/api`**; the raw
 OpenAPI 3 document is available at **`/api-json`**. Both are generated at
 bootstrap from the controllers' decorators via `DocumentBuilder` (`src/app.setup.ts`).
+Every success response now has a documented schema (previously several
+response shapes — level, score, leaderboard, progress, auth — were plain
+`interface`s with no `@ApiProperty`/`type:`, so Swagger only showed free-text
+descriptions for them): response DTOs live next to their `*Mapper` in
+`adapters/mappers/` (or `adapters/dtos/token-response.dto.ts` for the bare
+`{ token }` auth response), decorated with `@ApiProperty`, and referenced via
+`type:` on each `@ApiResponse`. This covers the newest fields too — themed
+`palette`/`silhouette` passthrough (ADR 0004, back#53/#54) on
+`LevelResponseDto`, and the ADR 0006 scoring/global-leaderboard shapes
+(`SubmitScoreResponseDto`, `GlobalLeaderboardResponseDto`).
 
 | Method | Path                  | Auth | Description                          |
 |--------|-----------------------|------|--------------------------------------|

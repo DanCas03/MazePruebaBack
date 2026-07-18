@@ -20,6 +20,7 @@ import { GetCurrentUserUseCase } from '../../application/use-cases/get-current-u
 import { RegisterDto } from '../dtos/register.dto';
 import { LoginDto } from '../dtos/login.dto';
 import { ErrorResponseDto } from '../dtos/error-response.dto';
+import { TokenResponseDto } from '../dtos/token-response.dto';
 import { JwtAuthGuard } from '../../infrastructure/security/jwt-auth.guard';
 import {
   UserProfileMapper,
@@ -41,7 +42,11 @@ export class AuthController {
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user and return a signed JWT' })
-  @ApiResponse({ status: 201, description: 'Account created; returns a JWT.' })
+  @ApiResponse({
+    status: 201,
+    description: 'Account created; returns a JWT.',
+    type: TokenResponseDto,
+  })
   @ApiResponse({
     status: 409,
     description: 'Email already registered, or username already taken.',
@@ -62,6 +67,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'Credentials valid; returns a JWT.',
+    type: TokenResponseDto,
   })
   @ApiResponse({
     status: 401,
@@ -80,6 +86,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'Profile of the authenticated user (id, username, email).',
+    type: UserProfileResponseDto,
   })
   @ApiResponse({
     status: 401,

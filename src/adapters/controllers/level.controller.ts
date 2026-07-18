@@ -35,6 +35,7 @@ export class LevelController {
     description:
       'Level summaries: campaign levels in play order followed by themed ' +
       'levels. Every item includes levelId and section.',
+    type: [LevelSummaryDto],
   })
   async list(): Promise<LevelSummaryDto[]> {
     const levels = await this.listLevelsUseCase.execute();
@@ -56,6 +57,7 @@ export class LevelController {
     description:
       'Full arrow-path level. Themed levels include palette, per-arrow ' +
       'paintRole and silhouette (opaque paint/figure metadata).',
+    type: LevelResponseDto,
   })
   @ApiResponse({
     status: 400,
@@ -81,6 +83,7 @@ export class LevelController {
   @ApiResponse({
     status: 200,
     description: 'Solution: arrow ids in clearing order.',
+    type: SolutionResponseDto,
   })
   @ApiResponse({
     status: 400,

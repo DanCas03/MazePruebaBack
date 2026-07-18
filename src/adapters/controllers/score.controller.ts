@@ -11,6 +11,7 @@ import {
 import {
   ApiBearerAuth,
   ApiOperation,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -23,9 +24,9 @@ import {
   ScoreMapper,
   SubmitScoreResponseDto,
   LeaderboardEntryResponseDto,
+  GlobalLeaderboardResponseDto,
 } from '../mappers/score.mapper';
 import type { AuthenticatedRequest } from '../http/authenticated-request.interface';
-import type { GlobalLeaderboard } from '../../application/read-models/global-leaderboard';
 
 export type { AuthenticatedRequest } from '../http/authenticated-request.interface';
 
@@ -47,6 +48,7 @@ export class ScoreController {
   @ApiResponse({
     status: 201,
     description: 'Canonical score derived and persisted',
+    type: SubmitScoreResponseDto,
   })
   @ApiResponse({ status: 400, description: 'Invalid score payload.' })
   @ApiResponse({ status: 401, description: 'Missing or invalid bearer token.' })
@@ -75,26 +77,41 @@ export class ScoreController {
   @ApiOperation({
     summary: 'Global player ranking (campaign best-per-level totals)',
   })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Max rows in the top list (defaults server-side)',
+  })
   @ApiResponse({
     status: 200,
     description: 'Top players plus requesting user row.',
+    type: GlobalLeaderboardResponseDto,
   })
   async getGlobalLeaderboard(
     @Req() req: AuthenticatedRequest,
     @Query('limit') limit?: string,
-  ): Promise<GlobalLeaderboard> {
+  ): Promise<GlobalLeaderboardResponseDto> {
     const parsedLimit = limit === undefined ? undefined : Number(limit);
-    return this.getGlobalLeaderboardUseCase.execute(
+    const board = await this.getGlobalLeaderboardUseCase.execute(
       req.user.userId,
       parsedLimit,
     );
+    return ScoreMapper.toGlobalLeaderboardDto(board);
   }
 
   @Get('leaderboard/:levelId')
   @ApiOperation({ summary: 'Get the top scores for a level' })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Max rows returned (defaults server-side)',
+  })
   @ApiResponse({
     status: 200,
     description: 'Top scores, ordered by score desc.',
+    type: [LeaderboardEntryResponseDto],
   })
   async getLeaderboard(
     @Param('levelId') levelId: string,
