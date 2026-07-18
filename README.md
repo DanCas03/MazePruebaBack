@@ -197,6 +197,22 @@ bootstrap from the controllers' decorators via `DocumentBuilder` (`src/app.setup
     { "id": "a1", "headDir": "up", "cells": [[1, 1], [1, 2]], "paintRole": "ojo" }
   ]
 }
+// GET /levels/:id → 200 for a HEX level (back#59, ADR-0007): same contract
+// plus an optional `space` descriptor — absent for rectangular levels, where
+// the space is implied by `cols`×`rows`. `cols`/`rows` are ALWAYS the
+// bounding box of the board in either geometry (for hex, `(2*radius+1)^2`),
+// never the hexagon's cell count. Hex levels may also belong to the `hex`
+// section (a third, product-taxonomy value of `LevelSection`, orthogonal to
+// the geometry — a level's section does not by itself determine its shape).
+{
+  "levelId": "h-001",
+  "cols": 5,
+  "rows": 5,
+  "space": { "type": "hex", "radius": 2 },
+  "arrows": [
+    { "id": "a1", "headDir": "up", "cells": [[1, 2], [2, 2]] }
+  ]
+}
 // GET /levels/:id → 404 when the id does not exist
 
 // GET /levels/:id/solution → 200 (arrow ids in clearing order; works for

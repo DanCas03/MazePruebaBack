@@ -72,6 +72,27 @@ backend las guarda y sirve como datos opacos; no participan en la validación de
 ni en la Solución.
 _Avoid_: tema, estilo, configuración de render.
 
+**Espacio hexagonal (HexSpace)**:
+`BoardSpace` hexagonal flat-top de radio R, implementado sobre el mismo seam que `RectSpace`
+(ADR-0007); usa coordenadas axiales `q=col−R, r=row−R` y publica 6 direcciones (up/down + 4
+diagonales) en vez de las 4 ortogonales del rectángulo. `HexMaskedSpace` es su gemelo
+restringido a las celdas activas de una silueta. **En hex la silueta es frontera jugable**:
+salir de la figura cuenta como salir del tablero — asimetría consciente frente a rect y
+temático, donde la silueta es solo visual y el espacio permanece completo.
+_Avoid_: hexágono como solo forma visual, grid hexagonal genérico.
+
+**Sección `hex`**:
+Tercer valor de `LevelSection` (junto a campaña y temático): niveles cuyo `BoardSpace` es
+`HexSpace`/`HexMaskedSpace`. Es taxonomía de producto, **ortogonal** a la geometría — un nivel
+puede ser de sección `hex` sin que la sección determine por sí sola la forma del tablero.
+_Avoid_: geometría como sinónimo de sección.
+
+**Descriptor `space`**:
+Campo wire opcional en el JSON de un `Level` (y en `LevelResponseDto`): `{ type: 'hex',
+radius }`. Si está ausente, el espacio es rectangular y se deriva de `cols`×`rows`. `cols`/
+`rows` son **siempre** el bounding box del tablero en ambas geometrías (en hex, `(2R+1)²`).
+_Avoid_: campo obligatorio, radius derivado de cols/rows.
+
 ### Cuenta y sesión
 
 **User** (Usuario):
