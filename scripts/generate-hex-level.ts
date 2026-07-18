@@ -139,7 +139,23 @@ interface GenParams {
   active: ReadonlyMap<string, Cell>; // celdas jugables (silueta o hex entero)
   regionOf?: ReadonlyMap<string, string>; // los segmentos no cruzan regiones
   maxLen: number;
+  turnProb: number; // prob. de codo por paso (0 = serpientes rectas)
   rnd: () => number;
+}
+
+// Anillo de direcciones flat-top en orden angular: los codos legales son ±60°
+// (giros de 120° hacen horquillas ilegibles en el panal).
+const RING: readonly Dir[] = [
+  'up',
+  'upRight',
+  'downRight',
+  'down',
+  'downLeft',
+  'upLeft',
+];
+function smoothTurns(dir: Dir): [Dir, Dir] {
+  const i = RING.indexOf(dir);
+  return [RING[(i + 5) % 6], RING[(i + 1) % 6]];
 }
 
 // Carril de salida desde head: pasos sucesivos DENTRO del espacio activo
@@ -157,13 +173,14 @@ function lane(params: GenParams, head: Cell, dir: Dir): Cell[] {
   return out;
 }
 
-// Inserta segmentos rectos cubriendo las celdas activas de dentro hacia fuera.
-// Invariante: al insertar, el carril de la cabeza no toca celdas YA ocupadas
-// (las aún libres las cubrirán flechas posteriores, que salen ANTES en la
-// solución inversa). Devuelve null si un hueco queda inescapable con esta
-// semilla — el llamador reintenta con otra.
+// Inserta serpientes (caminos con codos ±60°) cubriendo las celdas activas de
+// dentro hacia fuera. Invariante: al insertar, el carril de salida de la
+// cabeza (headDir = dirección del ÚLTIMO segmento, para que la punta continúe
+// el cuerpo) no toca celdas YA ocupadas — las aún libres las cubrirán flechas
+// posteriores, que salen ANTES en la solución inversa. Devuelve null si un
+// hueco queda inescapable con esta semilla — el llamador reintenta con otra.
 function tessellate(params: GenParams): GenArrow[] | null {
-  const { radius, active, regionOf, maxLen, rnd } = params;
+  const { radius, active, regionOf, maxLen, turnProb, rnd } = params;
   const occupied = new Set<string>();
   const uncovered = new Map(active);
   const arrows: GenArrow[] = [];
@@ -196,41 +213,65 @@ function tessellate(params: GenParams): GenArrow[] | null {
     let placed = false;
     const sameRegion = (c: Cell) =>
       !regionOf || regionOf.get(key(c)) === regionOf.get(key(seedCell));
-    // Dos pasadas: primero solo segmentos ≥2 (legibilidad — menos flechas de
+    // Dos pasadas: primero solo serpientes ≥2 (legibilidad — menos flechas de
     // una celda); los singles quedan como último recurso.
     for (const minLen of [2, 1]) {
-      for (const dir of outwardFirst) {
-        // Crece desde la celda semilla hacia dir (cabeza hacia fuera) y luego
-        // extiende la cola hacia dentro, siempre por celdas libres de la
-        // MISMA región: segmentos largos = niveles legibles.
-        const cells: Cell[] = [seedCell];
-        const [dr, dc] = DELTAS[dir];
-        while (cells.length < maxLen) {
-          const last = cells[cells.length - 1];
-          const next: Cell = [last[0] + dr, last[1] + dc];
-          if (!uncovered.has(key(next)) || !sameRegion(next)) break;
-          cells.push(next);
+      for (const dirInit of outwardFirst) {
+        // Dos tiradas RNG por dirección inicial: los codos hacen que caminos
+        // distintos desde la misma semilla tengan carriles distintos.
+        for (let attempt = 0; attempt < 2 && !placed; attempt++) {
+          // Crece la serpiente desde la celda semilla (cola, la más interior)
+          // paso a paso: sigue recto o dobla ±60° con prob. turnProb, siempre
+          // por celdas libres de la MISMA región y sin repetirse.
+          const cells: Cell[] = [seedCell];
+          const inPath = new Set([key(seedCell)]);
+          let lastDir: Dir = dirInit;
+          while (cells.length < maxLen) {
+            const last = cells[cells.length - 1];
+            const stepOk = (d: Dir): Cell | null => {
+              const next: Cell = [
+                last[0] + DELTAS[d][0],
+                last[1] + DELTAS[d][1],
+              ];
+              return uncovered.has(key(next)) &&
+                !inPath.has(key(next)) &&
+                sameRegion(next)
+                ? next
+                : null;
+            };
+            const straight = stepOk(lastDir);
+            const turns = smoothTurns(lastDir)
+              .map((d) => [d, stepOk(d)] as const)
+              .filter((e): e is [Dir, Cell] => e[1] !== null);
+            let chosen: readonly [Dir, Cell] | null = null;
+            if (straight !== null && (turns.length === 0 || rnd() >= turnProb))
+              chosen = [lastDir, straight];
+            else if (turns.length > 0)
+              chosen = turns[Math.floor(rnd() * turns.length)];
+            else if (straight !== null) chosen = [lastDir, straight];
+            if (chosen === null) break;
+            cells.push(chosen[1]);
+            inPath.add(key(chosen[1]));
+            lastDir = chosen[0];
+          }
+          if (cells.length < minLen) continue;
+          // headDir = dirección del último segmento: la punta dibujada
+          // continúa el cuerpo (para singles, la dirección inicial).
+          const head = cells[cells.length - 1];
+          if (lane(params, head, lastDir).some((c) => occupied.has(key(c))))
+            continue;
+          arrows.push({
+            cells,
+            headDir: lastDir,
+            region: regionOf?.get(key(seedCell)),
+          });
+          cells.forEach((c) => {
+            occupied.add(key(c));
+            uncovered.delete(key(c));
+          });
+          placed = true;
         }
-        while (cells.length < maxLen) {
-          const first = cells[0];
-          const prev: Cell = [first[0] - dr, first[1] - dc];
-          if (!uncovered.has(key(prev)) || !sameRegion(prev)) break;
-          cells.unshift(prev);
-        }
-        if (cells.length < minLen) continue;
-        const head = cells[cells.length - 1];
-        if (lane(params, head, dir).some((c) => occupied.has(key(c)))) continue;
-        arrows.push({
-          cells,
-          headDir: dir,
-          region: regionOf?.get(key(seedCell)),
-        });
-        cells.forEach((c) => {
-          occupied.add(key(c));
-          uncovered.delete(key(c));
-        });
-        placed = true;
-        break;
+        if (placed) break;
       }
       if (placed) break;
     }
@@ -294,6 +335,11 @@ function run(): void {
   const baseSeed = Number(arg('seed', '1'));
   const fill = Number(arg('fill', '0.95'));
   const maxLen = Number(arg('max-len', figure === 'snowflake' ? '4' : '5'));
+  // Codos tipo serpiente (modelo canónico ADR 0001): prob. de girar ±60° por
+  // paso. 0 reproduce los niveles rectos anteriores.
+  const turnProb = Number(
+    arg('turn-prob', figure === 'snowflake' ? '0.25' : '0.35'),
+  );
   const dry = process.argv.includes('--dry');
 
   const regions = figure === 'snowflake' ? snowflakeRegions(radius) : undefined;
@@ -322,6 +368,7 @@ function run(): void {
       active: activeMap,
       regionOf: regions ? regionOf : undefined,
       maxLen,
+      turnProb,
       rnd,
     });
     if (arrows === null) continue;
@@ -372,10 +419,23 @@ function run(): void {
     process.exit(1);
   }
   const { fixture, activeCount } = best;
+  const bent = fixture.arrows.filter((a) => {
+    if (a.cells.length < 3) return false;
+    const [d0r, d0c] = [
+      a.cells[1][0] - a.cells[0][0],
+      a.cells[1][1] - a.cells[0][1],
+    ];
+    return a.cells.some(
+      (c, i) =>
+        i >= 2 &&
+        (c[0] - a.cells[i - 1][0] !== d0r || c[1] - a.cells[i - 1][1] !== d0c),
+    );
+  }).length;
   console.log(
     `Level: ${id}  figure=${figure}  R=${radius}  seed=${baseSeed}\n` +
       `celdas=${activeCount}/${fullHexCells(radius).length}  ` +
-      `arrows=${fixture.arrows.length}  timeLimitSec=${fixture.timeLimitSec}`,
+      `arrows=${fixture.arrows.length} (${bent} con codo)  ` +
+      `timeLimitSec=${fixture.timeLimitSec}`,
   );
   console.log(renderAscii(fixture));
   if (!dry) {
