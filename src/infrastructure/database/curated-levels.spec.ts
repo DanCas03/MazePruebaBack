@@ -1,11 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { LevelBuilder } from '../../domain/entities/level.builder';
 import { LevelSolver } from '../../domain/services/level-solver';
-import { LevelId } from '../../domain/value-objects/level-id.vo';
 import { validateLevelPaint } from './level-paint.validator';
 import { validateLevelSilhouette } from './level-silhouette.validator';
 import type { ArrowPrimitives } from '../../domain/entities/arrow.factory';
+import { buildLevelFromFixture } from './level-fixture';
 
 // Contrato de los fixtures curados (back#10, ADR 0001 dec. 5): los 15 niveles
 // que prisma/seed.ts siembra en Postgres. La spec valida los fixtures como
@@ -87,11 +86,11 @@ function loadThemedFixtures(): ThemedLevelFixture[] {
 }
 
 function buildLevel(fixture: LevelFixture | ThemedLevelFixture) {
-  const builder = new LevelBuilder(new LevelId(fixture.levelId))
-    .withDimensions(fixture.cols, fixture.rows)
-    .withTimeLimit(fixture.timeLimitSec);
-  fixture.arrows.forEach((arrow) => builder.addArrow(arrow));
-  return builder.build();
+  // Camino único de construcción (back#60): delega en el módulo compartido
+  // `buildLevelFromFixture` para que se apliquen `space`/`section`/`silhouette`
+  // — así los fixtures hexagonales (p. ej. t-snowflake) se construyen sobre
+  // HexMaskedSpace y no sobre RectSpace, donde sus headDir diagonales lanzarían.
+  return buildLevelFromFixture(fixture);
 }
 
 describe('curated levels (back#10 seed fixtures)', () => {
@@ -287,10 +286,10 @@ describe('curated levels (back#10 seed fixtures)', () => {
   describe('themed fixtures', () => {
     const themed = loadThemedFixtures();
 
-    it('should ship the 3 themed figures (front#68) as themed fixtures without play order', () => {
-      // Arrange — figuras temáticas producidas por el tooling del front (ADR
-      // 0004: mínimo 3), sustituyen al placeholder t-smoke.
-      const expectedIds = ['t-bunny', 't-happy-face', 't-heart'];
+    it('should ship the front#68 figures plus t-snowflake (back#60) as themed fixtures without play order', () => {
+      // Arrange — 3 figuras temáticas del tooling del front (ADR 0004, front#68)
+      // + t-snowflake, el temático hexagonal enmascarado de back#60 (ADR-0007).
+      const expectedIds = ['t-bunny', 't-happy-face', 't-heart', 't-snowflake'];
       // Act
       const ids = themed.map((f) => f.levelId);
       // Assert
@@ -298,8 +297,18 @@ describe('curated levels (back#10 seed fixtures)', () => {
       themed.forEach((fixture) => {
         expect(fixture.section).toBe('themed');
         expect(fixture).not.toHaveProperty('order');
-        expect(fixture).not.toHaveProperty('timeLimitSec');
       });
+      // Las figuras front#68 son sin cronómetro; t-snowflake SÍ lleva
+      // `timeLimitSec` explícito (back#60 D6/D7: el temático hex es cronometrado).
+      themed
+        .filter((fixture) => fixture.levelId !== 't-snowflake')
+        .forEach((fixture) =>
+          expect(fixture).not.toHaveProperty('timeLimitSec'),
+        );
+      expect(
+        themed.find((fixture) => fixture.levelId === 't-snowflake')
+          ?.timeLimitSec,
+      ).toBe(45);
     });
 
     it.each(themed.map((fixture) => [fixture.levelId, fixture] as const))(

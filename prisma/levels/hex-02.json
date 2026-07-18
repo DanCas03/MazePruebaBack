@@ -1,0 +1,309 @@
+{
+  "levelId": "hex-02",
+  "section": "hex",
+  "cols": 9,
+  "rows": 9,
+  "space": {
+    "type": "hex",
+    "radius": 4
+  },
+  "timeLimitSec": 80,
+  "arrows": [
+    {
+      "id": "arrow-0",
+      "headDir": "downRight",
+      "cells": [
+        [
+          0,
+          8
+        ],
+        [
+          0,
+          7
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "id": "arrow-1",
+      "headDir": "upLeft",
+      "cells": [
+        [
+          8,
+          0
+        ],
+        [
+          8,
+          1
+        ],
+        [
+          8,
+          2
+        ],
+        [
+          8,
+          3
+        ],
+        [
+          8,
+          4
+        ]
+      ]
+    },
+    {
+      "id": "arrow-2",
+      "headDir": "upRight",
+      "cells": [
+        [
+          0,
+          4
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "arrow-3",
+      "headDir": "downLeft",
+      "cells": [
+        [
+          7,
+          5
+        ],
+        [
+          6,
+          6
+        ],
+        [
+          5,
+          7
+        ],
+        [
+          4,
+          8
+        ]
+      ]
+    },
+    {
+      "id": "arrow-4",
+      "headDir": "up",
+      "cells": [
+        [
+          5,
+          0
+        ],
+        [
+          6,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "arrow-5",
+      "headDir": "up",
+      "cells": [
+        [
+          4,
+          1
+        ],
+        [
+          5,
+          1
+        ],
+        [
+          6,
+          1
+        ]
+      ]
+    },
+    {
+      "id": "arrow-6",
+      "headDir": "up",
+      "cells": [
+        [
+          3,
+          2
+        ],
+        [
+          4,
+          2
+        ]
+      ]
+    },
+    {
+      "id": "arrow-7",
+      "headDir": "down",
+      "cells": [
+        [
+          7,
+          2
+        ],
+        [
+          6,
+          2
+        ]
+      ]
+    },
+    {
+      "id": "arrow-8",
+      "headDir": "up",
+      "cells": [
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          3
+        ]
+      ]
+    },
+    {
+      "id": "arrow-9",
+      "headDir": "down",
+      "cells": [
+        [
+          7,
+          3
+        ],
+        [
+          6,
+          3
+        ]
+      ]
+    },
+    {
+      "id": "arrow-10",
+      "headDir": "up",
+      "cells": [
+        [
+          1,
+          4
+        ],
+        [
+          2,
+          4
+        ]
+      ]
+    },
+    {
+      "id": "arrow-11",
+      "headDir": "down",
+      "cells": [
+        [
+          7,
+          4
+        ],
+        [
+          6,
+          4
+        ]
+      ]
+    },
+    {
+      "id": "arrow-12",
+      "headDir": "up",
+      "cells": [
+        [
+          1,
+          5
+        ],
+        [
+          2,
+          5
+        ]
+      ]
+    },
+    {
+      "id": "arrow-13",
+      "headDir": "down",
+      "cells": [
+        [
+          6,
+          5
+        ],
+        [
+          5,
+          5
+        ]
+      ]
+    },
+    {
+      "id": "arrow-14",
+      "headDir": "up",
+      "cells": [
+        [
+          1,
+          6
+        ]
+      ]
+    },
+    {
+      "id": "arrow-15",
+      "headDir": "down",
+      "cells": [
+        [
+          5,
+          6
+        ],
+        [
+          4,
+          6
+        ]
+      ]
+    },
+    {
+      "id": "arrow-16",
+      "headDir": "up",
+      "cells": [
+        [
+          1,
+          7
+        ],
+        [
+          2,
+          7
+        ],
+        [
+          3,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "arrow-17",
+      "headDir": "up",
+      "cells": [
+        [
+          1,
+          8
+        ],
+        [
+          2,
+          8
+        ]
+      ]
+    }
+  ]
+}
