@@ -3,6 +3,11 @@ import type { ArrowId } from '../../domain/value-objects/arrow-id.vo';
 
 export interface ArrowDto {
   id: string;
+  // Dirección de deslizamiento en formato wire camelCase (ADR-0007, back#58):
+  // el conjunto completo es de 8 — up/down/left/right + upLeft/upRight/
+  // downLeft/downRight. Cada nivel restringe al subconjunto de su espacio; los
+  // niveles rectangulares usan solo las 4 ortogonales (una diagonal en un
+  // espacio rectangular se rechaza en construcción, InvalidLevelException).
   headDir: string;
   cells: number[][];
   // Rol de pintado (ADR 0004): solo en flechas de niveles temáticos con
