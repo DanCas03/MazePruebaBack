@@ -1,0 +1,479 @@
+{
+  "levelId": "hex-03",
+  "section": "hex",
+  "cols": 11,
+  "rows": 11,
+  "timeLimitSec": 120,
+  "space": {
+    "type": "hex",
+    "radius": 5
+  },
+  "arrows": [
+    {
+      "id": "arrow-0",
+      "headDir": "downRight",
+      "cells": [
+        [
+          0,
+          8
+        ],
+        [
+          0,
+          9
+        ],
+        [
+          0,
+          10
+        ]
+      ]
+    },
+    {
+      "id": "arrow-1",
+      "headDir": "downRight",
+      "cells": [
+        [
+          0,
+          5
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "arrow-2",
+      "headDir": "upLeft",
+      "cells": [
+        [
+          10,
+          2
+        ],
+        [
+          10,
+          1
+        ],
+        [
+          10,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "arrow-3",
+      "headDir": "upLeft",
+      "cells": [
+        [
+          10,
+          5
+        ],
+        [
+          10,
+          4
+        ],
+        [
+          10,
+          3
+        ]
+      ]
+    },
+    {
+      "id": "arrow-4",
+      "headDir": "upRight",
+      "cells": [
+        [
+          7,
+          8
+        ],
+        [
+          6,
+          9
+        ],
+        [
+          5,
+          10
+        ]
+      ]
+    },
+    {
+      "id": "arrow-5",
+      "headDir": "upRight",
+      "cells": [
+        [
+          9,
+          6
+        ],
+        [
+          8,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "arrow-6",
+      "headDir": "downLeft",
+      "cells": [
+        [
+          3,
+          2
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          5,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "arrow-7",
+      "headDir": "downLeft",
+      "cells": [
+        [
+          1,
+          4
+        ],
+        [
+          2,
+          3
+        ]
+      ]
+    },
+    {
+      "id": "arrow-8",
+      "headDir": "down",
+      "cells": [
+        [
+          7,
+          0
+        ],
+        [
+          8,
+          0
+        ],
+        [
+          9,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "arrow-9",
+      "headDir": "down",
+      "cells": [
+        [
+          6,
+          1
+        ],
+        [
+          7,
+          1
+        ],
+        [
+          8,
+          1
+        ],
+        [
+          9,
+          1
+        ]
+      ]
+    },
+    {
+      "id": "arrow-10",
+      "headDir": "up",
+      "cells": [
+        [
+          4,
+          2
+        ]
+      ]
+    },
+    {
+      "id": "arrow-11",
+      "headDir": "down",
+      "cells": [
+        [
+          6,
+          2
+        ],
+        [
+          7,
+          2
+        ],
+        [
+          8,
+          2
+        ],
+        [
+          9,
+          2
+        ]
+      ]
+    },
+    {
+      "id": "arrow-12",
+      "headDir": "up",
+      "cells": [
+        [
+          4,
+          3
+        ],
+        [
+          3,
+          3
+        ]
+      ]
+    },
+    {
+      "id": "arrow-13",
+      "headDir": "down",
+      "cells": [
+        [
+          6,
+          3
+        ],
+        [
+          7,
+          3
+        ],
+        [
+          8,
+          3
+        ],
+        [
+          9,
+          3
+        ]
+      ]
+    },
+    {
+      "id": "arrow-14",
+      "headDir": "up",
+      "cells": [
+        [
+          3,
+          4
+        ],
+        [
+          2,
+          4
+        ]
+      ]
+    },
+    {
+      "id": "arrow-15",
+      "headDir": "down",
+      "cells": [
+        [
+          6,
+          4
+        ],
+        [
+          7,
+          4
+        ],
+        [
+          8,
+          4
+        ],
+        [
+          9,
+          4
+        ]
+      ]
+    },
+    {
+      "id": "arrow-16",
+      "headDir": "up",
+      "cells": [
+        [
+          3,
+          5
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          1,
+          5
+        ]
+      ]
+    },
+    {
+      "id": "arrow-17",
+      "headDir": "down",
+      "cells": [
+        [
+          6,
+          5
+        ],
+        [
+          7,
+          5
+        ],
+        [
+          8,
+          5
+        ],
+        [
+          9,
+          5
+        ]
+      ]
+    },
+    {
+      "id": "arrow-18",
+      "headDir": "up",
+      "cells": [
+        [
+          3,
+          6
+        ],
+        [
+          2,
+          6
+        ],
+        [
+          1,
+          6
+        ]
+      ]
+    },
+    {
+      "id": "arrow-19",
+      "headDir": "down",
+      "cells": [
+        [
+          6,
+          6
+        ],
+        [
+          7,
+          6
+        ],
+        [
+          8,
+          6
+        ]
+      ]
+    },
+    {
+      "id": "arrow-20",
+      "headDir": "up",
+      "cells": [
+        [
+          3,
+          7
+        ],
+        [
+          2,
+          7
+        ],
+        [
+          1,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "arrow-21",
+      "headDir": "down",
+      "cells": [
+        [
+          6,
+          7
+        ],
+        [
+          7,
+          7
+        ]
+      ]
+    },
+    {
+      "id": "arrow-22",
+      "headDir": "up",
+      "cells": [
+        [
+          3,
+          8
+        ],
+        [
+          2,
+          8
+        ],
+        [
+          1,
+          8
+        ]
+      ]
+    },
+    {
+      "id": "arrow-23",
+      "headDir": "down",
+      "cells": [
+        [
+          5,
+          8
+        ],
+        [
+          6,
+          8
+        ]
+      ]
+    },
+    {
+      "id": "arrow-24",
+      "headDir": "up",
+      "cells": [
+        [
+          3,
+          9
+        ],
+        [
+          2,
+          9
+        ],
+        [
+          1,
+          9
+        ]
+      ]
+    },
+    {
+      "id": "arrow-25",
+      "headDir": "down",
+      "cells": [
+        [
+          5,
+          9
+        ]
+      ]
+    },
+    {
+      "id": "arrow-26",
+      "headDir": "up",
+      "cells": [
+        [
+          3,
+          10
+        ],
+        [
+          2,
+          10
+        ],
+        [
+          1,
+          10
+        ]
+      ]
+    }
+  ]
+}
