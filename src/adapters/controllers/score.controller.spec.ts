@@ -181,7 +181,7 @@ describe('ScoreController', () => {
       },
     });
 
-    it('delegates to GetGlobalLeaderboardUseCase with the requesting userId and parsed limit, returning the result as-is', async () => {
+    it('delegates to GetGlobalLeaderboardUseCase with the requesting userId and parsed limit, mapping the result to the response DTO', async () => {
       // Arrange
       const req = buildRequest('user-1', 'user@example.com');
       const leaderboard = buildLeaderboard();
@@ -195,7 +195,7 @@ describe('ScoreController', () => {
         'user-1',
         10,
       );
-      expect(result).toBe(leaderboard);
+      expect(result).toStrictEqual(leaderboard);
     });
 
     it('passes undefined limit through to the use case when no query param is given', async () => {
