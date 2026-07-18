@@ -331,5 +331,29 @@
         "cells": [[9, 9], [9, 8]]
       }
     ]
+  },
+  {
+    "levelId": "char-05-hex-lanes",
+    "order": 5,
+    "cols": 0,
+    "rows": 0,
+    "space": { "type": "hex", "radius": 2 },
+    "arrows": [
+      {
+        "id": "arrow-0",
+        "headDir": "up",
+        "cells": [[1, 2], [2, 2]]
+      },
+      {
+        "id": "arrow-1",
+        "headDir": "downRight",
+        "cells": [[3, 3], [3, 2]]
+      },
+      {
+        "id": "arrow-2",
+        "headDir": "downLeft",
+        "cells": [[2, 1], [1, 1]]
+      }
+    ]
   }
 ]

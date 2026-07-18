@@ -4,6 +4,7 @@ import type { ILevelRepository } from '../../application/ports/i-level.repositor
 import { Level } from '../../domain/entities/level.entity';
 import type { LevelSilhouette } from '../../domain/entities/level.entity';
 import { LevelBuilder } from '../../domain/entities/level.builder';
+import type { SpaceDescriptor } from '../../domain/entities/level.builder';
 import { LevelId } from '../../domain/value-objects/level-id.vo';
 import type { ArrowPrimitives } from '../../domain/entities/arrow.factory';
 
@@ -33,6 +34,8 @@ interface LevelDataPrimitives {
   timeLimitSec?: number;
   palette?: Record<string, string>;
   silhouette?: LevelSilhouette;
+  // Descriptor de geometría (ADR-0007, back#59): ausente ⇒ rect cols×rows.
+  space?: SpaceDescriptor;
   arrows: StoredArrowPrimitives[];
 }
 
@@ -63,6 +66,9 @@ export class PrismaLevelRepository implements ILevelRepository {
     const data = record.data as LevelDataPrimitives;
     const builder = new LevelBuilder(new LevelId(record.id))
       .withDimensions(data.cols, data.rows)
+      // Geometría explícita (back#59): con `space` presente, cols/rows del
+      // wire se ignoran — el builder construye el espacio del descriptor.
+      .withSpace(data.space)
       // timeLimitSec es obligatorio en Level (ADR 0006, back#A2). Si el JSON
       // persistido no lo trae (datos legados pre-regeneración), el builder
       // aplica el provisional max(30, nº flechas * 6) en build() — no hay

@@ -2,6 +2,7 @@ import { PrismaLevelRepository } from './prisma-level.repository';
 import { PrismaService } from './prisma.service';
 import { Level } from '../../domain/entities/level.entity';
 import { LevelId } from '../../domain/value-objects/level-id.vo';
+import { HexSpace } from '../../domain/space/hex-space';
 
 describe('PrismaLevelRepository', () => {
   let sut: PrismaLevelRepository;
@@ -205,6 +206,39 @@ describe('PrismaLevelRepository', () => {
         roles: { a1: 'cara' },
       });
       expect(result?.arrows).toHaveLength(2);
+    });
+
+    it('should rebuild a hex level from a record carrying the space descriptor (back#59)', async () => {
+      // Arrange — descriptor de geometría (ADR-0007): cols/rows del wire se
+      // ignoran, el builder deriva el bounding box del espacio hex.
+      const hexRecord = {
+        id: 'hex-01',
+        order: null,
+        section: 'hex',
+        data: {
+          cols: 0,
+          rows: 0,
+          space: { type: 'hex', radius: 2 },
+          arrows: [
+            {
+              id: 'a-0',
+              headDir: 'up',
+              cells: [
+                [2, 2],
+                [3, 2],
+              ],
+            },
+          ],
+        },
+      };
+      mockPrisma.level.findUnique.mockResolvedValue(hexRecord);
+
+      // Act
+      const result = await sut.findById(new LevelId('hex-01'));
+
+      // Assert
+      expect(result?.space).toBeInstanceOf(HexSpace);
+      expect(result?.section).toBe('hex');
     });
   });
 

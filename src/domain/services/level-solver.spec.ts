@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { LevelSolver } from './level-solver';
-import { LevelBuilder } from '../entities/level.builder';
+import { LevelBuilder, SpaceDescriptor } from '../entities/level.builder';
 import { Level } from '../entities/level.entity';
 import { LevelId } from '../value-objects/level-id.vo';
 import { ArrowId } from '../value-objects/arrow-id.vo';
@@ -290,6 +290,8 @@ describe('LevelSolver', () => {
       cols: number;
       rows: number;
       timeLimitSec?: number;
+      // back#59: fixtures hex declaran su geometría igual que el wire real.
+      space?: SpaceDescriptor;
       arrows: ArrowPrimitives[];
     }
 
@@ -312,6 +314,7 @@ describe('LevelSolver', () => {
     const buildLevel = (fixture: LevelFixture): Level => {
       const builder = new LevelBuilder(new LevelId(fixture.levelId))
         .withDimensions(fixture.cols, fixture.rows)
+        .withSpace(fixture.space)
         .withTimeLimit(fixture.timeLimitSec);
       fixture.arrows.forEach((arrow) => builder.addArrow(arrow));
       return builder.build();
@@ -320,7 +323,7 @@ describe('LevelSolver', () => {
     it('should cover every static characterization fixture in the frozen snapshot', () => {
       // Arrange + Act — lectura de fixtures y snapshot estáticos
       // Assert — cuenta exacta (bloquea pérdida silenciosa) + paridad de ids
-      expect(fixtures).toHaveLength(4);
+      expect(fixtures).toHaveLength(5);
       expect(Object.keys(snapshot).sort()).toEqual(
         fixtures.map((fixture) => fixture.levelId).sort(),
       );
@@ -414,6 +417,65 @@ describe('LevelSolver', () => {
       expect(level.arrows.length).toBe(325);
       expect(idsOf(result)).toHaveLength(325);
       expect(elapsedMs).toBeLessThan(250);
+    });
+  });
+
+  // back#59: certificación hex — el solver resuelve niveles hexagonales sin
+  // ningún cambio, vía el seam BoardSpace (ADR 0005/0007).
+  describe('hexagonal levels (back#59)', () => {
+    it('should solve a solvable hex level', () => {
+      // Arrange — R=2: a-0 sube con carril libre; a-1 sale down de inmediato.
+      const level = new LevelBuilder(new LevelId('l-hex-solvable'))
+        .withDimensions(0, 0)
+        .withSpace({ type: 'hex', radius: 2 })
+        .addArrow({
+          id: 'a-0',
+          headDir: 'up',
+          cells: [
+            [1, 2],
+            [2, 2],
+          ],
+        })
+        .addArrow({
+          id: 'a-1',
+          headDir: 'down',
+          cells: [
+            [3, 2],
+            [3, 1],
+          ],
+        })
+        .build();
+      // Act
+      const result = solver.solve(level);
+      // Assert
+      expect(result).not.toBeNull();
+      expect(idsOf(result)!.sort()).toEqual(['a-0', 'a-1']);
+    });
+
+    it('should return null for a mutually blocked hex level', () => {
+      // Arrange — R=2, misma columna axial: a-0 sube contra a-1 que baja.
+      const level = new LevelBuilder(new LevelId('l-hex-unsolvable'))
+        .withDimensions(0, 0)
+        .withSpace({ type: 'hex', radius: 2 })
+        .addArrow({
+          id: 'a-0',
+          headDir: 'up',
+          cells: [
+            [2, 2],
+            [3, 2],
+          ],
+        })
+        .addArrow({
+          id: 'a-1',
+          headDir: 'down',
+          cells: [
+            [1, 2],
+            [0, 2],
+          ],
+        })
+        .build();
+      // Act / Assert — bloqueo mutuo: up de a-0 pisa (1,2) de a-1 y viceversa.
+      expect(solver.solve(level)).toBeNull();
     });
   });
 
