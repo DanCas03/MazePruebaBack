@@ -36,9 +36,13 @@ Why it is organized this way: the inner layers state *what* the system does, the
 
 ### Diagrams
 
-[`docs/diagrams/class-diagram.png`](docs/diagrams/class-diagram.png) — class diagram of the main entities, use cases, ports, and adapters, color-coded by Clean Architecture layer (Adapters / Application / Infrastructure / Domain / Shared-Aspects), with the GoF patterns from the table below called out inline:
+[`docs/diagrams/class-diagram-back.jpeg`](docs/diagrams/class-diagram-back.jpeg) — class diagram of the main entities, use cases, ports, and adapters, color-coded by Clean Architecture layer (Adapters / Application / Infrastructure / Domain / Shared-Aspects), with the GoF patterns from the table below called out inline:
 
-![Class diagram](docs/diagrams/class-diagram.png)
+![Class diagram](docs/diagrams/class-diagram-back.jpeg)
+
+[`docs/diagrams/flujo-ia.jpeg`](docs/diagrams/flujo-ia.jpeg) — AI-assisted development flow: how prompts, generated fragments, review, and per-fragment commits move through the team's workflow (see `AI_HISTORY.MD` and `AI_USAGE.md`):
+
+![AI flow](docs/diagrams/flujo-ia.jpeg)
 
 ## Design Patterns
 
